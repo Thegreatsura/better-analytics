@@ -1,21 +1,91 @@
 {
 	"$schema": "https://turbo.build/schema.json",
 	"ui": "tui",
+	"globalEnv": [
+		"DATABASE_URL",
+		"NODE_ENV"
+	],
 	"tasks": {
 		"build": {
-			"dependsOn": ["^build"],
-			"inputs": ["$TURBO_DEFAULT$", ".env*"],
-			"outputs": ["dist/**"]
+			"dependsOn": [
+				"^build"
+			],
+			"inputs": [
+				"$TURBO_DEFAULT$",
+				".env*"
+			],
+			"outputs": [
+				"dist/**"
+			],
+			"passThroughEnv": [
+				"BETTER_AUTH_SECRET",
+				"BETTER_AUTH_URL",
+				"GOOGLE_CLIENT_ID",
+				"GOOGLE_CLIENT_SECRET",
+				"GITHUB_CLIENT_ID",
+				"GITHUB_CLIENT_SECRET"
+			]
 		},
 		"lint": {
-			"dependsOn": ["^lint"]
+			"dependsOn": [
+				"^lint"
+			]
 		},
 		"check-types": {
-			"dependsOn": ["^check-types"]
+			"dependsOn": [
+				"^check-types"
+			]
 		},
 		"dev": {
 			"cache": false,
-			"persistent": true
+			"persistent": true,
+			"passThroughEnv": [
+				"BETTER_AUTH_SECRET",
+				"BETTER_AUTH_URL",
+				"GOOGLE_CLIENT_ID",
+				"GOOGLE_CLIENT_SECRET",
+				"GITHUB_CLIENT_ID",
+				"GITHUB_CLIENT_SECRET",
+				"DATABASE_URL"
+			]
+		},
+		"db:generate": {
+			"cache": false,
+			"env": [
+				"DATABASE_URL"
+			]
+		},
+		"db:push": {
+			"cache": false,
+			"env": [
+				"DATABASE_URL"
+			]
+		},
+		"db:studio": {
+			"cache": false,
+			"env": [
+				"DATABASE_URL"
+			]
+		},
+		"db:migrate": {
+			"cache": false,
+			"env": [
+				"DATABASE_URL"
+			]
+		},
+		"db:deploy": {
+			"cache": false,
+			"env": [
+				"DATABASE_URL"
+			]
+		},
+		"auth:generate": {
+			"cache": false,
+			"env": [
+				"DATABASE_URL",
+				"BETTER_AUTH_SECRET",
+				"BETTER_AUTH_URL"
+			]
 		}
 	}
 }

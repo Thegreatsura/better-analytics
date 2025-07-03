@@ -1,13 +1,11 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 import * as schema from './drizzle/schema';
-import * as relations from './drizzle/relations';
 
-const fullSchema = { ...schema, ...relations };
+// Create a PostgreSQL pool
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+});
 
-const databaseUrl = process.env.DATABASE_URL as string;
-
-if (!databaseUrl) {
-    throw new Error('DATABASE_URL is not set');
-}
-
-export const db = drizzle(databaseUrl, { schema: fullSchema });
+// Create the Drizzle client
+export const db = drizzle(pool, { schema: schema });

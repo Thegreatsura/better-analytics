@@ -10,6 +10,7 @@
 		"lint": "next lint"
 	},
 	"dependencies": {
+		"@better-analytics/auth": "workspace:*",
 		"@better-analytics/ui": "workspace:*",
 		"@tanstack/react-query": "^5.81.2",
 		"framer-motion": "^12.19.1",
