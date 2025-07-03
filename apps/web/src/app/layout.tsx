@@ -1,41 +1,55 @@
-import type { Metadata } from "next";
+import "@better-analytics/ui/globals.css";
+
+import type { LayoutProps } from "@/types/layout";
+import type { Metadata, Viewport } from "next";
+
 import { Geist, Geist_Mono } from "next/font/google";
-import "../index.css";
-import Providers from "@/components/providers";
-import Header from "@/components/header";
+import { ThemeProvider } from "next-themes";
+
+import { siteConfig } from "@/config/site";
+import { TooltipProvider } from "@better-analytics/ui/components/tooltip";
+import { cn } from "@better-analytics/ui";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+	variable: "--font-geist-sans",
+	subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+	variable: "--font-geist-mono",
+	subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "better-analytics",
-  description: "better-analytics",
+	title: siteConfig.name,
+	description: siteConfig.description,
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Providers>
-          <div className="grid grid-rows-[auto_1fr] h-svh">
-            <Header />
-            {children}
-          </div>
-        </Providers>
-      </body>
-    </html>
-  );
+export const viewport: Viewport = {
+	themeColor: "#ebff0a",
+};
+
+export default async function RootLayout({ children }: LayoutProps) {
+	return (
+		<html lang="en" suppressHydrationWarning>
+			<body
+				className={cn(
+					"overscroll-none scroll-smooth font-sans antialiased",
+					geistSans.variable,
+					geistMono.variable,
+				)}
+			>
+				<TooltipProvider>
+					<ThemeProvider
+						disableTransitionOnChange
+						defaultTheme="system"
+						attribute="class"
+						enableSystem
+					>
+						{children}
+					</ThemeProvider>
+				</TooltipProvider>
+			</body>
+		</html>
+	);
 }
