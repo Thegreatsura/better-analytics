@@ -11,7 +11,7 @@ import {
 	ContextMenuTrigger,
 	ContextMenuItem,
 	ContextMenu,
-} from "@better-analytics/ui/context-menu";
+} from "@better-analytics/ui/components/context-menu";
 
 interface LogobuddyProps {
 	readonly children: React.ReactNode;

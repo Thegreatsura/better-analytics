@@ -2,7 +2,7 @@ import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 import { Gmail, Outlook } from "@better-analytics/ui/icons";
-import { Button } from "@better-analytics/ui/button";
+import { Button } from "@better-analytics/ui/components/button";
 
 export function EmailShortcuts() {
 	const gmailURL = "https://mail.google.com/mail/u/0/#inbox";

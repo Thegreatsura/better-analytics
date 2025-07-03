@@ -4,7 +4,7 @@ import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 import { cn } from "@better-analytics/ui";
-import { Button } from "@better-analytics/ui/button";
+import { Button } from "@better-analytics/ui/components/button";
 
 interface LinkButtonProps extends ComponentPropsWithoutRef<typeof Button> {
 	href: string;
