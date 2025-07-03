@@ -6,24 +6,24 @@ import { PanelLeftIcon } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@better-analytics/ui";
-import { Button } from "@better-analytics/ui/button";
+import { Button } from "@better-analytics/ui/components/button";
 import { useIsMobile } from "@better-analytics/ui/hooks/use-mobile";
-import { Input } from "@better-analytics/ui/input";
-import { Separator } from "@better-analytics/ui/separator";
+import { Input } from "@better-analytics/ui/components/input";
+import { Separator } from "@better-analytics/ui/components/separator";
 import {
 	Sheet,
 	SheetContent,
 	SheetDescription,
 	SheetHeader,
 	SheetTitle,
-} from "@better-analytics/ui/sheet";
-import { Skeleton } from "@better-analytics/ui/skeleton";
+} from "@better-analytics/ui/components/sheet";
+import { Skeleton } from "@better-analytics/ui/components/skeleton";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@better-analytics/ui/tooltip";
+} from "@better-analytics/ui/components/tooltip";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;

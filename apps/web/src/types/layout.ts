@@ -1,3 +1,3 @@
 export interface LayoutProps {
-  readonly children: React.ReactNode
+	readonly children: React.ReactNode;
 }
