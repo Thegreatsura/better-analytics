@@ -8,11 +8,12 @@
 		"ui:add": "bunx --bun shadcn@canary add"
 	},
 	"exports": {
-		"./globals.css": "./src/globals.css",
 		"./postcss.config": "./postcss.config.mjs",
+		"./components/*": "./src/components/*.tsx",
+		"./globals.css": "./src/globals.css",
 		"./icons": "./src/icons/index.tsx",
-		"./*": "./src/*",
 		"./hooks/*": "./src/hooks/*.ts",
+		"./*": "./src/*",
 		".": {
 			"default": "./src/index.ts"
 		}
