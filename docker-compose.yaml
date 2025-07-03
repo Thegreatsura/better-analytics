@@ -1,0 +1,34 @@
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.5-alpine
+    ports:
+      - 9000:9000
+      - 9009:9009
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    environment:
+      - CLICKHOUSE_USER=admin
+      - CLICKHOUSE_PASSWORD=admin
+    networks:
+      - better-analytics
+  postgres:
+    image: postgres:17-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=better-analytics
+    networks:
+      - better-analytics
+
+volumes:
+  clickhouse_data:
+  postgres_data:
+
+networks:
+  better-analytics:
+    driver: bridge
