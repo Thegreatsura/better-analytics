@@ -196,6 +196,8 @@ export class BetterAnalyticsSDK {
         const currentUrl = typeof window !== 'undefined' ? window.location.href : data.url;
         const domainInfo = currentUrl ? parseDomain(currentUrl) : null;
 
+        const connection = (navigator as any).connection;
+
         return {
             ...data,
             browser_name: data.browser_name || uaResult.browser.name,
@@ -209,6 +211,16 @@ export class BetterAnalyticsSDK {
             page_title: data.page_title || (typeof document !== 'undefined' ? document.title : undefined),
             referrer: data.referrer || (typeof document !== 'undefined' ? document.referrer : undefined),
             source: data.source || domainInfo?.domain || undefined,
+
+            // Network Information
+            connection_type: connection?.type,
+            connection_effective_type: connection?.effectiveType,
+            connection_downlink: connection?.downlink,
+            connection_rtt: connection?.rtt,
+
+            // Hardware Information
+            device_memory: (navigator as any).deviceMemory,
+            device_cpu_cores: navigator.hardwareConcurrency,
         };
     }
 
