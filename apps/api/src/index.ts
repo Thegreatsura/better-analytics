@@ -4,6 +4,8 @@ import { clickhouse } from "@better-analytics/db/clickhouse";
 import { randomUUID } from "node:crypto";
 import { UAParser } from "ua-parser-js";
 import { parse as parseDomain } from "tldts";
+import { logger } from "./lib/logger";
+import { extractIpFromRequest, getGeoData } from "./lib/ip-geo";
 
 function sanitizeString(value: any, maxLength = 1000): string {
     if (typeof value !== 'string') return '';
@@ -23,6 +25,9 @@ const app = new Elysia()
             const browser = uaResult.browser;
             const os = uaResult.os;
             const device = uaResult.device;
+
+            const ip = extractIpFromRequest(request);
+            const geo = await getGeoData(ip);
 
             const domainInfo = body.url ? parseDomain(body.url) : null;
 
@@ -64,10 +69,13 @@ const app = new Elysia()
 
                 user_id: sanitizeString(body.user_id, 100),
                 session_id: sanitizeString(body.session_id, 100),
-                ip_address: sanitizeString(body.ip_address, 45),
-                country: sanitizeString(body.country, 50),
-                region: sanitizeString(body.region, 100),
-                city: sanitizeString(body.city, 100),
+                ip_address: sanitizeString(ip, 45),
+                country: sanitizeString(geo.country, 50),
+                region: sanitizeString(geo.region, 100),
+                city: sanitizeString(geo.city, 100),
+                org: sanitizeString(geo.org, 100),
+                postal: sanitizeString(geo.postal, 100),
+                loc: sanitizeString(geo.loc, 100),
 
                 response_time_ms: body.response_time_ms || 0,
                 memory_usage_mb: body.memory_usage_mb || 0,
@@ -98,10 +106,10 @@ const app = new Elysia()
             return { status: "success", id: errorData.id };
 
         } catch (error) {
-            console.error('Failed to ingest error:', error);
+            logger.error('Failed to ingest error:', error);
             return { status: "error", message: "Failed to process error" };
         }
     })
     .listen(process.env.PORT || 4000);
 
-console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
+logger.info(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
