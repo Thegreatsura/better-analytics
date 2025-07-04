@@ -51,39 +51,6 @@ async function withRetry<T>(
     throw lastError;
 }
 
-export function createClient(
-    options: ClickHouseClientConfigOptions,
-): ClickHouseClient {
-    const clickhouseClient = createClickHouseClient(options);
-
-    return new Proxy(clickhouseClient, {
-        get(target, property, receiver) {
-            const value = Reflect.get(target, property, receiver);
-
-            if (property === 'insert') {
-                return (...args: [any]): Promise<any> =>
-                    withRetry(() => (value as any).apply(target, args));
-            }
-
-            if (property === 'query') {
-                return <T>(params: QueryParams): Promise<ResultSet<T>> => {
-                    if (params.query_params) {
-                        console.warn(
-                            'query_params is not supported yet, use query binding',
-                        );
-                    }
-
-                    return withRetry(() =>
-                        (
-                            value as ClickHouseClient['query']
-                        ).apply(target, [
-                            { ...params, format: params.format ?? 'JSON' },
-                        ]),
-                    );
-                };
-            }
-
-            return value;
-        },
-    });
-}
+export const clickhouse = createClickHouseClient({
+    url: process.env.CLICKHOUSE_URL,
+});
