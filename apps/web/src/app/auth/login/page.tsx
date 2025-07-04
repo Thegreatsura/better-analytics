@@ -1,10 +1,10 @@
 import Link from "next/link";
 
-import { Logo } from "@better-analytics/ui/icons";
-import { LoginClient } from "./login.client";
 import { siteConfig } from "@/config/site";
-import { Gradient } from "@better-analytics/ui/components/gradient";
 import { Noise } from "@better-analytics/ui/components/noise";
+import { Logo } from "@better-analytics/ui/icons";
+
+import { LoginClient } from "./login.client";
 
 export default function Login() {
 	return (
@@ -26,11 +26,6 @@ export default function Login() {
 			</div>
 
 			<Noise opacity={0.5} />
-
-			<Gradient
-				className="h-full translate-y-1/2 bg-brand/5"
-				position="bottom"
-			/>
 		</div>
 	);
 }
