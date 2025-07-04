@@ -4,7 +4,7 @@ import { z } from "zod";
 export default createEnv({
 	schema: {
 		BETTER_AUTH_SECRET: z.string(),
-		BETTER_AUTH_URL: z.string(),
+		BETTER_AUTH_URL: z.string().url(),
 		GITHUB_CLIENT_ID: z.string(),
 		GITHUB_CLIENT_SECRET: z.string(),
 	},
