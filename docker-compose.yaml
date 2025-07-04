@@ -5,6 +5,8 @@ services:
     ports:
       - 9000:9000
       - 9009:9009
+      - 9100:9100
+      - 8123:8123
     volumes:
       - clickhouse_data:/var/lib/clickhouse
     environment:
