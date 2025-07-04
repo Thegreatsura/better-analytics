@@ -29,14 +29,12 @@
         "ua-parser-js": "^2.0.4",
         "zod": "^3.24.3",
       },
-      "devDependencies": {
-        "bun-types": "latest",
-      },
     },
     "apps/web": {
       "name": "web",
       "dependencies": {
         "@better-analytics/auth": "workspace:*",
+        "@better-analytics/sdk": "workspace:*",
         "@better-analytics/ui": "workspace:*",
         "@tanstack/react-query": "^5.81.2",
         "framer-motion": "^12.19.1",
@@ -92,6 +90,17 @@
       "dependencies": {
         "@types/node": "^24.0.3",
         "dotenv": "^16.5.0",
+      },
+      "devDependencies": {
+        "@better-analytics/typescript": "workspace:*",
+      },
+    },
+    "packages/sdk": {
+      "name": "@better-analytics/sdk",
+      "version": "0.0.0",
+      "dependencies": {
+        "tldts": "^6.1.77",
+        "ua-parser-js": "^2.0.4",
       },
       "devDependencies": {
         "@better-analytics/typescript": "workspace:*",
@@ -157,6 +166,8 @@
     "@better-analytics/db": ["@better-analytics/db@workspace:packages/db"],
 
     "@better-analytics/env": ["@better-analytics/env@workspace:packages/env"],
+
+    "@better-analytics/sdk": ["@better-analytics/sdk@workspace:packages/sdk"],
 
     "@better-analytics/typescript": ["@better-analytics/typescript@workspace:tooling/typescript"],
 
@@ -900,9 +911,9 @@
 
     "thread-stream": ["thread-stream@3.1.0", "", { "dependencies": { "real-require": "^0.2.0" } }, "sha512-OqyPZ9u96VohAyMfJykzmivOrY2wfMSf3C5TtFJVgN+Hm6aj+voFhlK+kZEIv2FBh1X6Xp3DlnCOfEQ3B2J86A=="],
 
-    "tldts": ["tldts@7.0.10", "", { "dependencies": { "tldts-core": "^7.0.10" }, "bin": { "tldts": "bin/cli.js" } }, "sha512-n6xyIpjWEn6Ikpkir7zVdxNoRO3ZrL+x65ztg/JYoIMoPkpRQ87W4RxbNiso+axhF2zTAzwR+NJJE3NJazLb6Q=="],
+    "tldts": ["tldts@6.1.86", "", { "dependencies": { "tldts-core": "^6.1.86" }, "bin": { "tldts": "bin/cli.js" } }, "sha512-WMi/OQ2axVTf/ykqCQgXiIct+mSQDFdH2fkwhPwgEwvJ1kSzZRiinb0zF2Xb8u4+OqPChmyI6MEu4EezNJz+FQ=="],
 
-    "tldts-core": ["tldts-core@7.0.10", "", {}, "sha512-z7PilFbUHwd+IlQ72D0aHDpqykUUpe9yvwa5k/rFvFLmpvNmWqHEIHoSYwE5sA5LZU4bTTIjhDZEjURHc8f2ag=="],
+    "tldts-core": ["tldts-core@6.1.86", "", {}, "sha512-Je6p7pkk+KMzMv2XXKmAE3McmolOQFdxkKw0R8EYNr7sELW46JqnNeTX8ybPiQgvg1ymCoF8LXs5fzFaZvJPTA=="],
 
     "token-types": ["token-types@6.0.3", "", { "dependencies": { "@tokenizer/token": "^0.3.0", "ieee754": "^1.2.1" } }, "sha512-IKJ6EzuPPWtKtEIEPpIdXv9j5j2LGJEYk0CKY2efgKoYKLBiZdh6iQkLVBow/CB3phyWAWCyk+bZeaimJn6uRQ=="],
 
@@ -986,6 +997,8 @@
 
     "@tailwindcss/oxide-wasm32-wasi/tslib": ["tslib@2.8.1", "", { "bundled": true }, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
 
+    "better-analytics-api/tldts": ["tldts@7.0.10", "", { "dependencies": { "tldts-core": "^7.0.10" }, "bin": { "tldts": "bin/cli.js" } }, "sha512-n6xyIpjWEn6Ikpkir7zVdxNoRO3ZrL+x65ztg/JYoIMoPkpRQ87W4RxbNiso+axhF2zTAzwR+NJJE3NJazLb6Q=="],
+
     "better-auth/zod": ["zod@3.25.71", "", {}, "sha512-BsBc/NPk7h8WsUWYWYL+BajcJPY8YhjelaWu2NMLuzgraKAz4Lb4/6K11g9jpuDetjMiqhZ6YaexFLOC0Ogi3Q=="],
 
     "better-call/rou3": ["rou3@0.5.1", "", {}, "sha512-OXMmJ3zRk2xeXFGfA3K+EOPHC5u7RDFG7lIOx0X1pdnhUkI8MdVrbV+sNsD80ElpUZ+MRHdyxPnFthq9VHs8uQ=="],
@@ -1041,5 +1054,7 @@
     "@esbuild-kit/core-utils/esbuild/@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.18.20", "", { "os": "win32", "cpu": "ia32" }, "sha512-Wv7QBi3ID/rROT08SABTS7eV4hX26sVduqDOTe1MvGMjNd3EjOz4b7zeexIR62GTIEKrfJXKL9LFxTYgkyeu7g=="],
 
     "@esbuild-kit/core-utils/esbuild/@esbuild/win32-x64": ["@esbuild/win32-x64@0.18.20", "", { "os": "win32", "cpu": "x64" }, "sha512-kTdfRcSiDfQca/y9QIkng02avJ+NCaQvrMejlsB3RRv5sE9rRoeBPISaZpKxHELzRxZyLvNts1P27W3wV+8geQ=="],
+
+    "better-analytics-api/tldts/tldts-core": ["tldts-core@7.0.10", "", {}, "sha512-z7PilFbUHwd+IlQ72D0aHDpqykUUpe9yvwa5k/rFvFLmpvNmWqHEIHoSYwE5sA5LZU4bTTIjhDZEjURHc8f2ag=="],
   }
 }
