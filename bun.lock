@@ -73,6 +73,7 @@
       "name": "@better-analytics/db",
       "version": "0.0.0",
       "dependencies": {
+        "@better-analytics/env": "workspace:*",
         "@clickhouse/client": "^1.11.2",
         "dotenv": "^17.0.1",
         "drizzle-orm": "^0.44.2",

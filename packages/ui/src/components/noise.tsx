@@ -9,7 +9,7 @@ export function Noise({ className, opacity = 10 }: NoiseProps) {
 	return (
 		<div
 			className={cn(
-				"-z-10 absolute inset-0 h-full w-full scale-[1.2] transform",
+				"-z-10 absolute inset-0 h-full w-full transform overflow-hidden",
 				className,
 			)}
 			style={{
