@@ -31,6 +31,16 @@ export interface ErrorData {
     viewport_width?: number;
     viewport_height?: number;
 
+    /** Network information (client-side) */
+    connection_type?: string;
+    connection_effective_type?: string;
+    connection_downlink?: number;
+    connection_rtt?: number;
+
+    /** Device hardware information (client-side) */
+    device_memory?: number;
+    device_cpu_cores?: number;
+
     /** Page information (client-side) */
     url?: string;
     page_title?: string;
