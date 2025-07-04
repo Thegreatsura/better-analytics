@@ -9,6 +9,7 @@ import { ThemeProvider } from "next-themes";
 import { siteConfig } from "@/config/site";
 import { TooltipProvider } from "@better-analytics/ui/components/tooltip";
 import { cn } from "@better-analytics/ui";
+import { Toaster } from "@/components/sonner";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -39,16 +40,16 @@ export default async function RootLayout({ children }: LayoutProps) {
 					geistMono.variable,
 				)}
 			>
-				<TooltipProvider>
-					<ThemeProvider
-						disableTransitionOnChange
-						defaultTheme="system"
-						attribute="class"
-						enableSystem
-					>
-						{children}
-					</ThemeProvider>
-				</TooltipProvider>
+				<ThemeProvider
+					disableTransitionOnChange
+					defaultTheme="system"
+					attribute="class"
+					enableSystem
+				>
+					<Toaster richColors />
+
+					<TooltipProvider>{children}</TooltipProvider>
+				</ThemeProvider>
 			</body>
 		</html>
 	);

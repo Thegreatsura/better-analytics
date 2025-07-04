@@ -1,52 +1,36 @@
-"use client";
+import Link from "next/link";
 
-import { authClient } from "@better-analytics/auth/client";
-import { toast } from "sonner";
-import { redirect } from "next/navigation";
-import { Button } from "@better-analytics/ui/components/button";
+import { Logo } from "@better-analytics/ui/icons";
+import { LoginClient } from "./login.client";
+import { siteConfig } from "@/config/site";
+import { Gradient } from "@better-analytics/ui/components/gradient";
+import { Noise } from "@better-analytics/ui/components/noise";
 
 export default function Login() {
-	async function onSubmit() {
-		const { error } = await authClient.signIn.social({
-			provider: "github",
-		});
-
-		if (error) {
-			return toast.error(error.message);
-		}
-
-		toast.success("Redirecting to dashboard...");
-
-		redirect("/dashboard");
-	}
-
 	return (
-		<div className="flex min-h-svh w-full items-center justify-center">
-			<div className="flex flex-col gap-4 p-6 md:p-10">
-				<div className="flex flex-1 items-center justify-center">
-					<div className="w-full max-w-xs">
-						<div className="flex flex-col gap-6">
-							<div className="flex flex-col items-center gap-2 text-center">
-								<h1 className="font-bold text-2xl">Login to your account</h1>
-								<p className="text-balance text-muted-foreground text-sm">
-									Enter your email below to login to your account
-								</p>
-							</div>
-							<div className="grid gap-6">
-								<Button variant="outline" className="w-full" onClick={onSubmit}>
-									Login with GitHub
-								</Button>
-							</div>
-							<div className="text-center text-sm">
-								Don&apos;t have an account?{" "}
-								<a href="/auth/signup" className="underline underline-offset-4">
-									Sign up
-								</a>
-							</div>
-						</div>
-					</div>
+		<div className="container flex min-h-svh w-full items-center justify-center">
+			<div className="flex max-w-sm flex-col items-center gap-6">
+				<Link href="/" className="flex select-none items-center gap-3">
+					<Logo className="size-4.5" />
+					<span className="font-medium uppercase">Better-Analytics</span>
+				</Link>
+
+				<div className="flex flex-col gap-3 text-center">
+					<h1 className="font-bold text-2xl">Welcome to {siteConfig.name}</h1>
+					<p className="text-muted-foreground text-sm">
+						Use your GitHub account to get started.
+					</p>
 				</div>
+
+				<LoginClient />
 			</div>
+
+			<Noise opacity={0.5} />
+
+			<Gradient
+				className="h-full translate-y-1/2 bg-brand/5"
+				position="bottom"
+			/>
 		</div>
 	);
 }
