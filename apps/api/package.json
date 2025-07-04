@@ -17,8 +17,5 @@
     "ua-parser-js": "^2.0.4",
     "zod": "^3.24.3"
   },
-  "devDependencies": {
-    "bun-types": "latest"
-  },
   "module": "src/index.js"
 }
