@@ -6,15 +6,11 @@
 		"dev": "turbo dev",
 		"build": "turbo build",
 		"check-types": "turbo check-types",
-		"dev:native": "turbo -F native dev",
-		"dev:web": "turbo -F web dev",
-		"dev:server": "turbo -F server dev",
 		"db:generate": "turbo db:generate --filter=./packages/db",
 		"db:push": "turbo db:push --filter=./packages/db",
 		"db:studio": "turbo db:studio --filter=./packages/db",
 		"db:migrate": "turbo db:migrate --filter=./packages/db",
-		"db:deploy": "turbo db:deploy --filter=./packages/db",
-		"auth:generate": "npx @better-auth/cli@latest generate --config packages/auth/src/auth.ts --output packages/db/src/drizzle/schema.ts --y"
+		"db:deploy": "turbo db:deploy --filter=./packages/db"
 	},
 	"dependencies": {
 		"@clickhouse/client": "^1.11.2",
