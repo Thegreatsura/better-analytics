@@ -1,4 +1,3 @@
-
 import { auth } from "@better-analytics/auth";
 import { headers } from "next/headers";
 import { Suspense } from "react";
@@ -6,8 +5,8 @@ import { SignButton } from "./_components/sign-button";
 
 export default async function HomePage() {
 	const session = await auth.api.getSession({
-		headers: await headers()
-	})
+		headers: await headers(),
+	});
 
 	return (
 		<div>
@@ -27,7 +26,6 @@ export default async function HomePage() {
 					<Suspense fallback={<div className="h-10" />}>
 						<SignButton session={session} />
 					</Suspense>
-
 				</div>
 			)}
 		</div>
