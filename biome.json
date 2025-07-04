@@ -40,12 +40,19 @@
 			"correctness": {
 				"useExhaustiveDependencies": "info"
 			},
+			"suspicious": {
+				"noExplicitAny": "off"
+			},
 			"nursery": {
 				"useSortedClasses": {
 					"level": "warn",
 					"fix": "safe",
 					"options": {
-						"functions": ["clsx", "cva", "cn"]
+						"functions": [
+							"clsx",
+							"cva",
+							"cn"
+						]
 					}
 				}
 			},

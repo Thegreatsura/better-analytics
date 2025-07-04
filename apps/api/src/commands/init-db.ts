@@ -41,6 +41,9 @@ CREATE TABLE IF NOT EXISTS errors (
     country LowCardinality(String),
     region LowCardinality(String),
     city LowCardinality(String),
+    org LowCardinality(String),
+    postal LowCardinality(String),
+    loc LowCardinality(String),
     
     response_time_ms UInt32,
     memory_usage_mb Float32,
