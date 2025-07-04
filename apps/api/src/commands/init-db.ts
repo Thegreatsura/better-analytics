@@ -23,6 +23,14 @@ CREATE TABLE IF NOT EXISTS errors (
     device_type LowCardinality(String),
     viewport_width UInt16,
     viewport_height UInt16,
+    
+    connection_type LowCardinality(String),
+    connection_effective_type LowCardinality(String),
+    connection_downlink Float32,
+    connection_rtt UInt32,
+    device_memory UInt8,
+    device_cpu_cores UInt8,
+
     url String,
     page_title String,
     referrer String,
