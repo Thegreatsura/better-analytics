@@ -4,8 +4,9 @@
 		"module": "nodenext",
 		"moduleResolution": "nodenext",
 		"jsx": "react-jsx",
+		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./src/*"]
+			"@better-analytics/auth/*": ["src/*"]
 		}
 	},
 	"include": ["src"],
