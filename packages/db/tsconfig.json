@@ -1,11 +1,11 @@
 {
 	"extends": "@better-analytics/typescript/base.json",
 	"compilerOptions": {
-		"outDir": "dist",
-		"declaration": true,
-		"declarationMap": true,
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./src/*"]
+			"@better-analytics/db/*": ["src/*"]
 		}
 	},
 	"include": ["src"],
