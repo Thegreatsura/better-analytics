@@ -1,4 +1,3 @@
-
 import { auth } from "@better-analytics/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 
