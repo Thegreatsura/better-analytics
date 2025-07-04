@@ -7,7 +7,7 @@
 		"rootDir": "src",
 		"baseUrl": "./",
 		"paths": {
-			"@/*": ["./src/*"]
+			"@better-analytics/sdk/*": ["./src/*"]
 		}
 	},
 	"include": ["src/**/*"],
