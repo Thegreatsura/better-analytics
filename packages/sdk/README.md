@@ -1,6 +1,14 @@
 # Better Analytics SDK
 
-A TypeScript SDK for reporting errors to Better Analytics from both client-side and server-side applications.
+A lightweight and powerful TypeScript SDK for reporting errors and logs to Better Analytics from any JavaScript environment.
+
+## Key Features
+
+-   **Universal**: Works seamlessly in both browser and Node.js environments.
+-   **Automatic**: Captures unhandled errors, promise rejections, and console logs.
+-   **Rich Context**: Gathers detailed information about the environment, user, and application state.
+-   **Customizable**: Highly configurable to fit your specific needs.
+-   **TypeScript-ready**: Provides strong typing for all its methods and data structures.
 
 ## Installation
 
@@ -8,193 +16,118 @@ A TypeScript SDK for reporting errors to Better Analytics from both client-side 
 npm install @better-analytics/sdk
 ```
 
-## Usage
+## Quick Start
 
-### Client-Side Setup
+### Client-Side
 
 ```typescript
 import { BetterAnalyticsSDK } from '@better-analytics/sdk';
 
-const analytics = new BetterAnalyticsSDK({
-  apiUrl: 'http://localhost:3000',
+export const analytics = new BetterAnalyticsSDK({
+  apiUrl: process.env.NEXT_PUBLIC_API_URL!,
   clientId: 'your-client-id',
-  environment: 'production',
-  debug: false,
-  autoCapture: true, // Automatically capture unhandled errors
+  environment: process.env.NODE_ENV,
+  autoCapture: true,
+  autoLog: true,
+  logLevel: 'warn',
 });
 ```
 
-### Server-Side Setup
+### Server-Side
 
 ```typescript
 import { BetterAnalyticsSDK } from '@better-analytics/sdk';
 
-const analytics = new BetterAnalyticsSDK({
-  apiUrl: 'http://localhost:3000',
+export const analytics = new BetterAnalyticsSDK({
+  apiUrl: process.env.API_URL!,
   clientId: 'your-client-id',
-  environment: 'production',
-  debug: false,
-  autoCapture: true, // Automatically capture uncaught exceptions
-  serverName: 'api-server-01',
+  environment: process.env.NODE_ENV,
+  autoCapture: true,
+  autoLog: true,
+  logLevel: 'info',
+  serverName: 'api-main',
   serviceName: 'user-service',
   serviceVersion: '1.2.3',
 });
 ```
 
-### Manual Error Reporting
+## API Reference
+
+### `captureError(data, [serverContext])`
+
+Captures a custom error event.
+
+-   `data`: An object containing the error details. The `custom_data` property can be an object, which will be automatically stringified.
+-   `serverContext`: (Server-side only) Additional context from the HTTP request and response.
 
 ```typescript
-// Client-side error
-await analytics.captureError({
-  error_type: 'client',
-  severity: 'high',
-  error_name: 'ValidationError',
-  message: 'Invalid user input',
-  user_id: 'user123',
-  custom_data: JSON.stringify({ field: 'email' }),
-  tags: ['validation', 'user-input'],
-});
-
-// Server-side error
-await analytics.captureError({
-  error_type: 'server',
-  severity: 'critical',
-  error_name: 'DatabaseError',
-  message: 'Connection timeout',
-  endpoint: '/api/users',
-  http_method: 'POST',
-  http_status_code: 500,
-  response_time_ms: 5000,
-});
-```
-
-### Exception Handling
-
-```typescript
-// Generic exception handling (works on both client and server)
-try {
-  throw new Error('Something went wrong');
-} catch (error) {
-  await analytics.captureException(error, {
-    user_id: 'user123',
+analytics.captureError({
+    error_name: 'PaymentFailed',
     severity: 'high',
-  });
+    custom_data: { amount: 100, currency: 'USD' },
+});
+```
+
+### `captureException(error, [context], [serverContext])`
+
+Captures a JavaScript `Error` object.
+
+-   `error`: The `Error` object to capture.
+-   `context`: Additional data to associate with the error.
+-   `serverContext`: (Server-side only) Additional context.
+
+```typescript
+try {
+    // ...
+} catch (error) {
+    analytics.captureException(error as Error, {
+        severity: 'critical',
+        tags: ['billing'],
+        custom_data: { userId: 'user-123' },
+    });
 }
 ```
 
-### Server-Side HTTP Error Handling
+### `log(message, [context])`
+
+Sends a log message.
+
+-   `message`: The log message.
+-   `context`: Additional data to associate with the log. The `context` property can be an object, which will be automatically stringified.
 
 ```typescript
-// Express.js middleware example
-app.use((err, req, res, next) => {
-  analytics.captureHttpError(err, req, res, {
-    tags: ['express-error'],
-    custom_data: JSON.stringify({ route: req.route?.path }),
-  });
-  
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-// Manual HTTP error reporting
-await analytics.captureHttpError(error, req, res, {
-  severity: 'high',
-  tags: ['payment-error'],
+analytics.log('User signed in', {
+    level: 'info',
+    user_id: 'user-123',
+    context: { source: 'google-oauth' },
 });
 ```
 
-### Context Management
+## Configuration
 
-```typescript
-// Set user context (works on both client and server)
-analytics.setUser('user123');
+The SDK can be configured with the following options:
 
-// Set additional context
-analytics.setContext({
-  user_id: 'user123',
-  environment: 'production',
-  service_name: 'frontend',
-  service_version: '1.0.0',
-});
-
-// Check runtime environment
-if (analytics.isServerSide()) {
-  console.log('Running on server');
-} else {
-  console.log('Running on client');
-}
-```
-
-### Configuration Options
-
-```typescript
-interface SDKConfig {
-  apiUrl: string;              // Your API endpoint
-  clientId: string;            // Your client ID
-  environment?: string;        // 'development' | 'staging' | 'production'
-  debug?: boolean;            // Enable debug logging
-  autoCapture?: boolean;      // Auto-capture unhandled errors
-  maxRetries?: number;        // Max retry attempts (default: 3)
-  retryDelay?: number;        // Retry delay in ms (default: 1000)
-  
-  // Server-specific options
-  serverName?: string;        // Server hostname (auto-detected)
-  serviceName?: string;       // Service name
-  serviceVersion?: string;    // Service version
-  isServer?: boolean;         // Force server/client mode (auto-detected)
-}
-```
-
-## Features
-
-### Universal (Client & Server)
-- **Auto-detection**: Automatically detects runtime environment
-- **Auto-capture**: Captures unhandled errors and promise rejections
-- **Retry logic**: Automatically retries failed requests with exponential backoff
-- **Context management**: Set user and context data for all errors
-- **TypeScript support**: Full TypeScript definitions included
-
-### Client-Side Specific
-- **Browser detection**: Automatically detects browser, OS, device info
-- **Page context**: Captures URL, title, referrer, viewport size
-- **DOM events**: Captures unhandled errors and promise rejections
-- **Session tracking**: Generates client-side session IDs
-
-### Server-Side Specific
-- **Process monitoring**: Captures uncaught exceptions and unhandled rejections
-- **HTTP context**: Rich HTTP request/response context capture
-- **Performance metrics**: Memory usage, Node.js version, process ID
-- **Server environment**: Hostname, service info, environment variables
-- **Express.js integration**: Easy middleware integration
-
-## Environment Detection
-
-The SDK automatically detects whether it's running in a browser or Node.js environment:
-
-```typescript
-// Auto-detection based on global objects
-const analytics = new BetterAnalyticsSDK({
-  apiUrl: 'http://localhost:3000',
-  clientId: 'your-client-id',
-  // isServer is auto-detected, but can be overridden
-});
-
-// Manual override
-const analytics = new BetterAnalyticsSDK({
-  apiUrl: 'http://localhost:3000',
-  clientId: 'your-client-id',
-  isServer: true, // Force server mode
-});
-```
+-   `apiUrl`: Your API endpoint.
+-   `clientId`: Your client ID.
+-   `environment`: `'development'`, `'staging'`, or `'production'`.
+-   `debug`: Enable debug logging from the SDK itself.
+-   `autoCapture`: Automatically capture unhandled errors and promise rejections.
+-   `autoLog`: Automatically capture `console` logs.
+-   `logLevel`: The minimum level of console logs to capture (`'trace'`, `'debug'`, `'info'`, `'warn'`, `'error'`).
+-   `maxRetries`: The maximum number of times to retry sending a failed event (default: `3`).
+-   `retryDelay`: The base delay in milliseconds between retries (default: `1000`).
+-   `serverName`, `serviceName`, `serviceVersion`: (Server-side only) Information about your server.
+-   `isServer`: Force the SDK to run in server or client mode. If not provided, the environment is auto-detected.
 
 ## Error Types
 
-The SDK supports different error types for better categorization:
+The SDK supports the following error types for better categorization:
 
-- `client`: Browser/frontend errors
-- `server`: Backend/API errors  
-- `network`: Network connectivity issues
-- `database`: Database-related errors
-- `validation`: Input validation errors
-- `auth`: Authentication/authorization errors
-- `business`: Business logic errors
-- `unknown`: Uncategorized errors 
+-   `client`: Browser/frontend errors
+-   `server`: Backend/API errors
+-   `network`: Network connectivity issues
+-   `database`: Database-related errors
+-   `validation`: Input validation errors
+-   `auth`: Authentication/authorization errors
+-   `business`: Business logic errors
+-   `unknown`: Uncategorized errors 

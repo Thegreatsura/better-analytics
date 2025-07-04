@@ -71,6 +71,26 @@ ORDER BY (id, error_type, severity, created_at)
 SETTINGS index_granularity = 8192;
 `;
 
+const logsTable = `
+CREATE TABLE IF NOT EXISTS logs (
+    id UUID,
+    client_id LowCardinality(String),
+    level Enum8('log' = 1, 'info' = 2, 'warn' = 3, 'error' = 4, 'debug' = 5, 'trace' = 6),
+    message String,
+    context String, 
+    source LowCardinality(String),
+    environment LowCardinality(String),
+    user_id String,
+    session_id String,
+    tags Array(String),
+    created_at DateTime64(3) DEFAULT now64()
+)
+ENGINE = MergeTree()
+PARTITION BY toYYYYMM(created_at)
+ORDER BY (client_id, level, created_at)
+SETTINGS index_granularity = 8192;
+`;
+
 const errorIndexes = [
     'CREATE INDEX IF NOT EXISTS idx_errors_user_id ON errors (user_id) TYPE bloom_filter GRANULARITY 1;',
     'CREATE INDEX IF NOT EXISTS idx_errors_session_id ON errors (session_id) TYPE bloom_filter GRANULARITY 1;',
@@ -125,24 +145,46 @@ ORDER BY total_errors DESC;
 `;
 
 async function initializeDatabase() {
+    console.log("Dropping existing tables and views...");
+    await Promise.all([
+        clickhouse.exec({ query: 'DROP VIEW IF EXISTS error_summary;' }),
+        clickhouse.exec({ query: 'DROP VIEW IF EXISTS user_error_summary;' }),
+        clickhouse.exec({ query: 'DROP TABLE IF EXISTS errors;' }),
+        clickhouse.exec({ query: 'DROP TABLE IF EXISTS logs;' }),
+    ]);
+    console.log("Tables and views dropped.");
+
+    console.log("Creating tables...");
+    await Promise.all([
+        clickhouse.exec({ query: errorTable }),
+        clickhouse.exec({ query: logsTable }),
+    ]);
+    console.log("Tables created.");
+
+    console.log("Creating indexes...");
+    await Promise.all(
+        errorIndexes.map((indexQuery) =>
+            clickhouse.exec({ query: indexQuery })
+        )
+    );
+    console.log("Indexes created.");
+
+    console.log("Creating views...");
+    await Promise.all([
+        clickhouse.exec({ query: errorSummaryView }),
+        clickhouse.exec({ query: userErrorSummaryView }),
+    ]);
+    console.log("Views created.");
+}
+
+async function run() {
     try {
-        await clickhouse.exec({ query: 'DROP VIEW IF EXISTS error_summary;' });
-        await clickhouse.exec({ query: 'DROP VIEW IF EXISTS user_error_summary;' });
-        await clickhouse.exec({ query: 'DROP TABLE IF EXISTS errors;' });
-
-        await clickhouse.exec({ query: errorTable });
-
-        for (const index of errorIndexes) {
-            await clickhouse.exec({ query: index });
-        }
-
-        await clickhouse.exec({ query: errorSummaryView });
-        await clickhouse.exec({ query: userErrorSummaryView });
-
+        await initializeDatabase();
+        console.log("Database initialized successfully.");
     } catch (error) {
-        console.error(error);
+        console.error("Failed to initialize database:", error);
         throw error;
     }
 }
 
-initializeDatabase();
+run();

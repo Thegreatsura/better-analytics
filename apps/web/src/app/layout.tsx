@@ -42,8 +42,9 @@ export default async function RootLayout({ children }: LayoutProps) {
 			>
 				<ThemeProvider
 					disableTransitionOnChange
-					defaultTheme="system"
+					defaultTheme="dark"
 					attribute="class"
+					forcedTheme="dark"
 					enableSystem
 				>
 					<Toaster richColors />
