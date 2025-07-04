@@ -7,7 +7,9 @@ import type {
     SDKResponse,
     ServerErrorContext,
     RequestContext,
-    ResponseContext
+    ResponseContext,
+    LogData,
+    LogLevel
 } from './types';
 
 /**
@@ -31,6 +33,8 @@ export class BetterAnalyticsSDK {
             environment: 'production',
             debug: false,
             autoCapture: false,
+            autoLog: false,
+            logLevel: 'info',
             maxRetries: 3,
             retryDelay: 1000,
             isServer: this.isServer,
@@ -56,13 +60,19 @@ export class BetterAnalyticsSDK {
             this.setupAutoCapture();
         }
 
-        this.log('SDK initialized', {
+        if (this.config.autoLog) {
+            this.setupAutoLogging();
+        }
+
+        this.logDebug('SDK initialized', {
             runtime: this.isServer ? 'server' : 'client',
             config: {
                 apiUrl: this.config.apiUrl,
                 clientId: this.config.clientId,
                 environment: this.config.environment,
                 autoCapture: this.config.autoCapture,
+                autoLog: this.config.autoLog,
+                logLevel: this.config.logLevel,
             }
         });
     }
@@ -79,9 +89,9 @@ export class BetterAnalyticsSDK {
         }
     }
 
-    private log(message: string, data?: unknown): void {
+    private logDebug(message: string, data?: unknown): void {
         if (this.config.debug) {
-            const prefix = this.isServer ? '[BetterAnalytics:Server]' : '[BetterAnalytics:Client]';
+            const prefix = this.isServer ? `[BetterAnalytics:${this.isServer ? 'Server' : 'Client'}]` : '[BetterAnalytics]';
             console.log(`${prefix} ${message}`, data);
         }
     }
@@ -92,6 +102,26 @@ export class BetterAnalyticsSDK {
         } else {
             this.setupServerAutoCapture();
         }
+    }
+
+    private setupAutoLogging(): void {
+        if (this.isDisabled) return;
+
+        const logLevels: LogLevel[] = ['trace', 'debug', 'info', 'log', 'warn', 'error'];
+        const configuredLogLevelIndex = logLevels.indexOf(this.config.logLevel);
+
+        logLevels.forEach((level, index) => {
+            if (index >= configuredLogLevelIndex) {
+                const originalConsoleMethod = console[level];
+                console[level] = (...args: any[]) => {
+                    const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
+                    this.log(message, { level });
+                    originalConsoleMethod.apply(console, args);
+                };
+            }
+        });
+
+        this.logDebug(`Console auto-logging enabled for levels: ${logLevels.slice(configuredLogLevelIndex).join(', ')}`);
     }
 
     private setupClientAutoCapture(): void {
@@ -145,7 +175,7 @@ export class BetterAnalyticsSDK {
     }
 
     private enrichErrorData(data: Partial<ErrorData>, serverContext?: ServerErrorContext): ErrorData {
-        const baseData: ErrorData = {
+        const baseData: Partial<ErrorData> = {
             client_id: this.config.clientId,
             error_type: this.isServer ? 'server' : 'client',
             severity: 'medium',
@@ -154,33 +184,27 @@ export class BetterAnalyticsSDK {
             ...data,
         };
 
-        if (this.isClient) {
-            return this.enrichClientErrorData(baseData);
-        }
+        const enrichedData = this.isClient
+            ? this.enrichClientErrorData(baseData)
+            : this.enrichServerErrorData(baseData, serverContext);
 
-        return this.enrichServerErrorData(baseData, serverContext);
+        return enrichedData as ErrorData;
     }
 
-    private enrichClientErrorData(data: ErrorData): ErrorData {
+    private enrichClientErrorData(data: Partial<ErrorData>): Partial<ErrorData> {
         const uaResult = this.parser.getResult();
         const currentUrl = typeof window !== 'undefined' ? window.location.href : data.url;
         const domainInfo = currentUrl ? parseDomain(currentUrl) : null;
 
         return {
             ...data,
-
-            // Auto-detect browser/device info
-            browser_name: data.browser_name || uaResult.browser.name || undefined,
-            browser_version: data.browser_version || uaResult.browser.version || undefined,
-            os_name: data.os_name || uaResult.os.name || undefined,
-            os_version: data.os_version || uaResult.os.version || undefined,
+            browser_name: data.browser_name || uaResult.browser.name,
+            browser_version: data.browser_version || uaResult.browser.version,
+            os_name: data.os_name || uaResult.os.name,
+            os_version: data.os_version || uaResult.os.version,
             device_type: data.device_type || uaResult.device.type || 'desktop',
-
-            // Auto-detect viewport
             viewport_width: data.viewport_width || (typeof window !== 'undefined' ? window.innerWidth : undefined),
             viewport_height: data.viewport_height || (typeof window !== 'undefined' ? window.innerHeight : undefined),
-
-            // Auto-detect page info
             url: data.url || currentUrl,
             page_title: data.page_title || (typeof document !== 'undefined' ? document.title : undefined),
             referrer: data.referrer || (typeof document !== 'undefined' ? document.referrer : undefined),
@@ -188,8 +212,8 @@ export class BetterAnalyticsSDK {
         };
     }
 
-    private enrichServerErrorData(data: ErrorData, serverContext?: ServerErrorContext): ErrorData {
-        const enriched: ErrorData = {
+    private enrichServerErrorData(data: Partial<ErrorData>, serverContext?: ServerErrorContext): Partial<ErrorData> {
+        const enrichedData: Partial<ErrorData> = {
             ...data,
 
             // Server environment info
@@ -205,25 +229,25 @@ export class BetterAnalyticsSDK {
 
         // Enrich with server context if provided
         if (serverContext) {
-            enriched.http_method = enriched.http_method || serverContext.req?.method;
-            enriched.url = enriched.url || serverContext.req?.url;
-            enriched.http_status_code = enriched.http_status_code || serverContext.res?.statusCode;
-            enriched.request_id = enriched.request_id || serverContext.requestId;
-            enriched.user_id = enriched.user_id || serverContext.userId;
+            enrichedData.http_method = serverContext.req?.method;
+            enrichedData.url = serverContext.req?.url;
+            enrichedData.http_status_code = serverContext.res?.statusCode;
+            enrichedData.request_id = serverContext.requestId;
+            enrichedData.user_id = serverContext.userId;
 
             // Extract user agent from request headers
             if (serverContext.req?.userAgent) {
                 const uaResult = this.parser.setUA(serverContext.req.userAgent).getResult();
-                enriched.user_agent = enriched.user_agent || serverContext.req.userAgent;
-                enriched.browser_name = enriched.browser_name || uaResult.browser.name || undefined;
-                enriched.browser_version = enriched.browser_version || uaResult.browser.version || undefined;
-                enriched.os_name = enriched.os_name || uaResult.os.name || undefined;
-                enriched.os_version = enriched.os_version || uaResult.os.version || undefined;
-                enriched.device_type = enriched.device_type || uaResult.device.type || 'desktop';
+                enrichedData.user_agent = serverContext.req.userAgent;
+                enrichedData.browser_name = uaResult.browser.name;
+                enrichedData.browser_version = uaResult.browser.version;
+                enrichedData.os_name = uaResult.os.name;
+                enrichedData.os_version = uaResult.os.version;
+                enrichedData.device_type = uaResult.device.type || 'desktop';
             }
         }
 
-        return enriched;
+        return enrichedData;
     }
 
     private getMemoryUsage(): number | undefined {
@@ -240,17 +264,35 @@ export class BetterAnalyticsSDK {
 
     private generateSessionId(): string {
         const prefix = this.isServer ? 'server' : 'client';
-        return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     }
 
-    private async sendError(errorData: ErrorData, retryCount = 0): Promise<SDKResponse> {
+    private async send(
+        endpoint: "ingest" | "log",
+        data: Partial<ErrorData> | Partial<LogData>,
+        retryCount = 0,
+    ): Promise<SDKResponse> {
+        if (this.isDisabled) {
+            this.logDebug("SDK is disabled. Skipping send.");
+            return { success: false, message: "SDK is disabled" };
+        }
+
+        const url = `${this.config.apiUrl}/${endpoint}`;
+        const headers: HeadersInit = {
+            "Content-Type": "application/json",
+        };
+
+        if (this.config.accessToken) {
+            headers["Authorization"] = `Bearer ${this.config.accessToken}`;
+        }
+
+        this.logDebug(`Sending data to ${url}`, data);
+
         try {
-            const response = await fetch(`${this.config.apiUrl}/ingest`, {
+            const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(errorData),
+                headers,
+                body: JSON.stringify(data),
             });
 
             if (!response.ok) {
@@ -258,14 +300,14 @@ export class BetterAnalyticsSDK {
             }
 
             const result = await response.json() as SDKResponse;
-            this.log('Error sent successfully', { id: result.id });
+            this.logDebug(`${endpoint === 'ingest' ? 'Error' : 'Log'} sent successfully`, { id: result.id });
             return result;
         } catch (error) {
-            this.log('Failed to send error', { error, retryCount });
+            this.logDebug(`Failed to send ${endpoint === 'ingest' ? 'error' : 'log'}`, { error, retryCount });
 
             if (retryCount < this.config.maxRetries) {
-                await this.delay(this.config.retryDelay * Math.pow(2, retryCount));
-                return this.sendError(errorData, retryCount + 1);
+                await this.delay(this.config.retryDelay * 2 ** retryCount);
+                return this.send(endpoint, data, retryCount + 1);
             }
 
             throw error;
@@ -277,63 +319,87 @@ export class BetterAnalyticsSDK {
     }
 
     /**
-     * Capture a custom error
+     * Captures a custom error.
+     * @param data - The error data to capture.
+     * @param serverContext - Optional server-side context.
      */
-    async captureError(data: Partial<ErrorData>, serverContext?: ServerErrorContext): Promise<SDKResponse> {
-        if (this.isDisabled) {
-            return {
-                status: 'error',
-                message: 'SDK is disabled.',
-            };
-        }
+    async captureError(data: Partial<Omit<ErrorData, 'custom_data'>> & { custom_data?: Record<string, any> | string }, serverContext?: ServerErrorContext): Promise<SDKResponse> {
+        if (this.isDisabled) return { success: false, message: 'SDK is disabled' };
         try {
-            const enrichedData = this.enrichErrorData(data, serverContext);
-            return await this.sendError(enrichedData);
+            const { custom_data, ...otherData } = data;
+            const processedData: Partial<ErrorData> = { ...otherData };
+            if (custom_data) {
+                processedData.custom_data = typeof custom_data === 'object' ? JSON.stringify(custom_data) : custom_data;
+            }
+            const enrichedData = this.enrichErrorData(processedData, serverContext);
+            this.logDebug('Capturing error', { data: enrichedData });
+            return this.send('ingest', enrichedData);
         } catch (error) {
-            this.log('Failed to capture error', error);
-            return {
-                status: 'error',
-                message: error instanceof Error ? error.message : 'Unknown error',
-            };
+            this.logDebug('Failed to capture error', error);
+            return { success: false, message: 'Failed to capture error' };
         }
     }
 
     /**
-     * Capture an exception with optional context
+     * Captures an exception.
+     * @param error - The error to capture.
+     * @param context - Optional context to add to the error.
+     * @param serverContext - Optional server-side context.
      */
-    async captureException(error: Error, context?: Partial<ErrorData>, serverContext?: ServerErrorContext): Promise<SDKResponse> {
-        if (this.isDisabled) {
-            return {
-                status: 'error',
-                message: 'SDK is disabled.',
-            };
-        }
-        return this.captureError({
+    async captureException(error: Error, context?: Partial<Omit<ErrorData, 'custom_data'>> & { custom_data?: Record<string, any> | string }, serverContext?: ServerErrorContext): Promise<SDKResponse> {
+        if (this.isDisabled) return { success: false, message: 'SDK is disabled' };
+        const errorData: Partial<Omit<ErrorData, 'custom_data'>> & { custom_data?: Record<string, any> | string } = {
             error_type: this.isServer ? 'server' : 'client',
             severity: 'high',
             error_name: error.name,
             message: error.message,
             stack_trace: error.stack,
             ...context,
-        }, serverContext);
+        };
+        return this.captureError(errorData, serverContext);
     }
 
     /**
-     * Server-specific method for capturing HTTP errors
-     * Works with Express.js and similar frameworks
+     * Sends a log message.
+     * @param message - The message to log.
+     * @param context - Optional context to add to the log.
+     */
+    async log(message: string, context?: Partial<Omit<LogData, 'message' | 'context'>> & { context?: Record<string, any> | string }): Promise<SDKResponse> {
+        if (this.isDisabled) return { success: false, message: 'SDK is disabled' };
+
+        const { context: rawContext, ...otherContext } = context || {};
+
+        const logData: Partial<LogData> = {
+            client_id: this.config.clientId,
+            level: 'info',
+            message,
+            environment: this.config.environment,
+            session_id: this.generateSessionId(),
+            ...otherContext,
+        };
+
+        if (rawContext) {
+            logData.context = typeof rawContext === 'object' ? JSON.stringify(rawContext) : rawContext;
+        }
+
+        this.logDebug('Capturing log', { data: logData });
+        return this.send('log', logData);
+    }
+
+    /**
+     * Captures an HTTP error.
+     * @param error - The error to capture.
+     * @param req - The HTTP request object.
+     * @param res - The HTTP response object.
+     * @param context - Optional context to add to the error.
      */
     async captureHttpError(
         error: Error,
         req: Record<string, unknown>,
         res: Record<string, unknown>,
-        context?: Partial<ErrorData>
+        context?: Partial<Omit<ErrorData, 'custom_data'>> & { custom_data?: Record<string, any> | string }
     ): Promise<SDKResponse> {
-        if (this.isDisabled) {
-            return {
-                status: 'error',
-                message: 'SDK is disabled.',
-            };
-        }
+        if (this.isDisabled) return { success: false, message: 'SDK is disabled' };
         const serverContext: ServerErrorContext = {
             req: this.extractRequestContext(req),
             res: this.extractResponseContext(res),
@@ -358,23 +424,16 @@ export class BetterAnalyticsSDK {
             method: this.extractStringValue(req, ['method']),
             url: this.extractStringValue(req, ['url', 'originalUrl']),
             headers: this.extractObjectValue(req, ['headers']),
-            body: req.body,
+            body: this.getNestedValue(req, 'body'),
             ip: this.extractStringValue(req, ['ip', 'connection.remoteAddress']),
-            userAgent: this.extractStringValue(req, ['headers.user-agent']) ||
-                this.extractStringValue(req, ['get']) &&
-                typeof req.get === 'function' ?
-                (req.get as (header: string) => string | undefined)('User-Agent') :
-                undefined,
+            userAgent: this.extractStringValue(req, ['headers.user-agent']),
         };
     }
 
     private extractResponseContext(res: Record<string, unknown>): ResponseContext {
         return {
             statusCode: this.extractNumberValue(res, ['statusCode']),
-            headers: this.extractObjectValue(res, ['getHeaders']) &&
-                typeof res.getHeaders === 'function' ?
-                (res.getHeaders as () => Record<string, string>)() :
-                this.extractObjectValue(res, ['headers']),
+            headers: this.extractObjectValue(res, ['headers', '_headers']),
         };
     }
 
@@ -397,7 +456,7 @@ export class BetterAnalyticsSDK {
     private extractObjectValue(obj: Record<string, unknown>, paths: string[]): Record<string, string> | undefined {
         for (const path of paths) {
             const value = this.getNestedValue(obj, path);
-            if (value && typeof value === 'object') {
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
                 return value as Record<string, string>;
             }
         }
@@ -405,55 +464,13 @@ export class BetterAnalyticsSDK {
     }
 
     private getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-        return path.split('.').reduce<unknown>((current, key) => {
-            return current && typeof current === 'object' && key in current
-                ? (current as Record<string, unknown>)[key]
-                : undefined;
-        }, obj);
+        return path.split('.').reduce((acc, part) => acc && (acc as any)[part], obj);
     }
 
-    /**
-     * Set user ID for future error reports
-     */
-    setUser(userId: string): void {
-        if (this.isDisabled) return;
-        if (this.isClient && typeof window !== 'undefined') {
-            (window as unknown as Record<string, unknown>).__betterAnalyticsUserId = userId;
-        }
-        // For server-side, store in instance
-        (this as Record<string, unknown>).__userId = userId;
-    }
-
-    /**
-     * Set context data for future error reports
-     */
-    setContext(context: Partial<ErrorData>): void {
-        if (this.isDisabled) return;
-        if (this.isClient && typeof window !== 'undefined') {
-            const win = window as unknown as Record<string, unknown>;
-            win.__betterAnalyticsContext = {
-                ...(win.__betterAnalyticsContext as Record<string, unknown> || {}),
-                ...context,
-            };
-        }
-        // For server-side, store in instance
-        const self = this as unknown as Record<string, unknown>;
-        self.__context = {
-            ...(self.__context as Record<string, unknown> || {}),
-            ...context,
-        };
-    }
-
-    /**
-     * Check if running in server environment
-     */
     isServerSide(): boolean {
         return this.isServer;
     }
 
-    /**
-     * Check if running in client environment
-     */
     isClientSide(): boolean {
         return this.isClient;
     }

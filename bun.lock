@@ -19,8 +19,10 @@
       "name": "better-analytics-api",
       "version": "1.0.0",
       "dependencies": {
+        "@better-analytics/db": "workspace:*",
         "@clickhouse/client": "^1.11.1",
         "@clickhouse/client-web": "^1.11.1",
+        "@elysiajs/cors": "^1.3.3",
         "autumn-js": "^0.0.67",
         "elysia": "^1.3.4",
         "pino": "^9.6.0",
@@ -203,6 +205,8 @@
     "@clickhouse/client-web": ["@clickhouse/client-web@1.11.2", "", { "dependencies": { "@clickhouse/client-common": "1.11.2" } }, "sha512-VyV0Wx/EZKJwKRgujc9ve8ad7+pVgXOIlCJsGltzU1h6bW7pQKWEAD9Y7eHWkbN3+6nokxUPDgQI0w0BWym6MQ=="],
 
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.10.2", "", {}, "sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w=="],
+
+    "@elysiajs/cors": ["@elysiajs/cors@1.3.3", "", { "peerDependencies": { "elysia": ">= 1.3.0" } }, "sha512-mYIU6PyMM6xIJuj7d27Vt0/wuzVKIEnFPjcvlkyd7t/m9xspAG37cwNjFxVOnyvY43oOd2I/oW2DB85utXpA2Q=="],
 
     "@emnapi/runtime": ["@emnapi/runtime@1.4.3", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-pBPWdu6MLKROBX05wSNKcNb++m5Er+KQ9QkB+WVM+pW2Kx9hoSrVTnu3BdkI5eBLZoKu/J6mW/B6i6bJB2ytXQ=="],
 

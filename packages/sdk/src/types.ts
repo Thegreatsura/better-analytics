@@ -19,7 +19,7 @@ export interface ErrorData {
 
     /** Context information */
     source?: string;
-    environment?: 'development' | 'staging' | 'production';
+    environment?: 'development' | 'staging' | 'production' | string;
 
     /** Browser/Device info (auto-detected on client-side) */
     user_agent?: string;
@@ -58,7 +58,21 @@ export interface ErrorData {
 
     /** Error status and metadata */
     status?: 'new' | 'investigating' | 'resolved' | 'ignored';
-    custom_data?: string;
+    custom_data?: string | Record<string, any>;
+    tags?: string[];
+}
+
+export type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug' | 'trace';
+
+export interface LogData {
+    client_id: string;
+    level: LogLevel;
+    message: string;
+    context?: string | Record<string, any>;
+    source?: string;
+    environment?: 'development' | 'staging' | 'production' | string;
+    user_id?: string;
+    session_id?: string;
     tags?: string[];
 }
 
@@ -72,14 +86,23 @@ export interface SDKConfig {
     /** Client ID for authentication */
     clientId: string;
 
+    /** Access token for API authentication */
+    accessToken?: string;
+
     /** Environment (defaults to 'production') */
-    environment?: 'development' | 'staging' | 'production';
+    environment?: 'development' | 'staging' | 'production' | string;
 
     /** Enable debug logging (defaults to false) */
     debug?: boolean;
 
     /** Auto-capture unhandled errors (defaults to false) */
     autoCapture?: boolean;
+
+    /** Auto-capture console logs (defaults to false) */
+    autoLog?: boolean;
+
+    /** Minimum log level to capture (defaults to 'info') */
+    logLevel?: LogLevel;
 
     /** Maximum retry attempts (defaults to 3) */
     maxRetries?: number;
@@ -103,17 +126,24 @@ export interface SDKConfig {
 /**
  * Internal SDK configuration with all required fields
  */
-export interface InternalSDKConfig extends Required<Omit<SDKConfig, 'serverName' | 'serviceName' | 'serviceVersion'>> {
+export interface InternalSDKConfig
+    extends Required<
+        Omit<
+            SDKConfig,
+            "serverName" | "serviceName" | "serviceVersion" | "accessToken"
+        >
+    > {
     serverName?: string;
     serviceName?: string;
     serviceVersion?: string;
+    accessToken?: string;
 }
 
 /**
  * API response structure
  */
 export interface SDKResponse {
-    status: 'success' | 'error';
+    success: boolean;
     id?: string;
     message?: string;
 }
