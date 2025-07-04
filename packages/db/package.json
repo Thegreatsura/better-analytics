@@ -6,7 +6,8 @@
 	"types": "./src/index.ts",
 	"exports": {
 		".": "./src/index.ts",
-		"./clickhouse": "./src/clickhouse/client.ts"
+		"./clickhouse": "./src/clickhouse/client.ts",
+		"./*": "./src/*"
 	},
 	"dependencies": {
 		"@better-analytics/env": "workspace:*",
