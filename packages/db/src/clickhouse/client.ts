@@ -61,14 +61,8 @@ export function createClient(
             const value = Reflect.get(target, property, receiver);
 
             if (property === 'insert') {
-                return <T>(
-                    ...args: [InsertParams<T>]
-                ): Promise<ExecResult<unknown>> =>
-                    withRetry(() =>
-                        (
-                            value as ClickHouseClient['insert']
-                        ).apply(target, args),
-                    );
+                return (...args: [any]): Promise<any> =>
+                    withRetry(() => (value as any).apply(target, args));
             }
 
             if (property === 'query') {
