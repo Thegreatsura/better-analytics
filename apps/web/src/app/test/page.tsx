@@ -3,9 +3,27 @@ import { getRecentErrors, getRecentLogs, getAnalyticsStats } from './actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@better-analytics/ui/components/card';
 import { Badge } from '@better-analytics/ui/components/badge';
 import { Skeleton } from '@better-analytics/ui/components/skeleton';
+import { Button } from '@better-analytics/ui/components/button';
+import { BarChart, Activity, AlertTriangle, Info, Bug, Shield, Globe, Clock } from 'lucide-react';
 
 function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleString();
+    return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(new Date(dateString));
+}
+
+function formatRelativeTime(dateString: string) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
 }
 
 function getSeverityColor(severity: string) {
@@ -15,6 +33,16 @@ function getSeverityColor(severity: string) {
         case 'medium': return 'default';
         case 'low': return 'secondary';
         default: return 'outline';
+    }
+}
+
+function getSeverityIcon(severity: string) {
+    switch (severity) {
+        case 'critical': return <AlertTriangle className="h-3 w-3" />;
+        case 'high': return <AlertTriangle className="h-3 w-3" />;
+        case 'medium': return <Info className="h-3 w-3" />;
+        case 'low': return <Info className="h-3 w-3" />;
+        default: return <Bug className="h-3 w-3" />;
     }
 }
 
@@ -29,60 +57,160 @@ function getLogLevelColor(level: string) {
     }
 }
 
-async function StatsSection() {
+async function StatsOverview() {
     const statsResult = await getAnalyticsStats();
 
     if (!statsResult.success || !statsResult.data) {
-        return <div className="text-red-500">Failed to load stats: {statsResult.error}</div>;
+        return (
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+                <p className="text-sm text-destructive">Failed to load analytics overview</p>
+            </div>
+        );
+    }
+
+    const { data } = statsResult;
+
+    const stats = [
+        {
+            title: "Total Errors",
+            value: data.totalErrors.toLocaleString(),
+            icon: <AlertTriangle className="h-4 w-4" />,
+            change: "+12% from last month",
+            changeType: "negative" as const,
+        },
+        {
+            title: "Total Logs",
+            value: data.totalLogs.toLocaleString(),
+            icon: <Activity className="h-4 w-4" />,
+            change: "+23% from last month",
+            changeType: "positive" as const,
+        },
+        {
+            title: "Error Types",
+            value: data.errorsByType.length.toString(),
+            icon: <Bug className="h-4 w-4" />,
+            change: "3 new types",
+            changeType: "neutral" as const,
+        },
+        {
+            title: "Severity Levels",
+            value: data.errorsBySeverity.length.toString(),
+            icon: <Shield className="h-4 w-4" />,
+            change: "Stable",
+            changeType: "neutral" as const,
+        },
+    ];
+
+    return (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {stats.map((stat, index) => (
+                <Card key={index} className="relative overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                            {stat.title}
+                        </CardTitle>
+                        <div className="text-muted-foreground">
+                            {stat.icon}
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stat.value}</div>
+                        <p className={`text-xs ${stat.changeType === 'positive' ? 'text-green-600' :
+                            stat.changeType === 'negative' ? 'text-red-600' :
+                                'text-muted-foreground'
+                            }`}>
+                            {stat.change}
+                        </p>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+}
+
+async function ErrorBreakdown() {
+    const statsResult = await getAnalyticsStats();
+
+    if (!statsResult.success || !statsResult.data) {
+        return null;
     }
 
     const { data } = statsResult;
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2">
             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Total Errors</CardTitle>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <BarChart className="h-4 w-4" />
+                        Error Types
+                    </CardTitle>
+                    <CardDescription>
+                        Distribution of error types across your application
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{data.totalErrors}</div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Total Logs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{data.totalLogs}</div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Error Types</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-1">
-                        {data.errorsByType.map((item: any) => (
-                            <div key={item.error_type} className="flex justify-between text-sm">
-                                <span>{item.error_type || 'unknown'}</span>
-                                <span className="font-medium">{item.count}</span>
-                            </div>
-                        ))}
+                    <div className="space-y-3">
+                        {data.errorsByType.map((item: any) => {
+                            const percentage = data.totalErrors > 0 ?
+                                Math.round((item.count / data.totalErrors) * 100) : 0;
+                            return (
+                                <div key={item.error_type} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-2 w-2 rounded-full bg-primary" />
+                                        <span className="text-sm font-medium capitalize">
+                                            {item.error_type || 'unknown'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-sm text-muted-foreground">
+                                            {percentage}%
+                                        </div>
+                                        <div className="text-sm font-medium">
+                                            {item.count}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </CardContent>
             </Card>
+
             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Error Severity</CardTitle>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        Severity Levels
+                    </CardTitle>
+                    <CardDescription>
+                        Error severity distribution and impact assessment
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-1">
-                        {data.errorsBySeverity.map((item: any) => (
-                            <div key={item.severity} className="flex justify-between text-sm">
-                                <span>{item.severity || 'unknown'}</span>
-                                <span className="font-medium">{item.count}</span>
-                            </div>
-                        ))}
+                    <div className="space-y-3">
+                        {data.errorsBySeverity.map((item: any) => {
+                            const percentage = data.totalErrors > 0 ?
+                                Math.round((item.count / data.totalErrors) * 100) : 0;
+                            return (
+                                <div key={item.severity} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        {getSeverityIcon(item.severity)}
+                                        <span className="text-sm font-medium capitalize">
+                                            {item.severity || 'unknown'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-sm text-muted-foreground">
+                                            {percentage}%
+                                        </div>
+                                        <div className="text-sm font-medium">
+                                            {item.count}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </CardContent>
             </Card>
@@ -90,122 +218,138 @@ async function StatsSection() {
     );
 }
 
-async function ErrorsTable() {
+async function RecentErrorsList() {
     const errorsResult = await getRecentErrors();
 
     if (!errorsResult.success || !errorsResult.data) {
-        return <div className="text-red-500">Failed to load errors: {errorsResult.error}</div>;
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Recent Errors</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">Failed to load recent errors</p>
+                </CardContent>
+            </Card>
+        );
     }
 
     const { data: errors } = errorsResult;
 
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Recent Errors</CardTitle>
-                <CardDescription>Last 50 errors from the analytics system</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        Recent Errors
+                    </CardTitle>
+                    <CardDescription>
+                        Latest error reports from your applications
+                    </CardDescription>
+                </div>
+                <Button variant="outline" size="sm">
+                    View All
+                </Button>
             </CardHeader>
             <CardContent>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="text-left p-2">Time</th>
-                                <th className="text-left p-2">Client</th>
-                                <th className="text-left p-2">Error Name</th>
-                                <th className="text-left p-2">Message</th>
-                                <th className="text-left p-2">Severity</th>
-                                <th className="text-left p-2">Type</th>
-                                <th className="text-left p-2">Source</th>
-                                <th className="text-left p-2">Environment</th>
-                                <th className="text-left p-2">Browser</th>
-                                <th className="text-left p-2">OS</th>
-                                <th className="text-left p-2">Country</th>
-                                <th className="text-left p-2">Count</th>
-                                <th className="text-left p-2">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {errors.map((error: any) => (
-                                <tr key={error.id} className="border-b hover:bg-muted/50">
-                                    <td className="p-2">{formatDate(error.created_at)}</td>
-                                    <td className="p-2 font-mono text-xs">{error.client_id}</td>
-                                    <td className="p-2 font-medium">{error.error_name || '-'}</td>
-                                    <td className="p-2 max-w-xs truncate" title={error.message}>
-                                        {error.message || '-'}
-                                    </td>
-                                    <td className="p-2">
-                                        <Badge variant={getSeverityColor(error.severity) as any}>
-                                            {error.severity || 'unknown'}
+                <div className="space-y-4">
+                    {errors.slice(0, 10).map((error: any) => (
+                        <div key={error.id} className="flex items-start gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                            <div className="flex-shrink-0 mt-1">
+                                <Badge variant={getSeverityColor(error.severity) as any} className="text-xs">
+                                    {error.severity || 'unknown'}
+                                </Badge>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="font-medium text-sm truncate">
+                                        {error.error_name || 'Unknown Error'}
+                                    </p>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <Clock className="h-3 w-3" />
+                                        {formatRelativeTime(error.created_at)}
+                                    </div>
+                                </div>
+                                <p className="text-sm text-muted-foreground truncate mt-1">
+                                    {error.message || 'No message available'}
+                                </p>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <Badge variant="outline" className="text-xs">
+                                        {error.error_type || 'unknown'}
+                                    </Badge>
+                                    {error.source && (
+                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                            <Globe className="h-3 w-3" />
+                                            {error.source}
+                                        </div>
+                                    )}
+                                    {error.environment && (
+                                        <Badge variant="secondary" className="text-xs">
+                                            {error.environment}
                                         </Badge>
-                                    </td>
-                                    <td className="p-2">{error.error_type || '-'}</td>
-                                    <td className="p-2">{error.source || '-'}</td>
-                                    <td className="p-2">{error.environment || '-'}</td>
-                                    <td className="p-2">{error.browser_name || '-'}</td>
-                                    <td className="p-2">{error.os_name || '-'}</td>
-                                    <td className="p-2">{error.country || '-'}</td>
-                                    <td className="p-2">{error.occurrence_count || 1}</td>
-                                    <td className="p-2">
-                                        <Badge variant="outline">{error.status || 'new'}</Badge>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </CardContent>
         </Card>
     );
 }
 
-async function LogsTable() {
+async function RecentLogsList() {
     const logsResult = await getRecentLogs();
 
     if (!logsResult.success || !logsResult.data) {
-        return <div className="text-red-500">Failed to load logs: {logsResult.error}</div>;
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Recent Logs</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">Failed to load recent logs</p>
+                </CardContent>
+            </Card>
+        );
     }
 
     const { data: logs } = logsResult;
 
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Recent Logs</CardTitle>
-                <CardDescription>Last 50 logs from the analytics system</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle className="flex items-center gap-2">
+                        <Activity className="h-4 w-4" />
+                        Recent Logs
+                    </CardTitle>
+                    <CardDescription>
+                        Latest log entries from your systems
+                    </CardDescription>
+                </div>
+                <Button variant="outline" size="sm">
+                    View All
+                </Button>
             </CardHeader>
             <CardContent>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="text-left p-2">Time</th>
-                                <th className="text-left p-2">Client</th>
-                                <th className="text-left p-2">Level</th>
-                                <th className="text-left p-2">Message</th>
-                                <th className="text-left p-2">Source</th>
-                                <th className="text-left p-2">Environment</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {logs.map((log: any) => (
-                                <tr key={log.id} className="border-b hover:bg-muted/50">
-                                    <td className="p-2">{formatDate(log.created_at)}</td>
-                                    <td className="p-2 font-mono text-xs">{log.client_id}</td>
-                                    <td className="p-2">
-                                        <Badge variant={getLogLevelColor(log.level) as any}>
-                                            {log.level || 'info'}
-                                        </Badge>
-                                    </td>
-                                    <td className="p-2 max-w-md truncate" title={log.message}>
-                                        {log.message || '-'}
-                                    </td>
-                                    <td className="p-2">{log.source || '-'}</td>
-                                    <td className="p-2">{log.environment || '-'}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="space-y-3">
+                    {logs.slice(0, 8).map((log: any) => (
+                        <div key={log.id} className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                            <Badge variant={getLogLevelColor(log.level) as any} className="text-xs">
+                                {log.level || 'info'}
+                            </Badge>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm truncate">
+                                    {log.message || 'No message'}
+                                </p>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                                {formatRelativeTime(log.created_at)}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </CardContent>
         </Card>
@@ -214,30 +358,77 @@ async function LogsTable() {
 
 export default function TestPage() {
     return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight">Analytics Data Test</h1>
-                <p className="text-muted-foreground mt-1">
-                    View recent analytics data from the database
-                </p>
-            </header>
+        <div className="flex-1 space-y-6 p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Analytics Overview</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Monitor your application's health and performance in real-time
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm">
+                        Export Data
+                    </Button>
+                    <Button size="sm">
+                        Generate Report
+                    </Button>
+                </div>
+            </div>
 
-            <div className="space-y-8">
+            {/* Stats Overview */}
+            <Suspense fallback={
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {[...Array(4)].map((_, i) => (
+                        <Card key={i}>
+                            <CardHeader className="pb-2">
+                                <Skeleton className="h-4 w-20" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-16 mb-2" />
+                                <Skeleton className="h-3 w-24" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            }>
+                <StatsOverview />
+            </Suspense>
+
+            {/* Error Breakdown */}
+            <Suspense fallback={
+                <div className="grid gap-4 md:grid-cols-2">
+                    {[...Array(2)].map((_, i) => (
+                        <Card key={i}>
+                            <CardHeader>
+                                <Skeleton className="h-5 w-32" />
+                                <Skeleton className="h-4 w-48" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-32 w-full" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            }>
+                <ErrorBreakdown />
+            </Suspense>
+
+            {/* Recent Activity */}
+            <div className="grid gap-6 lg:grid-cols-2">
                 <Suspense fallback={
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        {[...Array(4)].map((_, i) => (
-                            <Card key={i}>
-                                <CardHeader className="pb-2">
-                                    <Skeleton className="h-4 w-20" />
-                                </CardHeader>
-                                <CardContent>
-                                    <Skeleton className="h-8 w-12" />
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-32" />
+                            <Skeleton className="h-4 w-48" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-64 w-full" />
+                        </CardContent>
+                    </Card>
                 }>
-                    <StatsSection />
+                    <RecentErrorsList />
                 </Suspense>
 
                 <Suspense fallback={
@@ -251,21 +442,7 @@ export default function TestPage() {
                         </CardContent>
                     </Card>
                 }>
-                    <ErrorsTable />
-                </Suspense>
-
-                <Suspense fallback={
-                    <Card>
-                        <CardHeader>
-                            <Skeleton className="h-6 w-32" />
-                            <Skeleton className="h-4 w-48" />
-                        </CardHeader>
-                        <CardContent>
-                            <Skeleton className="h-64 w-full" />
-                        </CardContent>
-                    </Card>
-                }>
-                    <LogsTable />
+                    <RecentLogsList />
                 </Suspense>
             </div>
         </div>
