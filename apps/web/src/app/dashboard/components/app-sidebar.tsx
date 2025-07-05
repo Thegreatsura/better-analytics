@@ -25,8 +25,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			<SidebarHeader>
 				<SidebarMenuButton tooltip="Go to Landing Page" asChild>
 					<Link href="/">
-						<Logo className="size-4.5" />
-						<span className="font-aeonik font-medium text-base uppercase">
+						<Logo />
+						<span className="font-aeonik font-medium text-xs uppercase">
 							Better Analytics
 						</span>
 					</Link>

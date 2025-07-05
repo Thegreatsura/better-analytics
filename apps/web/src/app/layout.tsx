@@ -7,6 +7,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 
 import { siteConfig } from "@/config/site";
+import { QueryClientProvider } from "@/providers/query-client";
 import { TooltipProvider } from "@better-analytics/ui/components/tooltip";
 import { IconProvider } from "@better-analytics/ui/providers/icon.provider";
 import { cn } from "@better-analytics/ui";
@@ -41,19 +42,21 @@ export default async function RootLayout({ children }: LayoutProps) {
 					geistMono.variable,
 				)}
 			>
-				<ThemeProvider
-					disableTransitionOnChange
-					defaultTheme="dark"
-					attribute="class"
-					forcedTheme="dark"
-					enableSystem
-				>
-					<IconProvider>
-						<Toaster richColors />
+				<QueryClientProvider>
+					<ThemeProvider
+						disableTransitionOnChange
+						defaultTheme="dark"
+						attribute="class"
+						forcedTheme="dark"
+						enableSystem
+					>
+						<IconProvider>
+							<Toaster richColors />
 
-						<TooltipProvider>{children}</TooltipProvider>
-					</IconProvider>
-				</ThemeProvider>
+							<TooltipProvider>{children}</TooltipProvider>
+						</IconProvider>
+					</ThemeProvider>
+				</QueryClientProvider>
 			</body>
 		</html>
 	);

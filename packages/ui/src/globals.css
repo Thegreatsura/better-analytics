@@ -65,8 +65,8 @@
 	--popover-foreground: oklch(0.145 0 0);
 	--primary: oklch(0.205 0 0);
 	--primary-foreground: oklch(0.985 0 0);
-	--brand: oklch(74% 0.238 322.16);
-	--brand-foreground: oklch(0.0966 0.022 322.16);
+	--brand: oklch(0.5756 0.2341 276.94);
+	--brand-foreground: oklch(0.0785 0.0146 277.117);
 	--discord: oklch(0.6474 0.1243 270.6);
 	--discord-foreground: oklch(0.9523 0.0223 270.6);
 	--secondary: oklch(0.97 0 0);
@@ -103,8 +103,8 @@
 	--popover-foreground: oklch(0.985 0 0);
 	--primary: oklch(0.922 0 0);
 	--primary-foreground: oklch(0.205 0 0);
-	--brand: oklch(74% 0.238 322.16);
-	--brand-foreground: oklch(0.0966 0.022 322.16);
+	--brand: oklch(0.5756 0.2341 276.94);
+	--brand-foreground: oklch(0.0785 0.0146 277.117);
 	--discord: oklch(0.6474 0.1243 270.6);
 	--discord-foreground: oklch(0.9523 0.0223 270.6);
 	--secondary: oklch(0.269 0 0);
