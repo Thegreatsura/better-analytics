@@ -12,18 +12,17 @@ function createEnv({ schema, values, }) {
             get: () => undefined,
         });
     }
-    const parsed = zodSchema.safeParse({ ...values, ...process.env });
+    const mergedEnv = { ...values, ...process.env };
+    const parsed = zodSchema.safeParse(mergedEnv);
     if (!parsed.success) {
-        const missingVars = Object.keys(parsed.error.format()).filter((key) => key !== "_errors");
-        console.error(`❌ [${process.title}] Missing environment variables: ${missingVars.join(", ")}`);
+        const missingVars = Object.keys(parsed.error.format())
+            .filter((key) => key !== "_errors")
+            .join(", ");
+        console.error(`❌ [${process.title}] Missing environment variables: ${missingVars}`);
         process.exit(1);
     }
     return new Proxy(parsed.data, {
-        get(target, prop) {
-            if (typeof prop !== "string")
-                return undefined;
-            return Reflect.get(target, prop);
-        },
+        get: (target, prop) => typeof prop === "string" ? Reflect.get(target, prop) : undefined,
     });
 }
 function envValue(dev, prod) {

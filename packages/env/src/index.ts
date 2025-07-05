@@ -2,18 +2,16 @@ import "dotenv/config";
 
 import { z } from "zod";
 
-import type {
-	InferZodSchema,
-	SchemaValues,
-	Simplify,
-} from "@better-analytics/env/types";
+import type { InferZodSchema, SchemaValues, Simplify } from "./types";
 
-interface EnvProps<T extends Record<string, z.ZodType>> {
+type ZodSchemaMap = Record<string, z.ZodType>;
+
+interface EnvProps<T extends ZodSchemaMap> {
 	readonly schema: T;
 	readonly values?: SchemaValues<T>;
 }
 
-export function createEnv<T extends Record<string, z.ZodType>>({
+export function createEnv<T extends ZodSchemaMap>({
 	schema,
 	values,
 }: EnvProps<T>): Simplify<InferZodSchema<T>> {
@@ -26,24 +24,23 @@ export function createEnv<T extends Record<string, z.ZodType>>({
 		});
 	}
 
-	const parsed = zodSchema.safeParse({ ...values, ...process.env });
+	const mergedEnv = { ...values, ...process.env };
+	const parsed = zodSchema.safeParse(mergedEnv);
 
 	if (!parsed.success) {
-		const missingVars = Object.keys(parsed.error.format()).filter(
-			(key) => key !== "_errors",
-		);
+		const missingVars = Object.keys(parsed.error.format())
+			.filter((key) => key !== "_errors")
+			.join(", ");
 
 		console.error(
-			`❌ [${process.title}] Missing environment variables: ${missingVars.join(", ")}`,
+			`❌ [${process.title}] Missing environment variables: ${missingVars}`,
 		);
 		process.exit(1);
 	}
 
 	return new Proxy(parsed.data as InferZodSchema<T>, {
-		get(target, prop) {
-			if (typeof prop !== "string") return undefined;
-			return Reflect.get(target, prop);
-		},
+		get: (target, prop) =>
+			typeof prop === "string" ? Reflect.get(target, prop) : undefined,
 	});
 }
 
