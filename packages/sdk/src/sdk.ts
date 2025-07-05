@@ -281,6 +281,8 @@ export class BetterAnalyticsSDK {
         const url = `${this.config.apiUrl}/${endpoint}`;
         const headers: HeadersInit = {
             "Content-Type": "application/json",
+            "X-Analytics-Client": "true",
+            "User-Agent": this.isServer ? "BetterAnalyticsSDK/1.0.0" : (typeof navigator !== 'undefined' ? navigator.userAgent : "BetterAnalyticsSDK/1.0.0"),
         };
 
         if (this.config.accessToken) {
