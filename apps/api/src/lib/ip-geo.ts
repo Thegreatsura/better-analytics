@@ -182,6 +182,10 @@ export function extractIpFromRequest(request: Request): string {
   const realIp = request.headers.get('x-real-ip');
   if (realIp) return realIp;
 
+  if (process.env.NODE_ENV === 'development') {
+    return '127.0.0.1';
+  }
+
   return '';
 }
 
