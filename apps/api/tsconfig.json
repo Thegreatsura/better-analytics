@@ -4,7 +4,10 @@
 		"target": "ES2021",
 		"module": "ES2022",
 		"moduleResolution": "bundler",
-		"types": ["bun-types", "autumn-js"],
+		"types": [
+			"bun-types",
+			"autumn-js"
+		],
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
@@ -13,10 +16,17 @@
 		"declaration": true,
 		"declarationMap": true,
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": [
+				"./src/*"
+			]
 		},
 		"baseUrl": "."
 	},
-	"include": ["src/**/*"],
-	"exclude": ["node_modules", "dist"]
+	"include": [
+		"src/**/*"
+	],
+	"exclude": [
+		"node_modules",
+		"dist"
+	]
 }
