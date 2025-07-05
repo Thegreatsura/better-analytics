@@ -1,13 +1,13 @@
 "use client";
 
+import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
-import * as React from "react";
 
+import { useIsMobile } from "@better-analytics/ui/hooks/use-mobile";
 import { cn } from "@better-analytics/ui";
 import { Button } from "@better-analytics/ui/components/button";
-import { useIsMobile } from "@better-analytics/ui/hooks/use-mobile";
 import { Input } from "@better-analytics/ui/components/input";
 import { Separator } from "@better-analytics/ui/components/separator";
 import {

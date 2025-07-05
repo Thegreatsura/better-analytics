@@ -2,7 +2,7 @@
 
 import type * as React from "react";
 import * as ContextMenuPrimitive from "@radix-ui/react-context-menu";
-import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
+import { CheckIcon, CaretRightIcon, CircleIcon } from "@phosphor-icons/react";
 
 import { cn } from "@better-analytics/ui";
 
@@ -72,7 +72,7 @@ function ContextMenuSubTrigger({
 			{...props}
 		>
 			{children}
-			<ChevronRightIcon className="ml-auto" />
+			<CaretRightIcon className="ml-auto" />
 		</ContextMenuPrimitive.SubTrigger>
 	);
 }

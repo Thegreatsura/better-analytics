@@ -29,9 +29,6 @@
 		},
 		"db:deploy": {
 			"cache": false
-		},
-		"auth:generate": {
-			"cache": false
 		}
 	}
 }

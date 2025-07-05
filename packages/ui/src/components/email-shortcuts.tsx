@@ -1,4 +1,4 @@
-import { ExternalLink } from "lucide-react";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 
 import { Gmail, Outlook } from "@better-analytics/ui/icons";
@@ -17,7 +17,7 @@ export function EmailShortcuts() {
 			>
 				<Link href={gmailURL} target="_blank">
 					<Gmail className="size-3.5" /> Gmail
-					<ExternalLink className="size-3 opacity-50" />
+					<ArrowSquareOutIcon className="size-3 opacity-50" />
 				</Link>
 			</Button>
 
@@ -28,7 +28,7 @@ export function EmailShortcuts() {
 			>
 				<Link href={outlookURL} target="_blank">
 					<Outlook className="size-3.5" /> Outlook
-					<ExternalLink className="size-3 opacity-50" />
+					<ArrowSquareOutIcon className="size-3 opacity-50" />
 				</Link>
 			</Button>
 		</div>

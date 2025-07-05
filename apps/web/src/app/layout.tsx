@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 
 import { siteConfig } from "@/config/site";
 import { TooltipProvider } from "@better-analytics/ui/components/tooltip";
+import { IconProvider } from "@better-analytics/ui/providers/icon.provider";
 import { cn } from "@better-analytics/ui";
 import { Toaster } from "@/components/sonner";
 
@@ -47,9 +48,11 @@ export default async function RootLayout({ children }: LayoutProps) {
 					forcedTheme="dark"
 					enableSystem
 				>
-					<Toaster richColors />
+					<IconProvider>
+						<Toaster richColors />
 
-					<TooltipProvider>{children}</TooltipProvider>
+						<TooltipProvider>{children}</TooltipProvider>
+					</IconProvider>
 				</ThemeProvider>
 			</body>
 		</html>

@@ -1,6 +1,8 @@
+"use client";
+
 import type { ComponentPropsWithoutRef } from "react";
 
-import { ExternalLink } from "lucide-react";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 
 import { cn } from "@better-analytics/ui";
@@ -26,7 +28,7 @@ export function LinkButton({
 			className={cn("flex cursor-not-allowed items-center gap-2", className)}
 		>
 			{children}
-			{external && <ExternalLink className="size-3.5 opacity-50" />}
+			{external && <ArrowSquareOutIcon className="size-3.5 opacity-50" />}
 		</Button>
 	) : (
 		<Button
@@ -37,7 +39,7 @@ export function LinkButton({
 			<Link href={href} target={external ? "_blank" : undefined}>
 				{children}
 				{external && externalIcon && (
-					<ExternalLink className="size-3.5 opacity-50" />
+					<ArrowSquareOutIcon className="size-3.5 opacity-50" />
 				)}
 			</Link>
 		</Button>

@@ -44,7 +44,7 @@
 				"noExplicitAny": "off"
 			},
 			"nursery": {
-				"useSortedClasses": "off"
+				"useSortedClasses": "on"
 			},
 			"style": {
 				"noParameterAssign": "error",
