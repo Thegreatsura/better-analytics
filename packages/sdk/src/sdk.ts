@@ -12,10 +12,6 @@ import type {
     LogLevel
 } from './types';
 
-/**
- * Better Analytics SDK for error tracking
- * Supports both client-side and server-side environments
- */
 export class BetterAnalyticsSDK {
     private readonly config: InternalSDKConfig;
     private readonly parser!: UAParser;
@@ -24,11 +20,8 @@ export class BetterAnalyticsSDK {
     private isDisabled = false;
 
     constructor(config: SDKConfig) {
-        // Auto-detect environment
         this.isServer = config.isServer ?? (typeof window === 'undefined' && typeof process !== 'undefined');
         this.isClient = !this.isServer;
-
-        // Create internal config with defaults
         this.config = {
             environment: 'production',
             debug: false,
@@ -41,7 +34,6 @@ export class BetterAnalyticsSDK {
             ...config,
         };
 
-        // Add server-specific properties after the main config is set
         if (this.isServer) {
             this.config.serverName = config.serverName || this.getServerHostname();
             this.config.serviceName = config.serviceName;
@@ -81,7 +73,6 @@ export class BetterAnalyticsSDK {
         if (!this.isServer) return undefined;
 
         try {
-            // Dynamic import to avoid issues in client environments
             const os = require('os');
             return os.hostname();
         } catch {
@@ -127,7 +118,6 @@ export class BetterAnalyticsSDK {
     private setupClientAutoCapture(): void {
         if (typeof window === 'undefined') return;
 
-        // Capture unhandled errors
         window.addEventListener('error', (event) => {
             void this.reportError({
                 error_type: 'client',
@@ -139,7 +129,6 @@ export class BetterAnalyticsSDK {
             });
         });
 
-        // Capture unhandled promise rejections
         window.addEventListener('unhandledrejection', (event) => {
             void this.reportError({
                 error_type: 'client',
@@ -330,11 +319,6 @@ export class BetterAnalyticsSDK {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    /**
-     * Reports a custom error. This is the core method for sending error data.
-     * @param data - The error data to report.
-     * @param serverContext - Optional server-side context.
-     */
     async reportError(data: Partial<Omit<ErrorData, 'custom_data'>> & { custom_data?: Record<string, any> | string }, serverContext?: ServerErrorContext): Promise<SDKResponse> {
         if (this.isDisabled) return { success: false, message: 'SDK is disabled' };
         try {
@@ -352,12 +336,6 @@ export class BetterAnalyticsSDK {
         }
     }
 
-    /**
-     * Captures an exception.
-     * @param error - The error to capture.
-     * @param context - Optional context to add to the error.
-     * @param serverContext - Optional server-side context.
-     */
     async captureException(error: Error, context?: Partial<Omit<ErrorData, 'custom_data'>> & { custom_data?: Record<string, any> | string }, serverContext?: ServerErrorContext): Promise<SDKResponse> {
         if (this.isDisabled) return { success: false, message: 'SDK is disabled' };
         const errorData: Partial<Omit<ErrorData, 'custom_data'>> & { custom_data?: Record<string, any> | string } = {
@@ -371,11 +349,6 @@ export class BetterAnalyticsSDK {
         return this.reportError(errorData, serverContext);
     }
 
-    /**
-     * Sends a log message.
-     * @param message - The message to log.
-     * @param context - Optional context to add to the log.
-     */
     async reportLog(message: string, context?: Partial<Omit<LogData, 'message' | 'context'>> & { context?: Record<string, any> | string }): Promise<SDKResponse> {
         if (this.isDisabled) return { success: false, message: 'SDK is disabled' };
 
@@ -398,13 +371,30 @@ export class BetterAnalyticsSDK {
         return this._sendToApi('log', logData);
     }
 
-    /**
-     * Captures an HTTP error.
-     * @param error - The error to capture.
-     * @param req - The HTTP request object.
-     * @param res - The HTTP response object.
-     * @param context - Optional context to add to the error.
-     */
+    async log(message: string, context?: Record<string, any> | string): Promise<SDKResponse> {
+        return this.reportLog(message, { level: 'log', context });
+    }
+
+    async info(message: string, context?: Record<string, any> | string): Promise<SDKResponse> {
+        return this.reportLog(message, { level: 'info', context });
+    }
+
+    async warn(message: string, context?: Record<string, any> | string): Promise<SDKResponse> {
+        return this.reportLog(message, { level: 'warn', context });
+    }
+
+    async error(message: string, context?: Record<string, any> | string): Promise<SDKResponse> {
+        return this.reportLog(message, { level: 'error', context });
+    }
+
+    async debug(message: string, context?: Record<string, any> | string): Promise<SDKResponse> {
+        return this.reportLog(message, { level: 'debug', context });
+    }
+
+    async trace(message: string, context?: Record<string, any> | string): Promise<SDKResponse> {
+        return this.reportLog(message, { level: 'trace', context });
+    }
+
     async captureHttpError(
         error: Error,
         req: Record<string, unknown>,
