@@ -1,18 +1,11 @@
-export { BetterAnalyticsSDK } from './sdk';
-export type {
-    ErrorData,
-    SDKConfig,
-    SDKResponse,
-    ServerErrorContext,
-    RequestContext,
-    ResponseContext
-} from './types';
-import { BetterAnalyticsSDK } from './sdk';
-import type { SDKConfig } from './types';
+// Client-side error tracking
+export { createErrorTracker } from './client';
+export type { ErrorTrackerConfig, ErrorData, ErrorTracker } from './client';
 
-/**
- * Convenience function to create and initialize the SDK
- */
-export async function createSDK(config: SDKConfig): Promise<BetterAnalyticsSDK> {
-    return new BetterAnalyticsSDK(config);
-} 
+// Server-side logging
+export { createLogger } from './server';
+export type { LoggerConfig, LogData, Logger } from './server';
+
+// Shared types
+export type { ApiResponse } from './types';
+

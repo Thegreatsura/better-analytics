@@ -1,3 +1,5 @@
+"use client";
+
 import { SpinnerBallIcon } from "@phosphor-icons/react";
 
 import { Gradient } from "@better-analytics/ui/components/gradient";
