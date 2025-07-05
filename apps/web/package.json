@@ -10,6 +10,7 @@
 		"lint": "next lint"
 	},
 	"dependencies": {
+		"@better-analytics/env": "workspace:*",
 		"@better-analytics/auth": "workspace:*",
 		"@better-analytics/sdk": "workspace:*",
 		"@better-analytics/ui": "workspace:*",
