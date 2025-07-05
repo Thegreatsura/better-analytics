@@ -7,6 +7,8 @@ export const { GET, POST } = autumnHandler({
             headers: request.headers,
         });
 
+        console.log(session);
+
         return {
             customerId: session?.user.id,
             customerData: {

@@ -25,7 +25,7 @@
         "@clickhouse/client": "^1.11.1",
         "@clickhouse/client-web": "^1.11.1",
         "@elysiajs/cors": "^1.3.3",
-        "autumn-js": "^0.0.67",
+        "autumn-js": "^0.0.80",
         "elysia": "^1.3.4",
         "pino": "^9.6.0",
         "pino-pretty": "^13.0.0",
@@ -565,7 +565,7 @@
 
     "autoprefixer": ["autoprefixer@10.4.21", "", { "dependencies": { "browserslist": "^4.24.4", "caniuse-lite": "^1.0.30001702", "fraction.js": "^4.3.7", "normalize-range": "^0.1.2", "picocolors": "^1.1.1", "postcss-value-parser": "^4.2.0" }, "peerDependencies": { "postcss": "^8.1.0" }, "bin": { "autoprefixer": "bin/autoprefixer" } }, "sha512-O+A6LWV5LDHSJD3LjHYoNi4VLsj/Whi7k6zG12xTYaU4cQ8oxQGckXNX8cRHK5yOZ/ppVHe0ZBXGzSV9jXdVbQ=="],
 
-    "autumn-js": ["autumn-js@0.0.67", "", { "dependencies": { "chalk": "^5.4.1", "pino": "^9.7.0", "pino-pretty": "^13.0.0", "rou3": "^0.6.1", "swr": "^2.3.3" } }, "sha512-Xf1HxXA+RqH/qWvFNNjSO9tCZTRpwgi5WS3wEzTZ2d/nmUqhs7YTkR0GXC71BOscH3TByRSzBPFu5LLle5g42A=="],
+    "autumn-js": ["autumn-js@0.0.80", "", { "dependencies": { "chalk": "^5.4.1", "rou3": "^0.6.1", "swr": "^2.3.3" } }, "sha512-M0voNXO+ezF5rm1CYclOokQOD/GDaZKcQvfzLngvSMdG+e6mfJZztxV4/kdq0Ukzm6gy0F8edJ30niffDE15SQ=="],
 
     "better-analytics-api": ["better-analytics-api@workspace:apps/api"],
 
@@ -1040,8 +1040,6 @@
     "better-call/rou3": ["rou3@0.5.1", "", {}, "sha512-OXMmJ3zRk2xeXFGfA3K+EOPHC5u7RDFG7lIOx0X1pdnhUkI8MdVrbV+sNsD80ElpUZ+MRHdyxPnFthq9VHs8uQ=="],
 
     "next/postcss": ["postcss@8.4.31", "", { "dependencies": { "nanoid": "^3.3.6", "picocolors": "^1.0.0", "source-map-js": "^1.0.2" } }, "sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ=="],
-
-    "web/autumn-js": ["autumn-js@0.0.80", "", { "dependencies": { "chalk": "^5.4.1", "rou3": "^0.6.1", "swr": "^2.3.3" } }, "sha512-M0voNXO+ezF5rm1CYclOokQOD/GDaZKcQvfzLngvSMdG+e6mfJZztxV4/kdq0Ukzm6gy0F8edJ30niffDE15SQ=="],
 
     "@esbuild-kit/core-utils/esbuild/@esbuild/android-arm": ["@esbuild/android-arm@0.18.20", "", { "os": "android", "cpu": "arm" }, "sha512-fyi7TDI/ijKKNZTUJAQqiG5T7YjJXgnzkURqmGj13C6dCqckZBLdl4h7bkhHt/t0WP+zO9/zwroDvANaOqO5Sw=="],
 
