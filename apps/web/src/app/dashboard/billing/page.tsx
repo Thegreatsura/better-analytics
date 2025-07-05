@@ -1,6 +1,7 @@
 "use server"
 
 import { AutumnProvider, PricingTable } from "autumn-js/react";
+
 import { auth } from "@better-analytics/auth";
 import { headers } from "next/headers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@better-analytics/ui/components/card";
@@ -9,6 +10,7 @@ import { Autumn as autumn } from 'autumn-js';
 import { redirect } from "next/navigation";
 
 export default async function BillingPage() {
+
     const session = await auth.api.getSession({
         headers: await headers(),
     });
@@ -126,31 +128,6 @@ export default async function BillingPage() {
                     </CardContent>
                 </Card>
             </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Billing History</CardTitle>
-                    <CardDescription>Your recent billing and payment history</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between py-3 border-b">
-                            <div>
-                                <div className="font-medium">Free Plan</div>
-                                <div className="text-sm text-muted-foreground">January 2024</div>
-                            </div>
-                            <div className="text-right">
-                                <div className="font-bold">$0.00</div>
-                                <Badge variant="secondary" className="text-xs">Active</Badge>
-                            </div>
-                        </div>
-                        <div className="text-center py-8 text-muted-foreground">
-                            <p>No billing history yet. Upgrade to a paid plan to see billing details.</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
             <Card>
                 <CardHeader>
                     <CardTitle>Available Plans</CardTitle>

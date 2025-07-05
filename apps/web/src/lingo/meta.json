@@ -1,0 +1,141 @@
+{
+  "version": 0.1,
+  "files": {
+    "app/global-error.tsx": {
+      "scopes": {
+        "3/declaration/body/1/argument/1/1": {
+          "type": "element",
+          "hash": "a32d2d4af6cda3b463a595fa052b4726",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Global Error"
+        },
+        "3/declaration/body/1/argument/1/5": {
+          "type": "element",
+          "hash": "c19c53a05e21c7f3b395247809a14b51",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Reset"
+        }
+      }
+    },
+    "app/page.tsx": {
+      "scopes": {
+        "4/declaration/body/0/argument/1/1/1": {
+          "type": "element",
+          "hash": "5cab98e10db059cea730639ba2776dc1",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Better Analytics"
+        },
+        "4/declaration/body/0/argument/1/1/3": {
+          "type": "element",
+          "hash": "9ac1e1716b1f31d9e0192f5d01af1fe1",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Advanced error tracking, performance monitoring, and AI-powered insights for your applications."
+        },
+        "4/declaration/body/0/argument/1/3/1/1/1": {
+          "type": "element",
+          "hash": "a577f374874b75c7dcae878cfb88e747",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "<element:Robot></element:Robot> AI Assistant"
+        },
+        "4/declaration/body/0/argument/1/3/1/1/3": {
+          "type": "element",
+          "hash": "c96a32b1c93676fe56a41d00edf75545",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Chat with AI about your analytics data and get insights"
+        },
+        "4/declaration/body/0/argument/1/3/1/3/1/1": {
+          "type": "element",
+          "hash": "fb0baa64d7118a5225588878e859bebe",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Open AI Chat"
+        },
+        "4/declaration/body/0/argument/1/3/3/1/1": {
+          "type": "element",
+          "hash": "992ce74606a7fb143fd0a0477c5c0e0c",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "<element:ChartLine></element:ChartLine> Analytics Dashboard"
+        },
+        "4/declaration/body/0/argument/1/3/3/1/3": {
+          "type": "element",
+          "hash": "07ee1e9fa80185f4b6f7700a7de3f586",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "View real-time analytics and performance metrics"
+        },
+        "4/declaration/body/0/argument/1/3/3/3/1/1": {
+          "type": "element",
+          "hash": "2b1ae0b8d38df6600e3fe5b7831fa365",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "View Dashboard"
+        },
+        "4/declaration/body/0/argument/1/3/5/1/1": {
+          "type": "element",
+          "hash": "70c091f96345589c7b1baad3b45a7198",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "<element:Bug></element:Bug> Error Tracking"
+        },
+        "4/declaration/body/0/argument/1/3/5/1/3": {
+          "type": "element",
+          "hash": "4acda7f85f5a8a6e95483b4cf4f1afeb",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Test and monitor application errors in real-time"
+        },
+        "4/declaration/body/0/argument/1/3/5/3/1/1": {
+          "type": "element",
+          "hash": "84a890cc00f69ff1635bc77f8e9235ab",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Error Testing"
+        },
+        "4/declaration/body/0/argument/1/3/7/1/1": {
+          "type": "element",
+          "hash": "6061972f31e8b6eaf5eef2ed90187daf",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "<element:TestTube></element:TestTube> Sandbox"
+        },
+        "4/declaration/body/0/argument/1/3/7/1/3": {
+          "type": "element",
+          "hash": "d1e66f942701d73cecfd6386805fa7c2",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Experiment with features and test configurations"
+        },
+        "4/declaration/body/0/argument/1/3/7/3/1/1": {
+          "type": "element",
+          "hash": "a59f12c47abee1820d017f57a86ce49e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Open Sandbox"
+        }
+      }
+    }
+  }
+}
