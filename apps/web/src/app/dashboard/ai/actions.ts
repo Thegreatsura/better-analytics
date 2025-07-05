@@ -3,13 +3,8 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { z } from "zod";
-import env from "@/env";
 
-// Configure OpenRouter client
-const openrouterClient = openai({
-	apiKey: env.OPENROUTER_API_KEY,
-	baseURL: env.OPENROUTER_BASE_URL,
-});
+const openrouterClient = openai("openai/gpt-4o-mini");
 
 // Input validation schema
 const chatInputSchema = z.object({
@@ -30,10 +25,6 @@ export async function generateAIResponse(
 	try {
 		// Validate input
 		const validatedInput = chatInputSchema.parse(input);
-
-		if (!OPENROUTER_API_KEY) {
-			throw new Error("OpenRouter API key is not configured");
-		}
 
 		// Build the conversation context
 		const messages = [
@@ -66,10 +57,9 @@ If you don't have access to real data, provide helpful examples and guide users 
 				content: validatedInput.message,
 			},
 		];
-
 		// Generate response using OpenRouter
 		const result = await generateText({
-			model: openrouterClient("openai/gpt-4o-mini"),
+			model: openrouterClient,
 			messages,
 			maxTokens: 1000,
 			temperature: 0.7,
@@ -100,10 +90,6 @@ export async function generateAIStreamResponse(
 ) {
 	try {
 		const validatedInput = chatInputSchema.parse(input);
-
-		if (!OPENROUTER_API_KEY) {
-			throw new Error("OpenRouter API key is not configured");
-		}
 
 		// This would be used with streamText for real-time streaming
 		// For now, we'll use the regular generateText

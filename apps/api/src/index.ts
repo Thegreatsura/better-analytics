@@ -10,7 +10,24 @@ import { db, user } from "@better-analytics/db";
 import { eq } from "drizzle-orm";
 import { ErrorIngestBody, LogIngestBody } from "./types";
 import { cors } from "@elysiajs/cors";
+import { Autumn } from "autumn-js";
 
+// Helper function to check quota with Autumn
+async function checkQuota(feature_id: string, customer_id: string) {
+    try {
+        const { data } = await Autumn.check({
+            feature_id,
+            customer_id,
+            send_event: true,
+        });
+
+        return data?.allowed ?? false;
+    } catch (error) {
+        logger.error(`Failed to check quota for ${feature_id}:`, error);
+        // On error, allow the request to proceed (fail open)
+        return true;
+    }
+}
 
 function replaceUndefinedWithNull(obj: any): any {
     if (Array.isArray(obj)) {
@@ -68,8 +85,18 @@ const app = new Elysia()
         }
     })
     .get("/", () => "Better Analytics API")
-    .post("/ingest", async ({ body, request }) => {
+    .post("/ingest", async ({ body, request, set }) => {
         logger.info("Received request on /ingest endpoint.");
+
+        // Check quota for error ingestion
+        const isAllowed = await checkQuota("error", body.client_id);
+        if (!isAllowed) {
+            set.status = 429;
+            return {
+                status: "error",
+                message: "Quota exceeded for error ingestion.",
+            };
+        }
 
         const userAgent = request.headers.get("user-agent") || "";
         const uaResult = UAParser(userAgent);
@@ -113,7 +140,19 @@ const app = new Elysia()
             return { status: "error", message: "Failed to process error" };
         }
     }, { body: ErrorIngestBody })
-    .post("/log", async ({ body }) => {
+    .post("/log", async ({ body, set }) => {
+        logger.info("Received request on /log endpoint.");
+
+        // Check quota for log ingestion
+        const isAllowed = await checkQuota("log", body.client_id);
+        if (!isAllowed) {
+            set.status = 429;
+            return {
+                status: "error",
+                message: "Quota exceeded for log ingestion.",
+            };
+        }
+
         const logData = {
             id: randomUUID(),
             ...body,
