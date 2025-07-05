@@ -1,7 +1,8 @@
 "use server";
 
 import { openai } from "@ai-sdk/openai";
-import { generateText } from "ai";
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { streamText } from "ai";
 import { z } from "zod";
 
 // Environment configuration
@@ -9,7 +10,10 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 // Configure OpenRouter client
-const openrouterClient = openai("openai/gpt-4o-mini");
+const openrouterClient = createOpenRouter({
+    apiKey: OPENROUTER_API_KEY,
+    baseURL: OPENROUTER_BASE_URL,
+});
 
 // Input validation schema
 const chatInputSchema = z.object({
@@ -62,8 +66,8 @@ If you don't have access to real data, provide helpful examples and guide users 
         ];
 
         // Generate response using OpenRouter
-        const result = await generateText({
-            model: openrouterClient,
+        const result = await streamText({
+            model: openrouterClient("openai/gpt-4o-mini"),
             messages,
             maxTokens: 1000,
             temperature: 0.7,
@@ -71,7 +75,7 @@ If you don't have access to real data, provide helpful examples and guide users 
 
         return {
             success: true,
-            response: result.text,
+            response: result.textStream,
             usage: result.usage,
         };
     } catch (error) {

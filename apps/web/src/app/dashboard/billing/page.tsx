@@ -5,7 +5,6 @@ import { auth } from "@better-analytics/auth";
 import { headers } from "next/headers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@better-analytics/ui/components/card";
 import { Badge } from "@better-analytics/ui/components/badge";
-import { Separator } from "@better-analytics/ui/components/separator";
 import { Autumn as autumn } from 'autumn-js';
 import { redirect } from "next/navigation";
 
