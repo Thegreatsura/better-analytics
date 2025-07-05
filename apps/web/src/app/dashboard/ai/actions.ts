@@ -15,6 +15,7 @@ const openrouterClient = openai("openai/gpt-4o-mini");
 const chatInputSchema = z.object({
     message: z.string().min(1).max(1000),
     conversationHistory: z.array(z.object({
+        am_sk_live_GgFXN6hIWc0QAMnypWbEBEG9BChUoFBrB3gFYLjqto
         role: z.enum(["user", "assistant"]),
         content: z.string(),
     })).optional(),
