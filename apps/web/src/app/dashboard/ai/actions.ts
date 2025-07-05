@@ -9,10 +9,7 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 // Configure OpenRouter client
-const openrouterClient = openai({
-    apiKey: OPENROUTER_API_KEY,
-    baseURL: OPENROUTER_BASE_URL,
-});
+const openrouterClient = openai("openai/gpt-4o-mini");
 
 // Input validation schema
 const chatInputSchema = z.object({
