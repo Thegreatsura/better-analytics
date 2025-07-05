@@ -10,6 +10,7 @@ import { siteConfig } from "@/config/site";
 import { QueryClientProvider } from "@/providers/query-client";
 import { TooltipProvider } from "@better-analytics/ui/components/tooltip";
 import { IconProvider } from "@better-analytics/ui/providers/icon.provider";
+import { AutumnProvider } from "autumn-js/next";
 import { cn } from "@better-analytics/ui";
 import { Toaster } from "@/components/sonner";
 
@@ -53,7 +54,9 @@ export default async function RootLayout({ children }: LayoutProps) {
 						<IconProvider>
 							<Toaster richColors />
 
-							<TooltipProvider>{children}</TooltipProvider>
+							<TooltipProvider>
+								<AutumnProvider>{children}</AutumnProvider>
+							</TooltipProvider>
 						</IconProvider>
 					</ThemeProvider>
 				</QueryClientProvider>
