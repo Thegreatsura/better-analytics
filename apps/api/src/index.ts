@@ -1,5 +1,5 @@
 import "./polyfills/compression";
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import { clickhouse } from "@better-analytics/db/clickhouse";
 import { randomUUID } from "node:crypto";
 import { UAParser } from "ua-parser-js";
@@ -9,32 +9,34 @@ import { extractIpFromRequest, getGeoData } from "./lib/ip-geo";
 import { db, user } from "@better-analytics/db";
 import { eq } from "drizzle-orm";
 import { ErrorIngestBody, LogIngestBody } from "./types";
-import { InMemoryCache } from "./lib/cache";
 import { cors } from "@elysiajs/cors";
 
-function safeDate(date: string | number | Date | undefined): Date | null {
-    if (!date) return null;
-    try {
-        const d = new Date(date);
-        return Number.isNaN(d.getTime()) ? null : d;
-    } catch {
-        return null;
+
+function replaceUndefinedWithNull(obj: any): any {
+    if (Array.isArray(obj)) {
+        return obj.map(replaceUndefinedWithNull);
     }
+    if (obj && typeof obj === 'object') {
+        return Object.fromEntries(
+            Object.entries(obj).map(([k, v]) => [k, v === undefined ? null : replaceUndefinedWithNull(v)])
+        );
+    }
+    return obj;
 }
 
-const cache = new InMemoryCache(60);
+function toCHDateTime64(date: Date | string | number | null | undefined): string | null {
+    if (!date) return null;
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return null;
+    const pad = (n: number, z = 2) => String(n).padStart(z, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
+}
 
 const app = new Elysia()
     .use(cors())
     .onBeforeHandle(async ({ request, set, body }) => {
         if (new URL(request.url).pathname === "/") {
             return;
-        }
-
-        const cachedUser = cache.get(request.headers.get("Authorization") || "");
-
-        if (cachedUser) {
-            return cachedUser;
         }
 
         const authHeader = request.headers.get("Authorization");
@@ -64,12 +66,11 @@ const app = new Elysia()
                 message: "Unauthorized. Invalid access token.",
             };
         }
-
-        cache.set(request.headers.get("Authorization") || "", userExists);
-        return userExists;
     })
     .get("/", () => "Better Analytics API")
     .post("/ingest", async ({ body, request }) => {
+        logger.info("Received request on /ingest endpoint.");
+
         const userAgent = request.headers.get("user-agent") || "";
         const uaResult = UAParser(userAgent);
         const ip = extractIpFromRequest(request);
@@ -80,13 +81,15 @@ const app = new Elysia()
         const errorData = {
             id: randomUUID(),
             ...body,
+            tags: body.tags ?? [],
+            occurrence_count: body.occurrence_count ?? 1,
             source: body.source || domainInfo?.domain,
             user_agent: userAgent,
-            browser_name: uaResult.browser.name,
-            browser_version: uaResult.browser.version,
-            os_name: uaResult.os.name,
-            os_version: uaResult.os.version,
-            device_type: uaResult.device.type || 'desktop',
+            browser_name: body.browser_name ?? uaResult.browser.name,
+            browser_version: body.browser_version ?? uaResult.browser.version,
+            os_name: body.os_name ?? uaResult.os.name,
+            os_version: body.os_version ?? uaResult.os.version,
+            device_type: body.device_type ?? uaResult.device.type ?? "desktop",
             ip_address: ip,
             country: geo.country,
             region: geo.region,
@@ -94,18 +97,19 @@ const app = new Elysia()
             org: geo.org,
             postal: geo.postal,
             loc: geo.loc,
-            first_occurrence: safeDate(body.first_occurrence) || now,
-            last_occurrence: safeDate(body.last_occurrence) || now,
-            resolved_at: safeDate(body.resolved_at),
-            created_at: now,
-            updated_at: now,
+            first_occurrence: toCHDateTime64(body.first_occurrence) || toCHDateTime64(now),
+            last_occurrence: toCHDateTime64(body.last_occurrence) || toCHDateTime64(now),
+            resolved_at: toCHDateTime64(body.resolved_at),
+            created_at: toCHDateTime64(now),
+            updated_at: toCHDateTime64(now),
         };
 
+        const sanitizedErrorData = replaceUndefinedWithNull(errorData);
         try {
-            await clickhouse.insert({ table: 'errors', values: [errorData], format: 'JSONEachRow' });
-            return { status: "success", id: errorData.id };
+            await clickhouse.insert({ table: 'errors', values: [sanitizedErrorData], format: 'JSONEachRow' });
+            return { status: "success", id: sanitizedErrorData.id };
         } catch (error) {
-            logger.error('Failed to ingest error:', error);
+            logger.error({ message: 'Failed to ingest error:', error });
             return { status: "error", message: "Failed to process error" };
         }
     }, { body: ErrorIngestBody })
@@ -113,7 +117,7 @@ const app = new Elysia()
         const logData = {
             id: randomUUID(),
             ...body,
-            created_at: new Date(),
+            created_at: toCHDateTime64(new Date()),
         };
 
         try {
@@ -136,3 +140,5 @@ const app = new Elysia()
     .listen(process.env.PORT || 4000);
 
 logger.info(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
+
+export type App = typeof app;

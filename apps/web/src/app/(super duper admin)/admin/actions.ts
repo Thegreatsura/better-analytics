@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { randomBytes } from "crypto";
+import { chQuery } from "@better-analytics/db/clickhouse";
 
 type ActionState = {
     success: boolean;
@@ -73,4 +74,21 @@ export async function regenerateAccessToken(): Promise<ActionState> {
 
     revalidatePath("/admin");
     return { success: true, message: "A new access token has been generated." };
+}
+
+export async function getStats() {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+        return { success: false, message: "Unauthorized: Please log in." };
+    }
+
+    try {
+        const data = await chQuery({ query: "SELECT * FROM error_summary" });
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, message: "Failed to fetch stats from the database." };
+    }
 } 

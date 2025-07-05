@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useState } from "react";
 import {
     Card,
     CardContent,
@@ -12,7 +12,7 @@ import {
 import { Input } from "@better-analytics/ui/components/input";
 import { Button } from "@better-analytics/ui/components/button";
 import { updateAccessToken, regenerateAccessToken } from "./actions";
-import { Eye, EyeOff, Copy, RefreshCw, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Copy, RefreshCw } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import {
     Tooltip,
@@ -28,21 +28,16 @@ const initialState = {
 };
 
 function SubmitButton() {
-    const [isPending, startTransition] = useTransition();
     return (
         <Button
             type="submit"
-            disabled={isPending}
-            onClick={(e) => startTransition(() => { })}
         >
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes
         </Button>
     );
 }
 
 function RegenerateButton() {
-    const [isPending, startTransition] = useTransition();
 
     const handleRegenerate = async () => {
         if (
@@ -53,28 +48,17 @@ function RegenerateButton() {
             return;
         }
 
-        startTransition(async () => {
-            const result = await regenerateAccessToken();
-            if (result.success) {
-                toast.success(result.message);
-            } else {
-                toast.error(result.message);
-            }
-        });
+        const result = await regenerateAccessToken();
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.message);
+        }
     };
 
     return (
-        <Button
-            type="button"
-            variant="destructive"
-            onClick={handleRegenerate}
-            disabled={isPending}
-        >
-            {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-                <RefreshCw className="mr-2 h-4 w-4" />
-            )}
+        <Button type="button" variant="destructive" onClick={handleRegenerate}>
+            <RefreshCw className="mr-2 h-4 w-4" />
             Regenerate Token
         </Button>
     );
@@ -101,7 +85,6 @@ export function TokenForm({
         } else {
             toast.error(state.message);
         }
-        // Reset message after showing toast
         initialState.message = "";
     }
 

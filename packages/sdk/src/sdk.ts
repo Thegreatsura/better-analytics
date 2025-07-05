@@ -115,7 +115,7 @@ export class BetterAnalyticsSDK {
                 const originalConsoleMethod = console[level];
                 console[level] = (...args: any[]) => {
                     const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
-                    this.log(message, { level });
+                    this.reportLog(message, { level });
                     originalConsoleMethod.apply(console, args);
                 };
             }
@@ -129,7 +129,7 @@ export class BetterAnalyticsSDK {
 
         // Capture unhandled errors
         window.addEventListener('error', (event) => {
-            void this.captureError({
+            void this.reportError({
                 error_type: 'client',
                 severity: 'high',
                 error_name: event.error?.name || 'Error',
@@ -141,7 +141,7 @@ export class BetterAnalyticsSDK {
 
         // Capture unhandled promise rejections
         window.addEventListener('unhandledrejection', (event) => {
-            void this.captureError({
+            void this.reportError({
                 error_type: 'client',
                 severity: 'high',
                 error_name: 'UnhandledPromiseRejection',
@@ -163,7 +163,7 @@ export class BetterAnalyticsSDK {
         });
 
         process.on('unhandledRejection', (reason) => {
-            void this.captureError({
+            void this.reportError({
                 error_type: 'server',
                 severity: 'critical',
                 error_name: 'UnhandledPromiseRejection',
@@ -279,7 +279,7 @@ export class BetterAnalyticsSDK {
         return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     }
 
-    private async send(
+    private async _sendToApi(
         endpoint: "ingest" | "log",
         data: Partial<ErrorData> | Partial<LogData>,
         retryCount = 0,
@@ -319,7 +319,7 @@ export class BetterAnalyticsSDK {
 
             if (retryCount < this.config.maxRetries) {
                 await this.delay(this.config.retryDelay * 2 ** retryCount);
-                return this.send(endpoint, data, retryCount + 1);
+                return this._sendToApi(endpoint, data, retryCount + 1);
             }
 
             throw error;
@@ -331,11 +331,11 @@ export class BetterAnalyticsSDK {
     }
 
     /**
-     * Captures a custom error.
-     * @param data - The error data to capture.
+     * Reports a custom error. This is the core method for sending error data.
+     * @param data - The error data to report.
      * @param serverContext - Optional server-side context.
      */
-    async captureError(data: Partial<Omit<ErrorData, 'custom_data'>> & { custom_data?: Record<string, any> | string }, serverContext?: ServerErrorContext): Promise<SDKResponse> {
+    async reportError(data: Partial<Omit<ErrorData, 'custom_data'>> & { custom_data?: Record<string, any> | string }, serverContext?: ServerErrorContext): Promise<SDKResponse> {
         if (this.isDisabled) return { success: false, message: 'SDK is disabled' };
         try {
             const { custom_data, ...otherData } = data;
@@ -344,11 +344,11 @@ export class BetterAnalyticsSDK {
                 processedData.custom_data = typeof custom_data === 'object' ? JSON.stringify(custom_data) : custom_data;
             }
             const enrichedData = this.enrichErrorData(processedData, serverContext);
-            this.logDebug('Capturing error', { data: enrichedData });
-            return this.send('ingest', enrichedData);
+            this.logDebug('Reporting error', { data: enrichedData });
+            return this._sendToApi('ingest', enrichedData);
         } catch (error) {
-            this.logDebug('Failed to capture error', error);
-            return { success: false, message: 'Failed to capture error' };
+            this.logDebug('Failed to report error', error);
+            return { success: false, message: 'Failed to report error' };
         }
     }
 
@@ -368,7 +368,7 @@ export class BetterAnalyticsSDK {
             stack_trace: error.stack,
             ...context,
         };
-        return this.captureError(errorData, serverContext);
+        return this.reportError(errorData, serverContext);
     }
 
     /**
@@ -376,7 +376,7 @@ export class BetterAnalyticsSDK {
      * @param message - The message to log.
      * @param context - Optional context to add to the log.
      */
-    async log(message: string, context?: Partial<Omit<LogData, 'message' | 'context'>> & { context?: Record<string, any> | string }): Promise<SDKResponse> {
+    async reportLog(message: string, context?: Partial<Omit<LogData, 'message' | 'context'>> & { context?: Record<string, any> | string }): Promise<SDKResponse> {
         if (this.isDisabled) return { success: false, message: 'SDK is disabled' };
 
         const { context: rawContext, ...otherContext } = context || {};
@@ -395,7 +395,7 @@ export class BetterAnalyticsSDK {
         }
 
         this.logDebug('Capturing log', { data: logData });
-        return this.send('log', logData);
+        return this._sendToApi('log', logData);
     }
 
     /**

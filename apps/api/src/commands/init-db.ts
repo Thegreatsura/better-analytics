@@ -4,69 +4,69 @@ const errorTable = `
 CREATE TABLE IF NOT EXISTS errors (
     id UUID PRIMARY KEY,
     
-    error_type Enum8('client' = 1, 'server' = 2, 'network' = 3, 'database' = 4, 'validation' = 5, 'auth' = 6, 'business' = 7, 'unknown' = 8),
-    severity Enum8('low' = 1, 'medium' = 2, 'high' = 3, 'critical' = 4),
+    error_type Nullable(Enum8('client' = 1, 'server' = 2, 'network' = 3, 'database' = 4, 'validation' = 5, 'auth' = 6, 'business' = 7, 'unknown' = 8)),
+    severity Nullable(Enum8('low' = 1, 'medium' = 2, 'high' = 3, 'critical' = 4)),
     
-    error_code LowCardinality(String),
-    error_name LowCardinality(String),
-    message String,
-    stack_trace String,
+    error_code LowCardinality(Nullable(String)),
+    error_name LowCardinality(Nullable(String)),
+    message Nullable(String),
+    stack_trace Nullable(String),
     
-    source LowCardinality(String),
-    environment LowCardinality(String),
+    source LowCardinality(Nullable(String)),
+    environment LowCardinality(Nullable(String)),
     
-    user_agent String,
-    browser_name LowCardinality(String),
-    browser_version LowCardinality(String),
-    os_name LowCardinality(String),
-    os_version LowCardinality(String),
-    device_type LowCardinality(String),
-    viewport_width UInt16,
-    viewport_height UInt16,
+    user_agent Nullable(String),
+    browser_name LowCardinality(Nullable(String)),
+    browser_version LowCardinality(Nullable(String)),
+    os_name LowCardinality(Nullable(String)),
+    os_version LowCardinality(Nullable(String)),
+    device_type LowCardinality(Nullable(String)),
+    viewport_width Nullable(UInt16),
+    viewport_height Nullable(UInt16),
     
-    connection_type LowCardinality(String),
-    connection_effective_type LowCardinality(String),
-    connection_downlink Float32,
-    connection_rtt UInt32,
-    device_memory UInt8,
-    device_cpu_cores UInt8,
+    connection_type LowCardinality(Nullable(String)),
+    connection_effective_type LowCardinality(Nullable(String)),
+    connection_downlink Nullable(Float32),
+    connection_rtt Nullable(UInt32),
+    device_memory Nullable(UInt8),
+    device_cpu_cores Nullable(UInt8),
 
-    url String,
-    page_title String,
-    referrer String,
+    url Nullable(String),
+    page_title Nullable(String),
+    referrer Nullable(String),
     
-    server_name LowCardinality(String),
-    service_name LowCardinality(String),
-    service_version LowCardinality(String),
-    endpoint String,
-    http_method LowCardinality(String),
-    http_status_code UInt16,
-    request_id String,
+    server_name LowCardinality(Nullable(String)),
+    service_name LowCardinality(Nullable(String)),
+    service_version LowCardinality(Nullable(String)),
+    endpoint Nullable(String),
+    http_method LowCardinality(Nullable(String)),
+    http_status_code Nullable(UInt16),
+    request_id Nullable(String),
     
-    user_id String,
-    session_id String,
-    ip_address IPv4,
-    country LowCardinality(String),
-    region LowCardinality(String),
-    city LowCardinality(String),
-    org LowCardinality(String),
-    postal LowCardinality(String),
-    loc LowCardinality(String),
+    user_id Nullable(String),
+    session_id Nullable(String),
+    ip_address Nullable(String),
+    country LowCardinality(Nullable(String)),
+    region LowCardinality(Nullable(String)),
+    city LowCardinality(Nullable(String)),
+    org LowCardinality(Nullable(String)),
+    postal LowCardinality(Nullable(String)),
+    loc LowCardinality(Nullable(String)),
     
-    response_time_ms UInt32,
-    memory_usage_mb Float32,
-    cpu_usage_percent Float32,
+    response_time_ms Nullable(UInt32),
+    memory_usage_mb Nullable(Float32),
+    cpu_usage_percent Nullable(Float32),
     
     first_occurrence DateTime64(3) DEFAULT now64(),
     last_occurrence DateTime64(3) DEFAULT now64(),
     occurrence_count UInt32 DEFAULT 1,
     
-    status Enum8('new' = 1, 'investigating' = 2, 'resolved' = 3, 'ignored' = 4, 'recurring' = 5),
-    resolved_at DateTime64(3),
-    resolved_by String,
-    resolution_notes String,
+    status Nullable(Enum8('new' = 1, 'investigating' = 2, 'resolved' = 3, 'ignored' = 4, 'recurring' = 5)),
+    resolved_at Nullable(DateTime64(3)),
+    resolved_by Nullable(String),
+    resolution_notes Nullable(String),
     
-    custom_data String,
+    custom_data Nullable(String),
     tags Array(String),
     
     created_at DateTime64(3) DEFAULT now64(),
@@ -76,27 +76,27 @@ CREATE TABLE IF NOT EXISTS errors (
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(created_at)
 ORDER BY (id, error_type, severity, created_at)
-SETTINGS index_granularity = 8192;
+SETTINGS index_granularity = 8192, allow_nullable_key = 1;
 `;
 
 const logsTable = `
 CREATE TABLE IF NOT EXISTS logs (
     id UUID,
     client_id LowCardinality(String),
-    level Enum8('log' = 1, 'info' = 2, 'warn' = 3, 'error' = 4, 'debug' = 5, 'trace' = 6),
+    level Nullable(Enum8('log' = 1, 'info' = 2, 'warn' = 3, 'error' = 4, 'debug' = 5, 'trace' = 6)),
     message String,
-    context String, 
-    source LowCardinality(String),
-    environment LowCardinality(String),
-    user_id String,
-    session_id String,
+    context Nullable(String), 
+    source LowCardinality(Nullable(String)),
+    environment LowCardinality(Nullable(String)),
+    user_id Nullable(String),
+    session_id Nullable(String),
     tags Array(String),
     created_at DateTime64(3) DEFAULT now64()
 )
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(created_at)
 ORDER BY (client_id, level, created_at)
-SETTINGS index_granularity = 8192;
+SETTINGS index_granularity = 8192, allow_nullable_key = 1;
 `;
 
 const errorIndexes = [
@@ -153,7 +153,7 @@ ORDER BY total_errors DESC;
 `;
 
 async function initializeDatabase() {
-    console.log("Dropping existing tables and views...");
+    console.log("Dropping existing tables and views to apply new schema...");
     await Promise.all([
         clickhouse.exec({ query: 'DROP VIEW IF EXISTS error_summary;' }),
         clickhouse.exec({ query: 'DROP VIEW IF EXISTS user_error_summary;' }),
@@ -162,7 +162,7 @@ async function initializeDatabase() {
     ]);
     console.log("Tables and views dropped.");
 
-    console.log("Creating tables...");
+    console.log("Creating tables with new schema...");
     await Promise.all([
         clickhouse.exec({ query: errorTable }),
         clickhouse.exec({ query: logsTable }),

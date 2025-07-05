@@ -33,12 +33,12 @@ export default function ErrorsPage() {
 
     const handleLog = (level: "info" | "warn" | "error") => {
         const message = `This is a test ${level} log.`;
-        analytics?.log(message, { level });
+        analytics?.reportLog(message, { level });
         toast.success(`Logged a test "${level}" message.`);
     };
 
     const handleComplexError = () => {
-        analytics?.captureError({
+        analytics?.reportError({
             error_name: "ComplexDataError",
             message: "This error contains complex custom data.",
             severity: "medium",
