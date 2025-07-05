@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { z } from "zod";
-import type { InferZodSchema, SchemaValues, Simplify } from "@/types";
+import type { InferZodSchema, SchemaValues, Simplify } from "@better-analytics/env/types";
 interface EnvProps<T extends Record<string, z.ZodType>> {
     readonly schema: T;
     readonly values?: SchemaValues<T>;

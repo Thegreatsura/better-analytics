@@ -8,26 +8,22 @@ function createEnv({ schema, values, }) {
     const zodSchema = zod_1.z.object(schema);
     const isBrowser = typeof window !== "undefined";
     if (isBrowser) {
-        console.log("Running in browser context - using fallback values");
         return new Proxy({}, {
             get: () => undefined,
         });
     }
-    const envSubset = Object.keys(schema).reduce((acc, key) => {
-        if (process.env[key] !== undefined) {
-            acc[key] = process.env[key];
-        }
-        return acc;
-    }, {});
-    const parsed = zodSchema.safeParse({ ...values, ...envSubset });
+    const parsed = zodSchema.safeParse({ ...values, ...process.env });
     if (!parsed.success) {
         const missingVars = Object.keys(parsed.error.format()).filter((key) => key !== "_errors");
-        const errorMessage = `❌ [${process.title}] Missing environment variables: ${missingVars.join(", ")}`;
-        console.error(errorMessage);
+        console.error(`❌ [${process.title}] Missing environment variables: ${missingVars.join(", ")}`);
         process.exit(1);
     }
     return new Proxy(parsed.data, {
-        get: (target, prop) => Reflect.get(target, prop),
+        get(target, prop) {
+            if (typeof prop !== "string")
+                return undefined;
+            return Reflect.get(target, prop);
+        },
     });
 }
 function envValue(dev, prod) {

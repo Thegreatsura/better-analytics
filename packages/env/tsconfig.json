@@ -7,7 +7,7 @@
 		"declarationMap": true,
 		"baseUrl": "./",
 		"paths": {
-			"@/*": ["./src/*"]
+			"@better-analytics/env/*": ["./src/*"]
 		}
 	}
 }
