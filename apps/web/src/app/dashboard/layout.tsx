@@ -11,6 +11,7 @@ import {
 } from "@better-analytics/ui/components/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
 import { SiteHeader } from "./components/site-header";
+import { AutumnProvider } from "autumn-js/react";
 
 export const metadata: Metadata = {
 	title: "Better Analytics · Dashboard",

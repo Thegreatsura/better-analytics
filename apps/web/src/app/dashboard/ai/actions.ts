@@ -63,7 +63,7 @@ If you don't have access to real data, provide helpful examples and guide users 
 
         // Generate response using OpenRouter
         const result = await generateText({
-            model: openrouterClient("openai/gpt-4o-mini"),
+            model: openrouterClient,
             messages,
             maxTokens: 1000,
             temperature: 0.7,

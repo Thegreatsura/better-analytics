@@ -2,7 +2,7 @@ import authEnv from "@better-analytics/auth/env";
 import { Button } from "@better-analytics/ui/components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@better-analytics/ui/components/card";
 import Link from "next/link";
-import { Robot, ChartLine, Bug, TestTube } from "@phosphor-icons/react";
+import { Robot, ChartLine, Bug, TestTube } from "@phosphor-icons/react/ssr";
 
 export default function Landing() {
 	return (
