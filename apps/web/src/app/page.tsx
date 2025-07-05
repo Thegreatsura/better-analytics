@@ -1,6 +1,11 @@
-import authEnv from "@better-analytics/auth/env";
 import { Button } from "@better-analytics/ui/components/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@better-analytics/ui/components/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@better-analytics/ui/components/card";
 import Link from "next/link";
 import { Robot, ChartLine, Bug, TestTube } from "@phosphor-icons/react/ssr";
 
@@ -9,9 +14,12 @@ export default function Landing() {
 		<div className="container mx-auto py-8">
 			<div className="flex flex-col items-center justify-center min-h-screen space-y-8">
 				<div className="text-center space-y-4">
-					<h1 className="text-4xl font-bold tracking-tight">Better Analytics</h1>
+					<h1 className="text-4xl font-bold tracking-tight">
+						Better Analytics
+					</h1>
 					<p className="text-xl text-muted-foreground max-w-2xl">
-						Advanced error tracking, performance monitoring, and AI-powered insights for your applications.
+						Advanced error tracking, performance monitoring, and AI-powered
+						insights for your applications.
 					</p>
 				</div>
 
@@ -28,9 +36,7 @@ export default function Landing() {
 						</CardHeader>
 						<CardContent>
 							<Link href="/ai">
-								<Button className="w-full">
-									Open AI Chat
-								</Button>
+								<Button className="w-full">Open AI Chat</Button>
 							</Link>
 						</CardContent>
 					</Card>
@@ -91,10 +97,6 @@ export default function Landing() {
 							</Link>
 						</CardContent>
 					</Card>
-				</div>
-
-				<div className="text-center text-sm text-muted-foreground">
-					<p>Environment: {authEnv.BETTER_AUTH_URL}</p>
 				</div>
 			</div>
 		</div>

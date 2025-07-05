@@ -14,24 +14,39 @@ export function createEnv<T extends Record<string, z.ZodType>>({
 	values,
 }: EnvProps<T>): Simplify<InferZodSchema<T>> {
 	const zodSchema = z.object(schema);
-	const parsed = zodSchema.safeParse({ ...values, ...process.env });
+	const isBrowser = typeof window !== "undefined";
+
+	if (isBrowser) {
+		console.log("Running in browser context - using fallback values");
+		return new Proxy({} as InferZodSchema<T>, {
+			get: () => undefined,
+		});
+	}
+
+	const envSubset = Object.keys(schema).reduce(
+		(acc, key) => {
+			if (process.env[key] !== undefined) {
+				acc[key] = process.env[key];
+			}
+			return acc;
+		},
+		{} as Record<string, string | undefined>,
+	);
+
+	const parsed = zodSchema.safeParse({ ...values, ...envSubset });
 
 	if (!parsed.success) {
 		const missingVars = Object.keys(parsed.error.format()).filter(
 			(key) => key !== "_errors",
 		);
+		const errorMessage = `❌ [${process.title}] Missing environment variables: ${missingVars.join(", ")}`;
 
-		console.error(
-			`❌ [${process.title}] Missing environment variables: ${missingVars.join(", ")}`,
-		);
+		console.error(errorMessage);
 		process.exit(1);
 	}
 
 	return new Proxy(parsed.data as InferZodSchema<T>, {
-		get(target, prop) {
-			if (typeof prop !== "string") return undefined;
-			return Reflect.get(target, prop);
-		},
+		get: (target, prop) => Reflect.get(target, prop),
 	});
 }
 

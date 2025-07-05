@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import type { z } from "zod";
 export type Simplify<T> = {
     [P in keyof T]: T[P];
 } & {};

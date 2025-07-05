@@ -1,6 +1,6 @@
-import 'dotenv/config';
-import { z } from 'zod';
-import { InferZodSchema, SchemaValues, Simplify } from './types';
+import "dotenv/config";
+import { z } from "zod";
+import type { InferZodSchema, SchemaValues, Simplify } from "@/types";
 interface EnvProps<T extends Record<string, z.ZodType>> {
     readonly schema: T;
     readonly values?: SchemaValues<T>;
