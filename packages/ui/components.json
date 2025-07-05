@@ -9,7 +9,7 @@
 		"baseColor": "zinc",
 		"cssVariables": true
 	},
-	"iconLibrary": "lucide",
+	"iconLibrary": "phosphor",
 	"aliases": {
 		"components": "@better-analytics/ui/components",
 		"utils": "@better-analytics/ui",
