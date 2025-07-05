@@ -6,7 +6,7 @@ export async function triggerServerActionError() {
     try {
         throw new Error("This is a test error from a Server Action.");
     } catch (e: any) {
-        await analytics.captureException(e, {
+        await analytics.track(e, {
             tags: ["server-action", "test-error"],
             error_type: "server",
             environment: "production",
@@ -40,7 +40,7 @@ export async function triggerHttpError() {
         // Simulate a database connection error
         throw new Error("Database connection timeout");
     } catch (e: any) {
-        await analytics.captureHttpError(e, mockRequest, mockResponse, {
+        await analytics.track(e, {
             tags: ["server-action", "http-error", "database"],
             error_type: "server",
             environment: "production",
@@ -64,7 +64,7 @@ export async function triggerExceptionError() {
 
         throw error;
     } catch (e: any) {
-        await analytics.captureException(e, {
+        await analytics.track(e, {
             tags: ["server-action", "validation-error"],
             error_type: "server",
             error_code: e.code,

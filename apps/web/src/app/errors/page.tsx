@@ -43,94 +43,22 @@ export default function ErrorsPage() {
         }
     };
 
-    const handleLog = (level: "info" | "warn" | "error") => {
-        const message = `This is a test ${level} log.`;
-
-        if (level === "info") {
-            analytics?.info(message);
-        } else if (level === "warn") {
-            analytics?.warn(message);
-        } else if (level === "error") {
-            analytics?.error(message);
-        }
-
-        toast.success(`Logged a test "${level}" message.`);
+    const handleCustomMessage = () => {
+        analytics.track("This is a custom error message", {
+            context: "user-action",
+            severity: "medium",
+        });
+        toast.success("Tracked custom error message");
     };
 
     const handleComplexError = () => {
-        analytics?.reportError({
-            error_name: "ComplexDataError",
-            message: "This error contains complex custom data.",
-            severity: "medium",
-            custom_data: {
-                userPlan: "premium",
-                transactionId: "txn_12345",
-                details: {
-                    items: ["item1", "item2"],
-                    total: 99.99,
-                },
-            },
+        analytics.track("Payment processing failed", {
+            userPlan: "premium",
+            transactionId: "txn_12345",
+            amount: 99.99,
+            currency: "USD",
         });
-        toast.success("Captured an error with complex custom data.");
-    };
-
-    const handleErrorWithOccurrence = () => {
-        analytics?.reportError({
-            error_name: "RecurringError",
-            message: "This error has occurrence tracking.",
-            severity: "high",
-            occurrence_count: 5,
-            first_occurrence: new Date(Date.now() - 24 * 60 * 60 * 1000),
-            last_occurrence: new Date(),
-            status: "recurring",
-            tags: ["recurring", "high-priority"],
-        });
-        toast.success("Captured an error with occurrence tracking.");
-    };
-
-    const handleResolvedError = () => {
-        analytics?.reportError({
-            error_name: "ResolvedError",
-            message: "This error has been resolved.",
-            severity: "medium",
-            status: "resolved",
-            resolved_at: new Date(),
-            resolved_by: "admin@example.com",
-            resolution_notes: "Fixed by updating the database schema",
-        });
-        toast.success("Captured a resolved error.");
-    };
-
-    const handleErrorWithRequestContext = () => {
-        const mockRequest = {
-            method: "POST",
-            url: "/api/users",
-            headers: { "content-type": "application/json" },
-            body: { userId: "123" },
-            ip: "192.168.1.1",
-            userAgent: "Mozilla/5.0...",
-        };
-
-        const mockResponse = {
-            statusCode: 500,
-            headers: { "content-type": "application/json" },
-        };
-
-        analytics?.captureHttpError(
-            new Error("Database connection failed"),
-            mockRequest,
-            mockResponse,
-            {
-                error_name: "DatabaseError",
-                severity: "critical",
-                tags: ["database", "connection"],
-                custom_data: {
-                    database: "postgres",
-                    connectionPool: "main",
-                },
-            }
-        );
-        toast.success("Captured an HTTP error with request context.");
+        toast.success("Tracked error with complex data");
     };
 
     const handleNaturalException = () => {
@@ -145,27 +73,33 @@ export default function ErrorsPage() {
                 throw new Error("Age cannot be negative");
             }
         } catch (error) {
-            analytics?.captureException(error as Error, {
-                error_name: "ValidationError",
-                severity: "medium",
-                tags: ["validation", "user-input"],
-                custom_data: {
-                    field: "email",
-                    operation: "user-registration",
-                },
+            analytics.captureException(error as Error, {
+                field: "email",
+                operation: "user-registration",
+                userId: "123",
             });
-            toast.success("Captured exception naturally using captureException()");
+            toast.success("Captured exception with captureException()");
         }
+    };
+
+    const handleSetUser = () => {
+        analytics.setUser("user-12345");
+        toast.success("Set user ID to user-12345");
+    };
+
+    const handleAddTags = () => {
+        analytics.addTags(["test", "frontend", "critical"]);
+        toast.success("Added tags: test, frontend, critical");
     };
 
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
             <header className="mb-8">
                 <h1 className="text-3xl font-bold tracking-tight">
-                    SDK Error Testing
+                    Error Tracker Testing
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                    Use these controls to test the Better Analytics SDK error capturing.
+                    Test the new simplified error tracking SDK.
                 </p>
             </header>
 
@@ -196,69 +130,30 @@ export default function ErrorsPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Logging</CardTitle>
+                        <CardTitle>Custom Error Tracking</CardTitle>
                         <CardDescription>
-                            Send custom log messages to the API.
+                            Track custom messages and exceptions.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <p>Informational Log</p>
-                            <Button variant="secondary" onClick={() => handleLog("info")}>
-                                Send Info Log
+                            <p>Custom Message</p>
+                            <Button onClick={handleCustomMessage}>
+                                Track Message
                             </Button>
                         </div>
                         <Separator />
                         <div className="flex items-center justify-between">
-                            <p>Warning Log</p>
-                            <Button variant="secondary" onClick={() => handleLog("warn")}>
-                                Send Warn Log
+                            <p>Complex Data</p>
+                            <Button onClick={handleComplexError}>
+                                Track Complex
                             </Button>
                         </div>
                         <Separator />
                         <div className="flex items-center justify-between">
-                            <p>Error Log</p>
-                            <Button variant="secondary" onClick={() => handleLog("error")}>
-                                Send Error Log
-                            </Button>
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                            <p>Debug Log</p>
-                            <Button variant="outline" onClick={() => {
-                                analytics?.debug("This is a debug message", {
-                                    component: "ErrorsPage",
-                                    action: "debug-test"
-                                });
-                                toast.success("Sent debug log");
-                            }}>
-                                Send Debug Log
-                            </Button>
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                            <p>Trace Log</p>
-                            <Button variant="outline" onClick={() => {
-                                analytics?.trace("This is a trace message", {
-                                    function: "handleTraceLog",
-                                    timestamp: new Date().toISOString()
-                                });
-                                toast.success("Sent trace log");
-                            }}>
-                                Send Trace Log
-                            </Button>
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                            <p>General Log</p>
-                            <Button variant="outline" onClick={() => {
-                                analytics?.log("This is a general log message", {
-                                    type: "general",
-                                    source: "user-action"
-                                });
-                                toast.success("Sent general log");
-                            }}>
-                                Send General Log
+                            <p>Exception Capture</p>
+                            <Button onClick={handleNaturalException}>
+                                Capture Exception
                             </Button>
                         </div>
                     </CardContent>
@@ -266,30 +161,30 @@ export default function ErrorsPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Server-Side Errors</CardTitle>
+                        <CardTitle>Server Actions</CardTitle>
                         <CardDescription>
-                            Trigger errors from Next.js Server Actions.
+                            Trigger server-side errors through actions.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
                             <p>Server Action Error</p>
                             <Button variant="destructive" onClick={handleServerActionError}>
-                                Trigger Action
+                                Trigger
                             </Button>
                         </div>
                         <Separator />
                         <div className="flex items-center justify-between">
-                            <p>HTTP Error with Context</p>
+                            <p>HTTP Error</p>
                             <Button variant="destructive" onClick={handleHttpError}>
-                                Trigger HTTP Error
+                                Trigger
                             </Button>
                         </div>
                         <Separator />
                         <div className="flex items-center justify-between">
                             <p>Exception Error</p>
                             <Button variant="destructive" onClick={handleExceptionError}>
-                                Trigger Exception
+                                Trigger
                             </Button>
                         </div>
                     </CardContent>
@@ -297,49 +192,65 @@ export default function ErrorsPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Advanced Error Features</CardTitle>
+                        <CardTitle>SDK Configuration</CardTitle>
                         <CardDescription>
-                            Test advanced SDK and API features.
+                            Configure the error tracker settings.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <p>Complex Data Error</p>
-                            <Button variant="secondary" onClick={handleComplexError}>
-                                Capture Complex Error
+                            <p>Set User ID</p>
+                            <Button onClick={handleSetUser}>
+                                Set User
                             </Button>
                         </div>
                         <Separator />
                         <div className="flex items-center justify-between">
-                            <p>Error with Occurrence</p>
-                            <Button variant="secondary" onClick={handleErrorWithOccurrence}>
-                                Track Occurrences
-                            </Button>
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                            <p>Resolved Error</p>
-                            <Button variant="secondary" onClick={handleResolvedError}>
-                                Mark as Resolved
-                            </Button>
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                            <p>HTTP Error Context</p>
-                            <Button variant="secondary" onClick={handleErrorWithRequestContext}>
-                                Capture HTTP Error
-                            </Button>
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                            <p>Natural Exception Handling</p>
-                            <Button variant="secondary" onClick={handleNaturalException}>
-                                Capture Exception
+                            <p>Add Tags</p>
+                            <Button onClick={handleAddTags}>
+                                Add Tags
                             </Button>
                         </div>
                     </CardContent>
                 </Card>
             </div>
+
+            <Card className="mt-6">
+                <CardHeader>
+                    <CardTitle>Usage Examples</CardTitle>
+                    <CardDescription>
+                        Code examples for using the error tracker.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="font-medium mb-2">Track Custom Messages</h4>
+                            <code className="block bg-muted p-2 rounded text-sm">
+                                analytics.track("Payment failed", {`{ amount: 100, currency: "USD" }`});
+                            </code>
+                        </div>
+                        <div>
+                            <h4 className="font-medium mb-2">Capture Exceptions</h4>
+                            <code className="block bg-muted p-2 rounded text-sm">
+                                analytics.captureException(error, {`{ userId: "123", feature: "checkout" }`});
+                            </code>
+                        </div>
+                        <div>
+                            <h4 className="font-medium mb-2">Set User Context</h4>
+                            <code className="block bg-muted p-2 rounded text-sm">
+                                analytics.setUser("user-12345");
+                            </code>
+                        </div>
+                        <div>
+                            <h4 className="font-medium mb-2">Add Global Tags</h4>
+                            <code className="block bg-muted p-2 rounded text-sm">
+                                analytics.addTags(["frontend", "critical"]);
+                            </code>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 } 
