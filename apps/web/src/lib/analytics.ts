@@ -2,7 +2,6 @@
 
 import { createErrorTracker } from "@better-analytics/sdk";
 
-
 export const analytics = createErrorTracker({
 	apiUrl: process.env.NEXT_PUBLIC_API_URL || "",
 	clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "",

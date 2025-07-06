@@ -1,5 +1,5 @@
 export default function Sandbox() {
-	const shouldThrow = false;
+	const shouldThrow = true;
 
 	if (shouldThrow) {
 		throw new Error("This is a test error");
