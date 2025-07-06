@@ -1,9 +1,8 @@
 import {
-	LifebuoyIcon,
 	HouseIcon,
 	BugIcon,
-	FileTextIcon,
 	TerminalIcon,
+	ChartBarHorizontalIcon,
 } from "@phosphor-icons/react";
 
 export interface SidebarItem {
@@ -14,7 +13,7 @@ export interface SidebarItem {
 
 export interface SidebarConfig {
 	main: SidebarItem[];
-	secondary: SidebarItem[];
+	errors: SidebarItem[];
 }
 
 export const sidebarConfig: SidebarConfig = {
@@ -25,26 +24,21 @@ export const sidebarConfig: SidebarConfig = {
 			icon: HouseIcon,
 		},
 		{
-			title: "Logs",
-			url: "/dashboard/logs",
-			icon: FileTextIcon,
-		},
-		{
 			title: "Console",
 			url: "/dashboard/console",
 			icon: TerminalIcon,
 		},
+	],
+	errors: [
 		{
-			title: "Errors",
-			url: "/dashboard/errors",
+			title: "Console",
+			url: "/dashboard/errors/console",
 			icon: BugIcon,
 		},
-	],
-	secondary: [
 		{
-			title: "Get Help",
-			url: "/support",
-			icon: LifebuoyIcon,
+			title: "Analyics",
+			url: "/dashboard/errors/analytics",
+			icon: ChartBarHorizontalIcon,
 		},
 	],
 };
