@@ -1,21 +1,36 @@
-import React, { Suspense } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@better-analytics/ui/components/card';
+import React from 'react';
 import { Button } from '@better-analytics/ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@better-analytics/ui/components/card';
 import { Activity, AlertTriangle, Bug, Shield } from 'lucide-react';
-import { ErrorTypesChart, ErrorTypesChartSkeleton } from '@/components/chart/error-types-chart';
-import { SeverityLevelsChart, SeverityLevelsChartSkeleton } from '@/components/chart/severity-levels-chart';
-import { ErrorTrendsChart, ErrorTrendsChartSkeleton } from '@/components/chart/error-trends-chart';
-import { RecentErrorsChart, RecentErrorsChartSkeleton } from '@/components/chart/recent-errors-chart';
-import { RecentLogsChart, RecentLogsChartSkeleton } from '@/components/chart/recent-logs-chart';
-import {
-    getRecentErrors,
-    getRecentLogs,
-    getAnalyticsStats,
-    getErrorTrends,
-    getErrorMetrics,
-    getDebugInfo
-} from './actions';
+import { ErrorTypesChart } from '@/components/chart/error-types-chart';
+import { SeverityLevelsChart } from '@/components/chart/severity-levels-chart';
+import { ErrorTrendsChart } from '@/components/chart/error-trends-chart';
+import { RecentErrorsChart } from '@/components/chart/recent-errors-chart';
+import { RecentLogsChart } from '@/components/chart/recent-logs-chart';
+import { getAnalyticsStats, getErrorMetrics, getErrorTrends, getRecentErrors, getRecentLogs } from '../actions';
 
+// Helper functions
+function formatNumber(num: number): string {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+}
+
+function formatPercentage(num: number): string {
+    return `${num.toFixed(1)}%`;
+}
+
+function formatDuration(hours: number): string {
+    if (hours < 1) {
+        return `${Math.round(hours * 60)}min`;
+    }
+    return `${hours.toFixed(1)}h`;
+}
+
+// Helper functions for data transformation
 function getErrorTypeColor(type: string): string {
     const colors: Record<string, string> = {
         'client': '#3B82F6',
@@ -40,48 +55,23 @@ function getSeverityColor(severity: string): string {
     return colors[severity] || '#6B7280';
 }
 
-// Helper function to format numbers
-function formatNumber(num: number): string {
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
-}
-
-// Helper function to format percentage
-function formatPercentage(num: number): string {
-    return `${num.toFixed(1)}%`;
-}
-
-// Helper function to format duration
-function formatDuration(hours: number): string {
-    if (hours < 1) {
-        return `${Math.round(hours * 60)}min`;
-    }
-    return `${hours.toFixed(1)}h`;
-}
-
-export default async function TestPage() {
+export async function DashboardContent() {
     // Fetch all data in parallel
     const [
         recentErrorsResult,
         recentLogsResult,
         analyticsStatsResult,
         errorTrendsResult,
-        errorMetricsResult,
-        debugInfoResult
+        errorMetricsResult
     ] = await Promise.all([
         getRecentErrors(),
         getRecentLogs(),
         getAnalyticsStats(),
         getErrorTrends(),
-        getErrorMetrics(),
-        getDebugInfo()
+        getErrorMetrics()
     ]);
 
-    // Transform data for charts
+    // Transform data for the client component
     const errorTypeData = analyticsStatsResult.success && analyticsStatsResult.data
         ? analyticsStatsResult.data.errorsByType.map(item => ({
             name: item.error_type,
@@ -103,9 +93,9 @@ export default async function TestPage() {
     const trendData = errorTrendsResult.success && errorTrendsResult.data
         ? errorTrendsResult.data.map(item => ({
             date: item.date,
-            value: item.total_errors,
-            client: item.client_errors,
-            server: item.server_errors
+            value: typeof item.total_errors === 'string' ? parseInt(item.total_errors) : item.total_errors,
+            client: typeof item.client_errors === 'string' ? parseInt(item.client_errors) : item.client_errors,
+            server: typeof item.server_errors === 'string' ? parseInt(item.server_errors) : item.server_errors
         }))
         : [];
 
@@ -122,18 +112,23 @@ export default async function TestPage() {
         : [];
 
     const recentLogs = recentLogsResult.success && recentLogsResult.data
-        ? recentLogsResult.data.slice(0, 10).map(log => ({
-            id: log.id,
-            message: log.message,
-            level: (log.level === 'log' || log.level === 'info' || log.level === 'warn' || log.level === 'error' || log.level === 'debug' || log.level === 'trace')
-                ? (log.level === 'warn' ? 'warning' : log.level === 'log' ? 'info' : log.level === 'trace' ? 'debug' : log.level) as 'info' | 'warning' | 'error' | 'debug'
-                : 'info' as const,
-            timestamp: log.created_at,
-            source: log.source || 'Unknown'
-        }))
+        ? recentLogsResult.data.slice(0, 10).map(log => {
+            let logLevel: 'info' | 'warning' | 'error' | 'debug' = 'info';
+
+            if (log.level === 'error') logLevel = 'error';
+            else if (log.level === 'warn' || log.level === 'warning') logLevel = 'warning';
+            else if (log.level === 'debug' || log.level === 'trace') logLevel = 'debug';
+
+            return {
+                id: log.id,
+                message: log.message,
+                level: logLevel,
+                timestamp: log.created_at,
+                source: log.source || 'Unknown'
+            };
+        })
         : [];
 
-    // Get metrics data
     const metrics = errorMetricsResult.success && errorMetricsResult.data ? errorMetricsResult.data : {
         totalErrors: 0,
         errorRate: 0,
@@ -142,7 +137,7 @@ export default async function TestPage() {
     };
 
     return (
-        <div className="flex-1 space-y-4 p-4">
+        <div className="flex-1 space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -231,9 +226,7 @@ export default async function TestPage() {
                         <CardDescription>Latest error events from your application</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Suspense fallback={<RecentErrorsChartSkeleton />}>
-                            <RecentErrorsChart data={recentErrors} />
-                        </Suspense>
+                        <RecentErrorsChart data={recentErrors} />
                     </CardContent>
                 </Card>
 
@@ -243,9 +236,7 @@ export default async function TestPage() {
                         <CardDescription>Latest log entries from your application</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Suspense fallback={<RecentLogsChartSkeleton />}>
-                            <RecentLogsChart data={recentLogs} />
-                        </Suspense>
+                        <RecentLogsChart data={recentLogs} />
                     </CardContent>
                 </Card>
             </div>
@@ -258,9 +249,7 @@ export default async function TestPage() {
                         <CardDescription>Distribution of error types across your application</CardDescription>
                     </CardHeader>
                     <CardContent className="h-64">
-                        <Suspense fallback={<ErrorTypesChartSkeleton />}>
-                            <ErrorTypesChart data={errorTypeData} />
-                        </Suspense>
+                        <ErrorTypesChart data={errorTypeData} />
                     </CardContent>
                 </Card>
 
@@ -270,9 +259,7 @@ export default async function TestPage() {
                         <CardDescription>Error severity distribution and impact assessment</CardDescription>
                     </CardHeader>
                     <CardContent className="h-64">
-                        <Suspense fallback={<SeverityLevelsChartSkeleton />}>
-                            <SeverityLevelsChart data={severityData} />
-                        </Suspense>
+                        <SeverityLevelsChart data={severityData} />
                     </CardContent>
                 </Card>
             </div>
@@ -284,110 +271,9 @@ export default async function TestPage() {
                     <CardDescription>Error patterns over the past two weeks</CardDescription>
                 </CardHeader>
                 <CardContent className="h-64">
-                    <Suspense fallback={<ErrorTrendsChartSkeleton />}>
-                        <ErrorTrendsChart data={trendData} />
-                    </Suspense>
+                    <ErrorTrendsChart data={trendData} />
                 </CardContent>
             </Card>
-
-            {/* Data Status */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Data Status</CardTitle>
-                    <CardDescription>Current data availability and connection status</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${recentErrorsResult.success ? 'bg-green-500' : 'bg-red-500'}`} />
-                            <span className="text-sm">
-                                Errors: {recentErrorsResult.success ? 'Connected' : 'Error'}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${recentLogsResult.success ? 'bg-green-500' : 'bg-red-500'}`} />
-                            <span className="text-sm">
-                                Logs: {recentLogsResult.success ? 'Connected' : 'Error'}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${analyticsStatsResult.success ? 'bg-green-500' : 'bg-red-500'}`} />
-                            <span className="text-sm">
-                                Analytics: {analyticsStatsResult.success ? 'Connected' : 'Error'}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${errorTrendsResult.success ? 'bg-green-500' : 'bg-red-500'}`} />
-                            <span className="text-sm">
-                                Trends: {errorTrendsResult.success ? 'Connected' : 'Error'}
-                            </span>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Debug Info */}
-            {debugInfoResult.success && debugInfoResult.data && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Debug Information</CardTitle>
-                        <CardDescription>Database content analysis</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div>
-                                <h4 className="font-medium mb-2">Database Counts</h4>
-                                <div className="space-y-1 text-sm">
-                                    <div>Total Errors: {debugInfoResult.data.totalErrors}</div>
-                                    <div>Total Logs: {debugInfoResult.data.totalLogs}</div>
-                                </div>
-                            </div>
-                            <div>
-                                <h4 className="font-medium mb-2">Severity Breakdown</h4>
-                                <div className="space-y-1 text-sm">
-                                    {debugInfoResult.data.severityBreakdown.length > 0 ? (
-                                        debugInfoResult.data.severityBreakdown.map((item, index) => (
-                                            <div key={index}>
-                                                {item.severity}: {item.count}
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-muted-foreground">No severity data found</div>
-                                    )}
-                                </div>
-                            </div>
-                            <div>
-                                <h4 className="font-medium mb-2">Error Type Breakdown</h4>
-                                <div className="space-y-1 text-sm">
-                                    {debugInfoResult.data.errorTypeBreakdown.length > 0 ? (
-                                        debugInfoResult.data.errorTypeBreakdown.map((item, index) => (
-                                            <div key={index}>
-                                                {item.error_type}: {item.count}
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-muted-foreground">No error type data found</div>
-                                    )}
-                                </div>
-                            </div>
-                            <div>
-                                <h4 className="font-medium mb-2">Sample Errors</h4>
-                                <div className="space-y-1 text-sm">
-                                    {debugInfoResult.data.sampleErrors.length > 0 ? (
-                                        debugInfoResult.data.sampleErrors.map((error, index) => (
-                                            <div key={index} className="text-xs">
-                                                {error.severity} | {error.error_type} | {error.created_at}
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-muted-foreground">No sample errors found</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
         </div>
     );
 }
