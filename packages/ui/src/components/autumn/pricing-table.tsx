@@ -7,9 +7,9 @@ import { cn } from "@better-analytics/ui";
 import { Switch } from "@better-analytics/ui/components/switch";
 import { Button } from "@better-analytics/ui/components/button";
 import { Check, Loader2 } from "lucide-react";
-import AttachDialog from "@better-analytics/ui/components/autumn/attach-dialog";
-import { getPricingTableContent } from "@better-analytics/ui/lib/autumn/pricing-table-content";
-import { Product, ProductItem } from "autumn-js";
+import AttachDialog from "../autumn/attach-dialog";
+import { getPricingTableContent } from "../../lib/autumn/pricing-table-content";
+import type { Product, ProductItem } from "autumn-js";
 
 export default function PricingTable({
   productDetails,
@@ -22,8 +22,8 @@ export default function PricingTable({
 
   if (isLoading) {
     return (
-      <div className="w-full h-full flex justify-center items-center min-h-[300px]">
-        <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
+      <div className="flex h-full min-h-[300px] w-full items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
       </div>
     );
   }
@@ -48,9 +48,8 @@ export default function PricingTable({
     if (multiInterval) {
       if (isAnnual) {
         return product.properties?.interval_group === "year";
-      } else {
-        return product.properties?.interval_group === "month";
       }
+      return product.properties?.interval_group === "month";
     }
 
     return true;
@@ -67,7 +66,7 @@ export default function PricingTable({
         >
           {products.filter(intervalFilter).map((product, index) => (
             <PricingCard
-              key={index}
+              key={product.id}
               productId={product.id}
               buttonProps={{
                 disabled:
@@ -200,12 +199,8 @@ export const PricingCard = ({
   const { name, display: productDisplay, items } = product;
 
   const { buttonText } = getPricingTableContent(product);
-  const isRecommended = productDisplay?.recommend_text ? true : false;
-  const mainPriceDisplay = product.properties?.is_free
-    ? {
-      primary_text: "Free",
-    }
-    : product.items[0]?.display;
+  const isRecommended = !!productDisplay?.recommend_text;
+  const mainPriceDisplay = product.properties?.is_free ? { primary_text: "Free" } : product.items[0]?.display;
 
   const featureItems = product.properties?.is_free
     ? product.items
@@ -296,23 +291,23 @@ export const PricingFeatureList = ({
   return (
     <div className={cn("flex-grow", className)}>
       {everythingFrom && (
-        <p className="text-sm mb-4">
+        <p className="mb-4 text-sm">
           Everything from {everythingFrom}, plus:
         </p>
       )}
       <div className="space-y-3">
-        {items.map((item, index) => (
+        {items.map((item) => (
           <div
-            key={index}
+            key={item.feature_id}
             className="flex items-start gap-2 text-sm"
           >
             {showIcon && (
-              <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             )}
             <div className="flex flex-col">
               <span>{item.display?.primary_text}</span>
               {item.display?.secondary_text && (
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   {item.display?.secondary_text}
                 </span>
               )}
@@ -350,7 +345,7 @@ export const PricingCardButton = React.forwardRef<
   return (
     <Button
       className={cn(
-        "w-full py-3 px-4 group overflow-hidden relative transition-all duration-300 hover:brightness-90 border rounded-lg",
+        "group relative w-full overflow-hidden rounded-lg border px-4 py-3 transition-all duration-300 hover:brightness-90",
         className
       )}
       {...props}
@@ -363,11 +358,11 @@ export const PricingCardButton = React.forwardRef<
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         <>
-          <div className="flex items-center justify-between w-full transition-transform duration-300 group-hover:translate-y-[-130%]">
+          <div className="flex w-full items-center justify-between transition-transform duration-300 group-hover:translate-y-[-130%]">
             <span>{children}</span>
             <span className="text-sm">→</span>
           </div>
-          <div className="flex items-center justify-between w-full absolute px-4 translate-y-[130%] transition-transform duration-300 group-hover:translate-y-0 mt-2 group-hover:mt-0">
+          <div className="absolute mt-2 flex w-full translate-y-[130%] items-center justify-between px-4 transition-transform duration-300 group-hover:mt-0 group-hover:translate-y-0">
             <span>{children}</span>
             <span className="text-sm">→</span>
           </div>
@@ -387,21 +382,21 @@ export const AnnualSwitch = ({
   setIsAnnualToggle: (isAnnual: boolean) => void;
 }) => {
   return (
-    <div className="flex items-center space-x-2 mb-4">
-      <span className="text-sm text-muted-foreground">Monthly</span>
+    <div className="mb-4 flex items-center space-x-2">
+      <span className="text-muted-foreground text-sm">Monthly</span>
       <Switch
         id="annual-billing"
         checked={isAnnualToggle}
         onCheckedChange={setIsAnnualToggle}
       />
-      <span className="text-sm text-muted-foreground">Annual</span>
+      <span className="text-muted-foreground text-sm">Annual</span>
     </div>
   );
 };
 
 export const RecommendedBadge = ({ recommended }: { recommended: string }) => {
   return (
-    <div className="bg-secondary absolute border text-muted-foreground text-sm font-medium lg:rounded-full px-3 lg:py-0.5 lg:top-4 lg:right-4 top-[-1px] right-[-1px] rounded-bl-lg">
+    <div className="absolute top-[-1px] right-[-1px] rounded-bl-lg border bg-secondary px-3 font-medium text-muted-foreground text-sm lg:top-4 lg:right-4 lg:rounded-full lg:py-0.5">
       {recommended}
     </div>
   );

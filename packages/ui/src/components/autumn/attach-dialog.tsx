@@ -11,7 +11,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@better-analytics/ui/components/dialog";
-import { getAttachContent } from "@better-analytics/ui/lib/autumn/attach-content";
+import { getAttachContent } from "../../lib/autumn/attach-content";
 import { useCustomer } from "autumn-js/react";
 
 export interface AttachDialogProps {
@@ -189,7 +189,7 @@ export const OptionsInput = ({
         value={quantity ? quantity / billing_units : ""}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           const newOptions = [...optionsInput];
-          newOptions[index]!.quantity = parseInt(e.target.value) * billing_units;
+          newOptions[index]!.quantity = Number.parseInt(e.target.value) * billing_units;
           setOptionsInput(newOptions);
         }}
       >
