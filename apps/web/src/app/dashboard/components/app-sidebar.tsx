@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { authClient } from "@better-analytics/auth/client";
 import { Logo } from "@better-analytics/ui/icons";
 import {
 	Sidebar,
@@ -10,21 +11,19 @@ import {
 	SidebarHeader,
 	SidebarMenuButton,
 } from "@better-analytics/ui/components/sidebar";
+import { sidebarConfig } from "@/config/sidebar";
 
 import { NavMain } from "./nav-main";
-import { NavSecondary } from "./nav-secondary";
 import { NavUser } from "./nav-user";
-import { sidebarConfig } from "@/config/sidebar";
-import { authClient } from "@better-analytics/auth/client";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { data: session } = authClient.useSession();
 
 	return (
-		<Sidebar collapsible="icon" {...props}>
+		<Sidebar {...props}>
 			<SidebarHeader>
-				<SidebarMenuButton tooltip="Go to Landing Page" asChild>
-					<Link href="/">
+				<SidebarMenuButton tooltip="Better Analytics" asChild>
+					<Link href="/dashboard">
 						<Logo />
 						<span className="font-aeonik font-medium text-xs uppercase">
 							Better Analytics
@@ -36,7 +35,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			<SidebarContent>
 				<NavMain items={sidebarConfig.main} />
 
-				<NavSecondary items={sidebarConfig.secondary} className="mt-auto" />
+				<NavMain items={sidebarConfig.errors} title="Errors" />
+
+				<NavMain items={sidebarConfig.settings} title="Settings" />
 			</SidebarContent>
 
 			<SidebarFooter>

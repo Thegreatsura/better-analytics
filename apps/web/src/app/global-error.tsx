@@ -1,46 +1,27 @@
-'use client';
+"use client";
 
-import { analytics } from '@/lib/analytics';
-import { useEffect, useState } from 'react';
+import { analytics } from "@/lib/analytics";
+import { useEffect } from "react";
 
-export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-    const [localizedMessages, setLocalizedMessages] = useState({
-        title: 'Global Error',
-        message: 'An unknown error occurred',
-        resetButton: 'Reset'
-    });
+interface GlobalErrorProps {
+    error: Error & { digest?: string };
+    reset: () => void;
+}
 
+export default function GlobalError({ error, reset }: GlobalErrorProps) {
     useEffect(() => {
-        analytics.captureException(error, { tags: ['global-error'] });
-
-        const localizeMessages = async () => {
-            try {
-                const [title, message, resetButton] = await Promise.all([
-                    analytics.localizeError('Global Error'),
-                    analytics.localizeError(error.message || 'An unknown error occurred'),
-                    analytics.localizeError('Reset')
-                ]);
-
-                setLocalizedMessages({
-                    title,
-                    message,
-                    resetButton
-                });
-            } catch (err) {
-                console.warn('Failed to localize error messages:', err);
-            }
-        };
-
-        localizeMessages();
+        analytics.captureException(error, { tags: ["global-error"] });
     }, [error]);
 
     return (
         <html lang="en">
             <body>
-                <h1>{localizedMessages.title}</h1>
-                <p>{localizedMessages.message}</p>
-                <button type="button" onClick={reset}>{localizedMessages.resetButton}</button>
+                <h1>Global Error</h1>
+                <p>{error.message}</p>
+                <button type="button" onClick={reset}>
+                    Reset
+                </button>
             </body>
         </html>
     );
-} 
+}
