@@ -60,7 +60,7 @@ export async function chQueryCount(
     params?: Record<string, any>
 ): Promise<number> {
     const result = await chQueryOne<{ count: string }>(query, params);
-    return result ? parseInt(result.count, 10) : 0;
+    return result ? Number.parseInt(result.count, 10) : 0;
 }
 
 /**
