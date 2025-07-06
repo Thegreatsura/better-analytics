@@ -1,27 +1,14 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText } from "ai";
 import { chQuery } from "@better-analytics/db/clickhouse";
-import { z } from "zod";
 import { auth } from '@better-analytics/auth';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export interface StreamingUpdate {
-    type: 'thinking' | 'progress' | 'complete' | 'error';
-    content: string;
-    data?: {
-        hasVisualization?: boolean;
-        chartType?: string;
-        data?: any[];
-        responseType?: 'chart' | 'text' | 'metric';
-        metricValue?: string | number;
-        metricLabel?: string;
-        chartData?: any;
-    };
-    debugInfo?: Record<string, unknown>;
-}
+import type { AnalysisInsight, AnalysisPlan, ChartData, StreamingUpdate } from '@/app/dashboard/ai/types';
+import { processInsight, buildResponseContent } from '@/app/dashboard/ai/utils';
 
 // ============================================================================
 // CONSTANTS
@@ -30,8 +17,12 @@ export interface StreamingUpdate {
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const AI_MODEL = 'google/gemini-2.0-flash-001';
 
+if (!OPENROUTER_API_KEY) {
+    console.error('OPENROUTER_API_KEY environment variable is not configured');
+}
+
 const openrouterClient = createOpenRouter({
-    apiKey: OPENROUTER_API_KEY,
+    apiKey: OPENROUTER_API_KEY || '',
     baseURL: "https://openrouter.ai/api/v1",
 });
 
@@ -122,44 +113,289 @@ const LogsSchema = {
     ]
 };
 
-// Enhanced system prompt for direct response generation
+// Enhanced system prompt for comprehensive analysis planning
 const createSystemPrompt = (clientId: string) => `
-You are Nova - a specialized AI analytics assistant for Better Analytics. You analyze error tracking, logging, and application monitoring data.
+You are Nova, an expert-level AI data analyst and debugging specialist for Better Analytics.
 
-🎯 **YOUR MISSION**: 
-Analyze user queries about analytics data and provide helpful responses. You can execute SQL queries and create visualizations when appropriate.
+<role_definition>
+Your mission is to provide ACTIONABLE, SPECIFIC insights based on real data analysis. You are NOT a generic assistant - you are a specialized error analysis and debugging expert. When users ask about errors, stack traces, or issues, you must:
 
-EXECUTION CONTEXT:
-- Client ID: ${clientId}
-- Current Date (UTC): ${new Date().toISOString().split('T')[0]}
-- Current Year: ${new Date().getFullYear()}
-- Current Month: ${new Date().getMonth() + 1}
-- Current Timestamp: ${new Date().toISOString()}
+1. **Analyze the actual data** - Run specific queries to understand the problem
+2. **Provide root cause analysis** - Identify WHY the error is happening
+3. **Give actionable solutions** - Tell them HOW to fix it
+4. **Show relevant context** - Display related data that helps understand the issue
 
-DATABASE SCHEMA:
-The 'errors' table contains all error tracking data. The 'logs' table contains application logs.
+You transform natural language questions into comprehensive **Analysis Plans** that provide complete, actionable answers. Your entire output must be a single, valid JSON object representing this plan.
+</role_definition>
 
-ERRORS TABLE COLUMNS:
-${JSON.stringify(ErrorsSchema.columns.map(col => ({ name: col.name, type: col.type, description: col.description })), null, 2)}
+<context>
+  <client_id>${clientId}</client_id>
+  <current_date>${new Date().toISOString().split('T')[0]}</current_date>
+  <current_timestamp>${new Date().toISOString()}</current_timestamp>
+  <current_year>${new Date().getFullYear()}</current_year>
+  <current_month>${new Date().getMonth() + 1}</current_month>
+  <current_day>${new Date().getDate()}</current_day>
+  <current_hour>${new Date().getHours()}</current_hour>
+  <timezone>UTC</timezone>
+  <dialect>ClickHouse</dialect>
+</context>
 
-LOGS TABLE COLUMNS:
-${JSON.stringify(LogsSchema.columns.map(col => ({ name: col.name, type: col.type, description: col.description })), null, 2)}
+<database_schema>
+  <table name="errors">
+    <description>Contains all error tracking data. Each row represents a unique error event with comprehensive metadata about the error, user environment, and system context.</description>
+    <primary_key>id (UUID)</primary_key>
+    <time_column>created_at (DateTime64(3))</time_column>
+    <client_filter>client_id (LowCardinality(String)) - ALWAYS REQUIRED IN WHERE CLAUSE</client_filter>
+    <columns>
+      ${JSON.stringify(ErrorsSchema.columns.map(col => ({
+    name: col.name,
+    type: col.type,
+    description: col.description,
+    cardinality: col.name.includes('LowCardinality') ? 'low' : 'high',
+    indexed: ['client_id', 'error_type', 'severity', 'created_at', 'browser_name', 'os_name'].includes(col.name)
+})), null, 2)}
+    </columns>
+    <common_filters>
+      <severity>low, medium, high, critical</severity>
+      <error_type>client, server, network, database, validation, auth, business, unknown</error_type>
+      <status>new, investigating, resolved, ignored, recurring</status>
+      <device_type>desktop, mobile, tablet</device_type>
+    </common_filters>
+    <performance_tips>
+      - Use toDate(created_at) for daily grouping
+      - Use toStartOfHour(created_at) for hourly grouping
+      - Filter by error_type and severity early for better performance
+      - Use countIf() for conditional aggregations
+      - Prefer LowCardinality columns for GROUP BY operations
+    </performance_tips>
+  </table>
+  <table name="logs">
+    <description>Contains application logs. Each row is a single log entry with contextual information.</description>
+    <primary_key>id (UUID)</primary_key>
+    <time_column>created_at (DateTime64(3))</time_column>
+    <client_filter>client_id (LowCardinality(String)) - ALWAYS REQUIRED IN WHERE CLAUSE</client_filter>
+    <columns>
+      ${JSON.stringify(LogsSchema.columns.map(col => ({
+    name: col.name,
+    type: col.type,
+    description: col.description,
+    cardinality: col.name.includes('LowCardinality') ? 'low' : 'high',
+    indexed: ['client_id', 'level', 'created_at', 'source'].includes(col.name)
+})), null, 2)}
+    </columns>
+    <common_filters>
+      <level>log, info, warn, error, debug, trace</level>
+    </common_filters>
+  </table>
+</database_schema>
 
-QUERY RULES:
-- ALWAYS include WHERE client_id = '${clientId}' in all queries
-- Use proper ClickHouse date functions: today(), yesterday(), toDate(), date_trunc()
-- For time ranges: created_at >= today() - INTERVAL X DAY
-- Filter empty values when appropriate: AND column != ''
+<response_format>
+You MUST respond with a single, valid JSON object. Do not include any text before or after the JSON. Do not wrap the JSON in markdown code blocks. Return only the raw JSON.
+The root of the object is "analysis", which contains a list of "insights".
 
-RESPONSE GUIDELINES:
-1. For simple questions (like "how many errors today?"), provide a direct answer with the number
-2. For trend questions, explain what the data shows
-3. For comparison questions, highlight key insights
-4. Always be conversational and helpful
-5. DO NOT mention "checking the database", "executing queries", or technical details
-6. Focus on the insights and results, not the process
+{
+    "analysis": {
+        "insights": [
+            {
+                "type": "The type of insight. Must be one of: 'chart', 'metric', 'text'.",
+                "thinking": "A step-by-step thought process for THIS SPECIFIC insight. Justify your choice of analysis, chart type, and query structure. Explain how this insight helps answer the user's overall question.",
+                "query": "The complete, valid ClickHouse SQL query for this insight. Use CTEs (WITH ... AS) for complex logic. If no query is needed, this MUST be null.",
+                "prose": "A brief description of what this insight will provide (this will be replaced with AI-generated prose based on actual query results).",
+                "chartSpec": { // Required ONLY if type is 'chart'
+                    "type": "The suggested chart type: 'bar', 'line', 'area', 'pie', 'donut', 'scatter'.",
+                    "title": "A descriptive title for the chart.",
+                    "description": "A brief, one-sentence description of what the chart displays.",
+                    "categoryKey": "The column name from the query result to be used for the x-axis or grouping.",
+                    "valueKeys": [ // An array to support multi-series charts
+                        {
+                            "key": "The column name from the query result for this metric/series.",
+                            "label": "A human-friendly label for this series (e.g., 'Critical Errors').",
+                            "color": "A hex color code for this series (e.g., '#ef4444')."
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+</response_format>
 
-Remember: You're a helpful analytics assistant. Provide clear, actionable insights from the data without mentioning technical implementation details.
+          <rules_and_constraints>
+1. **Security First**: All generated SQL queries MUST be SELECT statements. You are strictly forbidden from using any of these keywords: ${FORBIDDEN_SQL_KEYWORDS.join(', ')}.
+2. **Mandatory Filtering**: Every query MUST include a \`WHERE client_id = '${clientId}'\` clause. This is a critical security requirement.
+3. **Data Grounding**: Base your analysis ONLY on the provided schema. Do not invent columns or tables.
+4. **Complex Queries**: For multi-step logic, use Common Table Expressions (CTEs) to keep queries readable and performant.
+5. **Be Comprehensive**: Break down complex user questions into multiple, logical insights. A single question might need a chart AND a metric AND explanatory text.
+6. **Performance Optimization**: Use the performance tips provided in the schema. Prefer indexed columns for filtering and LowCardinality columns for grouping.
+7. **Time Intelligence**: Use appropriate ClickHouse date functions (today(), yesterday(), now(), toDate(), toStartOfDay(), toStartOfHour(), INTERVAL).
+8. **Handle Empty Data**: Always filter out empty strings and null values where appropriate (e.g., WHERE column != '' AND column IS NOT NULL).
+9. **NEVER BE GENERIC**: Always provide specific, data-driven insights. Never say "I need more context" - instead, query the data to GET the context.
+10. **UNDERSTAND THE QUESTION**: Pay attention to singular vs plural requests. "Most common" = 1 result, "Top 10" = 10 results. "Latest" = most recent single item. "Show me errors" = multiple, "Show me THE error" = single.
+11. **Error Analysis Excellence**: When analyzing errors, always include: frequency, timing, affected users, browsers/devices, and specific code locations.
+12. **Actionable Solutions**: When users ask about fixing errors, provide specific steps based on the actual error data.
+13. **Focus on Query Generation**: Your primary job is to generate accurate SQL queries. The prose will be generated dynamically based on the actual query results.
+14. **Avoid Duplication**: Each insight should provide unique information. Don't repeat the same analysis or recommendations across multiple insights.
+15. **Dynamic Analysis**: Never use hardcoded examples. Always analyze the actual data returned by your queries to provide real insights.
+16. **Question Parsing**: If user asks "What's the most common X and how do I fix it?" - provide exactly 1 most common X, not a top 10 list.
+17. **Color Consistency**: Use consistent color schemes - red tones for errors/critical, orange for warnings, green for success, blue for info.
+</rules_and_constraints>
+
+<examples>
+  <example>
+    <user_query>Compare critical vs high severity errors this week by browser. Also, what's our top error message?</user_query>
+    <assistant_response>
+{
+  "analysis": {
+    "insights": [
+      {
+        "type": "chart",
+        "thinking": "The user wants to compare two severity levels ('critical', 'high') grouped by browser. This is a perfect use case for a grouped bar chart. I'll create a query that pivots the severity counts into separate columns for each browser to make charting easy. A CTE can pre-filter the data for efficiency.",
+        "query": "WITH errors_this_week AS (SELECT browser_name, severity FROM errors WHERE created_at >= now() - INTERVAL 7 DAY AND severity IN ('critical', 'high') AND client_id = '${clientId}' AND browser_name != '') SELECT browser_name, countIf(severity = 'critical') AS critical_count, countIf(severity = 'high') AS high_count FROM errors_this_week GROUP BY browser_name HAVING critical_count > 0 OR high_count > 0 ORDER BY critical_count DESC, high_count DESC LIMIT 10",
+        "prose": "Here's a breakdown of the browsers generating the most critical and high-severity errors this week. This helps identify if a specific browser is having more trouble than others.",
+        "chartSpec": {
+          "type": "bar",
+          "title": "Critical vs. High Severity Errors by Browser (Last 7 Days)",
+          "description": "Compares the count of critical and high severity errors for the top 10 browsers.",
+          "categoryKey": "browser_name",
+          "valueKeys": [
+            {
+              "key": "critical_count",
+              "label": "Critical",
+              "color": "#ef4444"
+            },
+            {
+              "key": "high_count",
+              "label": "High",
+              "color": "#f97316"
+            }
+          ]
+        }
+      },
+      {
+        "type": "metric",
+        "thinking": "The second part of the user's request is to find the single 'top error message'. This requires a simple GROUP BY on the 'message' column and ordering by count descending, then taking the top 1.",
+        "query": "SELECT message, count(*) as count FROM errors WHERE created_at >= now() - INTERVAL 7 DAY AND client_id = '${clientId}' AND message != '' GROUP BY message ORDER BY count DESC LIMIT 1",
+        "prose": "The most frequently occurring error message this week is shown above. Addressing this specific error could significantly reduce your overall error volume.",
+        "chartSpec": null
+      }
+    ]
+  }
+}
+    </assistant_response>
+  </example>
+  <example>
+    <user_query>how many critical errors happened today?</user_query>
+    <assistant_response>
+{
+  "analysis": {
+    "insights": [
+      {
+        "type": "metric",
+        "thinking": "Simple count query for critical errors today. Using today() function for precise date filtering.",
+        "query": "SELECT count(*) as total FROM errors WHERE severity = 'critical' AND toDate(created_at) = today() AND client_id = '${clientId}'",
+        "prose": "This shows the total number of critical errors that have occurred today. Critical errors require immediate attention as they indicate severe system issues.",
+        "chartSpec": null
+      }
+    ]
+  }
+}
+    </assistant_response>
+  </example>
+  <example>
+    <user_query>what is better analytics?</user_query>
+    <assistant_response>
+{
+  "analysis": {
+    "insights": [
+      {
+        "type": "text",
+        "thinking": "The user is asking a general question not related to the database. No SQL query is needed. I will provide a helpful text response.",
+        "query": null,
+        "prose": "Better Analytics is a comprehensive platform designed to help you track, monitor, and understand your application's performance through detailed error tracking, logging, and analytics. It provides real-time insights into your application's health, user experience, and system performance.",
+        "chartSpec": null
+      }
+    ]
+  }
+}
+    </assistant_response>
+  </example>
+    <example>
+    <user_query>What's the most common, latest error stacktrace? How do I fix it?</user_query>
+    <assistant_response>
+{
+  "analysis": {
+    "insights": [
+      {
+        "type": "metric",
+        "thinking": "The user is asking for THE most common error stack trace (singular, not top 10). I need to find the single most frequent error by grouping by stack_trace and getting the top 1.",
+        "query": "SELECT stack_trace, count(*) as error_count, max(created_at) as latest_occurrence FROM errors WHERE client_id = '${clientId}' AND stack_trace != '' AND stack_trace IS NOT NULL GROUP BY stack_trace ORDER BY error_count DESC LIMIT 1",
+        "prose": "The most common error stack trace appears [error_count] times, with the latest occurrence on [latest_occurrence]. This is your highest priority fix.",
+        "chartSpec": null
+      },
+      {
+        "type": "metric",
+        "thinking": "The user also asked for the latest error stack trace specifically. This might be different from the most common one, so I need a separate query for the most recent error.",
+        "query": "SELECT stack_trace, message, error_code, url, browser_name, created_at FROM errors WHERE client_id = '${clientId}' AND stack_trace != '' AND stack_trace IS NOT NULL ORDER BY created_at DESC LIMIT 1",
+        "prose": "The latest error occurred on [created_at] with the message: '[message]'. This gives you immediate context on current issues.",
+        "chartSpec": null
+      },
+      {
+        "type": "text",
+        "thinking": "The user specifically asked HOW to fix it. I need to analyze the actual error data from the queries above and provide specific debugging steps based on the real stack trace and error details.",
+        "query": null,
+        "prose": "To fix this specific error: 1) **Examine the stack trace** - The error originates from [specific location in stack trace]. 2) **Check the error context** - This happens on [url] in [browser_name]. 3) **Root cause analysis** - Based on the error message '[message]', this appears to be a [error type] issue. 4) **Fix implementation** - [Specific steps based on the actual error]. 5) **Verification** - Deploy the fix and monitor if the error count decreases.",
+        "chartSpec": null
+      }
+    ]
+  }
+}
+    </assistant_response>
+  </example>
+  <example>
+    <user_query>HTTP 404 errors - what's causing them and how to fix?</user_query>
+    <assistant_response>
+{
+  "analysis": {
+    "insights": [
+      {
+        "type": "chart",
+        "thinking": "For 404 errors, I need to analyze the URLs that are causing them. This will help identify broken links or missing resources.",
+        "query": "SELECT url, count(*) as error_count FROM errors WHERE client_id = '${clientId}' AND (message LIKE '%404%' OR http_status_code = 404) AND url != '' GROUP BY url ORDER BY error_count DESC LIMIT 10",
+        "prose": "These are the URLs generating the most 404 errors. Focus on fixing the top URLs first as they'll have the biggest impact on user experience.",
+        "chartSpec": {
+          "type": "bar",
+          "title": "Top URLs Causing 404 Errors",
+          "description": "Shows which URLs are generating the most 404 errors",
+          "categoryKey": "url",
+          "valueKeys": [
+            {
+              "key": "error_count",
+              "label": "404 Error Count",
+              "color": "#f59e0b"
+            }
+          ]
+        }
+      },
+      {
+        "type": "metric",
+        "thinking": "I should also show the total count of 404 errors to give context on the scope of the problem.",
+        "query": "SELECT count(*) as total_404_errors FROM errors WHERE client_id = '${clientId}' AND (message LIKE '%404%' OR http_status_code = 404) AND created_at >= now() - INTERVAL 7 DAY",
+        "prose": "Total 404 errors in the last 7 days. This gives you the scope of the problem.",
+        "chartSpec": null
+      },
+      {
+        "type": "text",
+        "thinking": "The user wants to know how to fix 404 errors. I should provide specific, actionable steps.",
+        "query": null,
+        "prose": "**How to fix 404 errors:** 1) **Check broken links** - Review the URLs above and verify they exist on your server. 2) **Update navigation** - Fix any hardcoded links in your navigation, buttons, or forms. 3) **Implement redirects** - For moved pages, add 301 redirects from old URLs to new ones. 4) **Fix asset paths** - Ensure CSS, JS, and image files are in the correct locations. 5) **Update sitemap** - Remove deleted pages from your sitemap.xml. 6) **Add error handling** - Implement a custom 404 page that helps users find what they're looking for.",
+        "chartSpec": null
+      }
+    ]
+  }
+}
+    </assistant_response>
+  </example>
+</examples>
 `;
 
 // ============================================================================
@@ -197,43 +433,60 @@ async function executeQuery(sql: string, clientId: string): Promise<unknown[]> {
     return result;
 }
 
-// Function to analyze user query and determine if SQL is needed
-function analyzeQuery(query: string, clientId: string): { needsSQL: boolean, chartType?: string, sqlQuery?: string } {
-    const lowerQuery = query.toLowerCase();
+async function generateDynamicProse(
+    userQuery: string,
+    insight: AnalysisInsight,
+    queryResult: Record<string, unknown>[],
+    clientId: string
+): Promise<string> {
+    try {
+        const prosePrompt = `You are Nova, an expert data analyst. The user asked: "${userQuery}"
 
-    // Simple patterns for different types of queries
-    if (lowerQuery.includes('how many') || lowerQuery.includes('count') || lowerQuery.includes('total')) {
-        if (lowerQuery.includes('error')) {
-            return {
-                needsSQL: true,
-                sqlQuery: `SELECT COUNT(*) as count FROM errors WHERE client_id = '${clientId}' AND toDate(created_at) = today()`
-            };
+I executed this SQL query:
+\`\`\`sql
+${insight.query}
+\`\`\`
+
+The query returned ${queryResult.length} rows of data:
+\`\`\`json
+${JSON.stringify(queryResult.slice(0, 10), null, 2)}${queryResult.length > 10 ? '\n... (showing first 10 rows)' : ''}
+\`\`\`
+
+Based on this ACTUAL data, write a conversational, insightful prose that:
+1. References specific numbers, values, and findings from the data
+2. Explains what this means for the user
+3. Provides actionable insights or recommendations
+4. Is friendly and conversational, not robotic
+5. For error analysis, explains the root cause and how to fix it
+6. For stack traces, explains what the error means and where it's happening
+
+Write 2-3 sentences maximum. Be specific and cite actual data points.`;
+
+        const result = await streamText({
+            model: openrouterClient(AI_MODEL),
+            messages: [
+                {
+                    role: 'user',
+                    content: prosePrompt,
+                }
+            ],
+            maxTokens: 300,
+            temperature: 0.3,
+        });
+
+        let prose = '';
+        for await (const delta of result.fullStream) {
+            if (delta.type === 'text-delta') {
+                prose += delta.textDelta;
+            }
         }
-        if (lowerQuery.includes('log')) {
-            return {
-                needsSQL: true,
-                sqlQuery: `SELECT COUNT(*) as count FROM logs WHERE client_id = '${clientId}' AND toDate(created_at) = today()`
-            };
-        }
-    }
 
-    if (lowerQuery.includes('trend') || lowerQuery.includes('over time') || lowerQuery.includes('daily')) {
-        return {
-            needsSQL: true,
-            chartType: 'line',
-            sqlQuery: `SELECT toDate(created_at) as date, COUNT(*) as count FROM errors WHERE client_id = '${clientId}' AND created_at >= today() - INTERVAL 7 DAY GROUP BY date ORDER BY date`
-        };
+        return prose.trim();
+    } catch (error) {
+        console.error('Failed to generate dynamic prose:', error);
+        // Fallback to basic prose
+        return `Based on the query results, I found ${queryResult.length} relevant data points that help answer your question.`;
     }
-
-    if (lowerQuery.includes('top') || lowerQuery.includes('most')) {
-        return {
-            needsSQL: true,
-            chartType: 'bar',
-            sqlQuery: `SELECT error_type, COUNT(*) as count FROM errors WHERE client_id = '${clientId}' AND error_type != '' GROUP BY error_type ORDER BY count DESC LIMIT 10`
-        };
-    }
-
-    return { needsSQL: false };
 }
 
 // ============================================================================
@@ -245,7 +498,20 @@ export async function POST(req: Request) {
         const { messages } = await req.json();
 
         if (!OPENROUTER_API_KEY) {
-            throw new Error("OpenRouter API key is not configured");
+            return new Response(
+                `data: ${JSON.stringify({
+                    type: 'error',
+                    content: "AI service is currently unavailable. Please try again later.",
+                })}\n\n`,
+                {
+                    status: 503,
+                    headers: {
+                        'Content-Type': 'text/event-stream',
+                        'Cache-Control': 'no-cache',
+                        'Access-Control-Allow-Origin': '*',
+                    },
+                }
+            );
         }
 
         const session = await auth.api.getSession({
@@ -258,13 +524,14 @@ export async function POST(req: Request) {
             return new Response(
                 `data: ${JSON.stringify({
                     type: 'error',
-                    content: "I apologize, but I'm having trouble processing your request right now. Please try again later.",
+                    content: "Authentication required. Please log in to use the AI assistant.",
                 })}\n\n`,
                 {
-                    status: 500,
+                    status: 401,
                     headers: {
                         'Content-Type': 'text/event-stream',
                         'Cache-Control': 'no-cache',
+                        'Access-Control-Allow-Origin': '*',
                     },
                 }
             );
@@ -280,7 +547,7 @@ export async function POST(req: Request) {
                 role: "system" as const,
                 content: createSystemPrompt(clientId || ''),
             },
-            ...messages.map((msg: any) => ({
+            ...messages.map((msg: { role: string; content: string }) => ({
                 role: msg.role as "user" | "assistant",
                 content: msg.content,
             })),
@@ -303,100 +570,132 @@ export async function POST(req: Request) {
                     // Send initial thinking step
                     sendUpdate({
                         type: 'thinking',
-                        content: createThinkingStep('Analyzing your question...')
+                        content: createThinkingStep('Creating analysis plan...')
                     });
 
-                    // Analyze the query to see if we need to execute SQL
-                    const analysis = analyzeQuery(userQuery, clientId);
-
-                    let queryResult: any = null;
-                    let chartData: any = null;
-
-                    if (analysis.needsSQL && analysis.sqlQuery) {
-                        sendUpdate({
-                            type: 'thinking',
-                            content: createThinkingStep('Querying the database...')
-                        });
-
-                        try {
-                            queryResult = await executeQuery(analysis.sqlQuery, clientId);
-
-                            // If we have chart type and data, prepare chart data
-                            if (analysis.chartType && queryResult.length > 0) {
-                                const firstRow = queryResult[0];
-                                const keys = Object.keys(firstRow);
-                                const xAxisKey = keys.find(k => k.includes('date') || k.includes('type') || k.includes('name')) || keys[0];
-                                const yAxisKey = keys.find(k => k.includes('count') || k.includes('total')) || keys[1];
-
-                                chartData = {
-                                    title: "Analytics Chart",
-                                    description: "Data visualization from your query",
-                                    type: analysis.chartType,
-                                    data: queryResult,
-                                    xAxisKey,
-                                    yAxisKey,
-                                    config: {
-                                        [yAxisKey]: {
-                                            label: yAxisKey.charAt(0).toUpperCase() + yAxisKey.slice(1),
-                                            color: "#3b82f6"
-                                        }
-                                    }
-                                };
-                            }
-                        } catch (error) {
-                            console.error('Query execution error:', error);
-                        }
-                    }
-
-                    // Prepare enhanced conversation messages with query results
-                    let enhancedMessages = [...conversationMessages];
-
-                    // If we have query results, add them as context for the AI
-                    if (queryResult && queryResult.length > 0) {
-                        const result = queryResult[0];
-                        const countValue = result.count || result.COUNT || Object.values(result)[0];
-
-                        enhancedMessages.push({
-                            role: "system" as const,
-                            content: `Query result: ${countValue}. Provide a natural response about this number without mentioning the query execution process.`
-                        });
-                    }
-
-                    // Generate AI response
-                    const result = await streamText({
+                    // Generate AI analysis plan
+                    const result = streamText({
                         model: openrouterClient(AI_MODEL),
-                        messages: enhancedMessages,
-                        maxTokens: 1000,
-                        temperature: 0.3,
+                        messages: conversationMessages,
+                        maxTokens: 2000,
+                        temperature: 0.2,
                     });
 
-                    let content = '';
+                    let aiResponse = '';
 
-                    // Process the AI stream
+                    // Collect the full AI response
                     for await (const delta of result.fullStream) {
                         if (delta.type === 'text-delta') {
-                            content += delta.textDelta;
-                            sendUpdate({
-                                type: 'progress',
-                                content,
-                                data: {
-                                    hasVisualization: !!chartData,
-                                    chartData
-                                }
-                            });
+                            aiResponse += delta.textDelta;
                         }
                     }
+
+                    debugLog("AI Response received", { responseLength: aiResponse.length });
+
+                    // Parse the AI response as JSON
+                    let analysisPlan: AnalysisPlan;
+                    try {
+                        // Clean the response by removing markdown code blocks if present
+                        let cleanedResponse = aiResponse.trim();
+
+                        // Remove ```json at the start and ``` at the end if present
+                        if (cleanedResponse.startsWith('```json')) {
+                            cleanedResponse = cleanedResponse.slice(7); // Remove '```json'
+                        } else if (cleanedResponse.startsWith('```')) {
+                            cleanedResponse = cleanedResponse.slice(3); // Remove '```'
+                        }
+
+                        if (cleanedResponse.endsWith('```')) {
+                            cleanedResponse = cleanedResponse.slice(0, -3); // Remove trailing '```'
+                        }
+
+                        cleanedResponse = cleanedResponse.trim();
+
+                        analysisPlan = JSON.parse(cleanedResponse);
+                    } catch (parseError) {
+                        console.error('Failed to parse AI response as JSON:', parseError);
+                        console.error('Raw AI response:', aiResponse.substring(0, 200) + '...');
+                        throw new Error('Invalid AI response format');
+                    }
+
+                    // Validate the analysis plan structure
+                    if (!analysisPlan?.analysis?.insights || !Array.isArray(analysisPlan.analysis.insights)) {
+                        throw new Error('Invalid analysis plan structure');
+                    }
+
+                    sendUpdate({
+                        type: 'thinking',
+                        content: createThinkingStep(`Processing ${analysisPlan.analysis.insights.length} insight(s)...`)
+                    });
+
+                    // Process each insight in the analysis plan
+                    const processedInsights = [];
+
+                    for (let i = 0; i < analysisPlan.analysis.insights.length; i++) {
+                        const insight = analysisPlan.analysis.insights[i];
+
+                        sendUpdate({
+                            type: 'thinking',
+                            content: createThinkingStep(`Processing insight ${i + 1}: ${insight.type}`)
+                        });
+
+                        let processedInsight = insight;
+
+                        // Execute query if present
+                        if (insight.query) {
+                            // Validate the SQL query
+                            if (!validateSQL(insight.query)) {
+                                console.error('Invalid SQL query generated:', insight.query);
+                                processedInsight = {
+                                    ...insight,
+                                    prose: "I encountered an issue with the generated query. Please try rephrasing your question.",
+                                    query: null
+                                };
+                            } else {
+                                try {
+                                    const queryResult = await executeQuery(insight.query, clientId);
+
+                                    // Generate dynamic prose based on actual query results
+                                    sendUpdate({
+                                        type: 'thinking',
+                                        content: createThinkingStep(`Analyzing results and generating insights...`)
+                                    });
+
+                                    const dynamicProse = await generateDynamicProse(userQuery, insight, queryResult as Record<string, unknown>[], clientId);
+
+                                    // Process the insight with dynamic prose
+                                    processedInsight = processInsight({
+                                        ...insight,
+                                        prose: dynamicProse
+                                    }, queryResult as Record<string, unknown>[]);
+                                } catch (queryError) {
+                                    console.error('Query execution error:', queryError);
+                                    processedInsight = {
+                                        ...insight,
+                                        prose: "I encountered an issue while fetching the data. Please try again.",
+                                        query: null
+                                    };
+                                }
+                            }
+                        }
+
+                        processedInsights.push(processedInsight);
+                    }
+
+                    // Build the final response content
+                    const { content: finalContent, hasCharts, finalChartData } = buildResponseContent(processedInsights);
 
                     // Send final complete message
                     sendUpdate({
                         type: 'complete',
-                        content: content || 'Analysis completed.',
+                        content: finalContent.trim() || 'Analysis completed.',
                         data: {
-                            hasVisualization: !!chartData,
-                            responseType: chartData ? 'chart' : 'text',
-                            chartType: chartData?.type,
-                            data: chartData?.data,
-                            chartData
+                            hasVisualization: hasCharts,
+                            responseType: hasCharts ? 'chart' : 'text',
+                            chartType: finalChartData?.type,
+                            data: finalChartData?.data,
+                            chartData: finalChartData || undefined,
+                            insights: processedInsights
                         }
                     });
 
@@ -426,16 +725,34 @@ export async function POST(req: Request) {
     } catch (error) {
         console.error("Chat stream API error:", error);
 
+        // Determine appropriate error response based on error type
+        let statusCode = 500;
+        let errorMessage = "I apologize, but I'm having trouble processing your request right now. Please try again later.";
+
+        if (error instanceof Error) {
+            if (error.message.includes('rate limit') || error.message.includes('quota')) {
+                statusCode = 429;
+                errorMessage = "Too many requests. Please wait a moment before trying again.";
+            } else if (error.message.includes('network') || error.message.includes('fetch')) {
+                statusCode = 503;
+                errorMessage = "Service temporarily unavailable. Please try again later.";
+            } else if (error.message.includes('auth') || error.message.includes('unauthorized')) {
+                statusCode = 401;
+                errorMessage = "Authentication required. Please log in to continue.";
+            }
+        }
+
         return new Response(
             `data: ${JSON.stringify({
                 type: 'error',
-                content: "I apologize, but I'm having trouble processing your request right now. Please try again later.",
+                content: errorMessage,
             })}\n\n`,
             {
-                status: 500,
+                status: statusCode,
                 headers: {
                     'Content-Type': 'text/event-stream',
                     'Cache-Control': 'no-cache',
+                    'Access-Control-Allow-Origin': '*',
                 },
             }
         );

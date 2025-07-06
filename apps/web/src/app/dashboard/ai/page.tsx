@@ -8,54 +8,27 @@ import { PaperPlaneTilt, Robot, User, Copy, ThumbsUp, ThumbsDown, StopCircle, Sp
 import { toast } from 'sonner';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { ChartRenderer } from './components/chart-renderer';
+import { MarkdownRenderer } from './components/markdown-renderer';
+import { InsightRenderer } from './components/insight-renderer';
 import { cn } from '@better-analytics/ui';
+import type { Message, ToolCall, AnalysisInsight } from './types';
 
-// Type for chart data from AI tool calls
-interface ChartData {
-    title: string;
-    description: string;
-    type: 'bar' | 'line' | 'area' | 'pie' | 'donut' | 'scatter' | 'radial';
-    data: Array<Record<string, any>>;
-    xAxisKey: string;
-    yAxisKey: string;
-    colorScheme?: string[];
-    config: Record<string, { label: string; color: string }>;
-}
-
-// Message type for our custom chat system
-interface Message {
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    chartData?: ChartData;
-    toolCalls?: ToolCall[];
-    isStreaming?: boolean;
-    timestamp: number;
-}
-
-// Tool call type for tracking AI actions
-interface ToolCall {
-    id: string;
-    name: string;
-    status: 'pending' | 'running' | 'completed' | 'error';
-    description: string;
-    result?: any;
-}
+import { useChat } from './hooks/use-chat';
 
 export default function AIPage() {
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            role: 'assistant',
-            content: 'Hello! I\'m your Better Analytics AI assistant. I can help you analyze your data, understand error patterns, and provide insights about your application\'s performance. I can also create beautiful charts and visualizations from your data. What would you like to know?',
-            timestamp: Date.now(),
-        },
-    ]);
-
-    const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [currentEventSource, setCurrentEventSource] = useState<EventSource | null>(null);
+    const {
+        messages,
+        inputValue: input,
+        isLoading,
+        error,
+        scrollAreaRef,
+        setInputValue: setInput,
+        sendMessage,
+        handleKeyPress,
+        resetChat,
+        retryLastMessage,
+        stopStreaming,
+    } = useChat();
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -64,24 +37,7 @@ export default function AIPage() {
             setInput(decodeURIComponent(preFilledMessage));
             window.history.replaceState({}, '', window.location.pathname);
         }
-    }, []);
-
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-        }
-    }, [messages]);
-
-    // Clean up EventSource on unmount
-    useEffect(() => {
-        return () => {
-            if (currentEventSource) {
-                currentEventSource.close();
-            }
-        };
-    }, [currentEventSource]);
+    }, [setInput]);
 
     const copyMessage = useCallback((content: string) => {
         navigator.clipboard.writeText(content);
@@ -92,148 +48,14 @@ export default function AIPage() {
         toast.success(`Feedback recorded: ${vote === 'up' ? 'Helpful' : 'Not helpful'}`);
     }, []);
 
-    const stopStreaming = useCallback(() => {
-        if (currentEventSource) {
-            currentEventSource.close();
-            setCurrentEventSource(null);
-        }
-        setIsLoading(false);
-    }, [currentEventSource]);
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
-
-        const userMessage: Message = {
-            id: Date.now().toString(),
-            role: 'user',
-            content: input.trim(),
-            timestamp: Date.now(),
-        };
-
-        const assistantMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: '',
-            isStreaming: true,
-            toolCalls: [],
-            timestamp: Date.now(),
-        };
-
-        setMessages(prev => [...prev, userMessage, assistantMessage]);
-        setInput('');
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            const eventSource = new EventSource('/api/chat/stream', {
-                // Note: EventSource doesn't support POST, so we'll need to modify our approach
-            });
-
-            // Use fetch with Server-Sent Events streaming
-            const response = await fetch('/api/chat/stream', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    messages: [...messages, userMessage].map(m => ({
-                        role: m.role,
-                        content: m.content,
-                    })),
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to get AI response');
-            }
-
-            const reader = response.body?.getReader();
-            const decoder = new TextDecoder();
-
-            if (!reader) {
-                throw new Error('No response stream available');
-            }
-
-            let buffer = '';
-            let currentThinkingSteps: string[] = [];
-
-            while (true) {
-                const { done, value } = await reader.read();
-
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-
-                for (const line of lines) {
-                    if (line.trim() === '') continue;
-
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.slice(6));
-
-                            if (data.type === 'thinking') {
-                                currentThinkingSteps.push(data.content);
-                                setMessages(prev => prev.map(msg => {
-                                    if (msg.id === assistantMessage.id) {
-                                        return {
-                                            ...msg,
-                                            toolCalls: [{
-                                                id: 'thinking',
-                                                name: 'thinking',
-                                                status: 'running' as const,
-                                                description: data.content,
-                                            }],
-                                        };
-                                    }
-                                    return msg;
-                                }));
-                            } else if (data.type === 'progress') {
-                                setMessages(prev => prev.map(msg => {
-                                    if (msg.id === assistantMessage.id) {
-                                        return {
-                                            ...msg,
-                                            content: data.content,
-                                            chartData: data.data?.chartData,
-                                            isStreaming: true,
-                                        };
-                                    }
-                                    return msg;
-                                }));
-                            } else if (data.type === 'done') {
-                                setMessages(prev => prev.map(msg => {
-                                    if (msg.id === assistantMessage.id) {
-                                        return {
-                                            ...msg,
-                                            content: data.content,
-                                            chartData: data.data?.chartData,
-                                            isStreaming: false,
-                                            toolCalls: [],
-                                        };
-                                    }
-                                    return msg;
-                                }));
-                                setIsLoading(false);
-                            }
-                        } catch (e) {
-                            console.error('Error parsing SSE data:', e);
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error in AI chat:', error);
-            setError(error instanceof Error ? error.message : 'An error occurred');
-            setMessages(prev => prev.filter(msg => msg.id !== assistantMessage.id));
-            setIsLoading(false);
-        }
+        await sendMessage();
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInput(e.target.value);
-        setError(null);
     };
 
     // Keyboard shortcuts
@@ -248,14 +70,6 @@ export default function AIPage() {
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
-
-    const reload = () => {
-        const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-        if (lastUserMessage) {
-            setMessages(prev => prev.filter(m => m.timestamp <= lastUserMessage.timestamp));
-            setInput(lastUserMessage.content);
-        }
-    };
 
     return (
         <div className="flex flex-col h-full space-y-6">
@@ -305,7 +119,7 @@ export default function AIPage() {
             </div>
 
             {/* Chat Card */}
-            <Card className="flex-1 flex flex-col overflow-hidden">
+            <Card className="flex-1 flex flex-col overflow-hidden p-0">
                 {/* Messages Area */}
                 <CardContent className="flex-1 p-0 overflow-hidden">
                     <div className="h-full overflow-y-auto px-6 custom-scrollbar" ref={scrollAreaRef}>
@@ -332,12 +146,21 @@ export default function AIPage() {
                                                         : 'bg-muted/50 border-border/20 hover:bg-muted/70 hover:border-border/30'
                                                 )}
                                             >
-                                                <div className="text-sm leading-relaxed break-words">
-                                                    {message.content}
-                                                    {message.isStreaming && (
-                                                        <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
-                                                    )}
-                                                </div>
+                                                {message.role === 'assistant' ? (
+                                                    <div className="text-sm leading-relaxed break-words">
+                                                        <MarkdownRenderer content={message.content} />
+                                                        {message.isStreaming && (
+                                                            <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-sm leading-relaxed break-words">
+                                                        {message.content}
+                                                        {message.isStreaming && (
+                                                            <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
@@ -361,12 +184,15 @@ export default function AIPage() {
                                             </div>
                                         )}
 
-                                        {/* Chart Visualization */}
-                                        {message.chartData && (
+                                        {/* Chart Visualization - Legacy single chart */}
+                                        {message.chartData && !message.insights && (
                                             <div className="mt-3">
                                                 <ChartRenderer chartData={message.chartData} />
                                             </div>
                                         )}
+
+                                        {/* Multi-Insight Visualization */}
+                                        {/* <InsightRenderer insights={message.insights || []} /> */}
 
                                         {/* Action Buttons for Assistant Messages */}
                                         {message.role === 'assistant' && message.content && !message.isStreaming && (
@@ -443,16 +269,21 @@ export default function AIPage() {
                                     </div>
                                     <div className="flex-1 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 transition-all duration-200 hover:bg-red-500/15 hover:border-red-500/30">
                                         <div className="flex items-center justify-between gap-3">
-                                            <span className="text-sm text-red-600 dark:text-red-400 font-medium">
-                                                {error}
-                                            </span>
+                                            <div className="flex-1">
+                                                <div className="text-sm text-red-600 dark:text-red-400 font-medium">
+                                                    Something went wrong
+                                                </div>
+                                                <div className="text-xs text-red-600/70 dark:text-red-400/70 mt-1">
+                                                    {error}
+                                                </div>
+                                            </div>
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={reload}
+                                                            onClick={retryLastMessage}
                                                             className="h-7 w-7 p-0 flex-shrink-0 hover:bg-red-500/10 hover:text-red-400 transition-all duration-150"
                                                         >
                                                             <PaperPlaneTilt className="h-3 w-3" />
@@ -479,6 +310,7 @@ export default function AIPage() {
                                 <Input
                                     value={input}
                                     onChange={handleInputChange}
+                                    onKeyDown={handleKeyPress}
                                     placeholder="Ask me about your analytics data and I'll create charts... (⌘K to focus)"
                                     disabled={isLoading}
                                     className="pr-16 bg-background/50 border-border/50 focus:bg-background focus:border-border transition-all duration-200 min-h-[44px]"
