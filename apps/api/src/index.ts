@@ -9,7 +9,6 @@ import { extractIpFromRequest, getGeoData } from "./lib/ip-geo";
 import { db, user } from "@better-analytics/db";
 import { eq } from "drizzle-orm";
 import { ErrorIngestBody, LogIngestBody } from "./types";
-import { cors } from "@elysiajs/cors";
 import { Autumn } from "autumn-js";
 import supabase from "./lib/soup-base";
 
@@ -66,7 +65,13 @@ function toCHDateTime64(date: Date | string | number | null | undefined): string
 }
 
 const app = new Elysia()
-    .use(cors())
+    .onBeforeHandle(({ request, set }) => {
+        set.headers["Access-Control-Allow-Origin"] = request.headers.get("origin") || "*";
+        set.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+        set.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Origin, X-Requested-With, Accept";
+        set.headers["Access-Control-Allow-Credentials"] = "true";
+        set.headers["Access-Control-Max-Age"] = "86400";
+    })
     .derive(async ({ request, set, body }) => {
         if (new URL(request.url).pathname === "/") {
             return { userId: null };
