@@ -1,0 +1,11 @@
+{
+	"extends": "@better-analytics/typescript/react-library.json",
+	"compilerOptions": {
+		"baseUrl": "./",
+		"paths": {
+			"@better-analytics/email/*": ["./src/*"]
+		}
+	},
+	"include": ["src", "emails"],
+	"exclude": ["node_modules", "dist"]
+}
