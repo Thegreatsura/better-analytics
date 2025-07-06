@@ -126,110 +126,111 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                     : "border-border/[0.08] hover:bg-muted/[0.03]"
             )}
         >
-            <button
-                type="button"
-                className="flex w-full items-center p-4 cursor-pointer transition-all duration-200"
-                onClick={hasDetails ? onToggleExpand : undefined}
-            >
-                <div className="flex flex-1 items-center gap-4">
-                    {/* Level Badge */}
-                    <Badge
-                        variant="outline"
-                        className={cn(
-                            "min-w-[60px] justify-center font-medium rounded transition-all duration-200",
-                            "group-hover:shadow-sm group-hover:scale-[1.02]",
-                            getLevelColor(level || type)
+            <CollapsibleTrigger asChild>
+                <div
+                    role="button"
+                    className="flex w-full items-center p-4 cursor-pointer transition-all duration-200"
+                >
+                    <div className="flex flex-1 items-center gap-4">
+                        {/* Level Badge */}
+                        <Badge
+                            variant="outline"
+                            className={cn(
+                                "min-w-[60px] justify-center font-medium rounded transition-all duration-200",
+                                "group-hover:shadow-sm group-hover:scale-[1.02]",
+                                getLevelColor(level || type)
+                            )}
+                        >
+                            {(level || type).toUpperCase()}
+                        </Badge>
+
+                        {/* Timestamp */}
+                        {!noTimestamp && (
+                            <div className="flex items-center gap-2 min-w-[90px] transition-all duration-200 group-hover:text-foreground/80">
+                                <Clock className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground/60" />
+                                <time className="text-sm text-muted-foreground font-mono transition-colors duration-200 group-hover:text-foreground/70">
+                                    {formattedTime}
+                                </time>
+                            </div>
                         )}
-                    >
-                        {(level || type).toUpperCase()}
-                    </Badge>
 
-                    {/* Timestamp */}
-                    {!noTimestamp && (
-                        <div className="flex items-center gap-2 min-w-[90px] transition-all duration-200 group-hover:text-foreground/80">
-                            <Clock className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground/60" />
-                            <time className="text-sm text-muted-foreground font-mono transition-colors duration-200 group-hover:text-foreground/70">
-                                {formattedTime}
-                            </time>
-                        </div>
-                    )}
+                        {/* Source */}
+                        {source && (
+                            <div className="flex items-center gap-2">
+                                <Server className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground/60" />
+                                <span className="text-sm text-muted-foreground transition-colors duration-200 group-hover:text-foreground/70">
+                                    {source}
+                                </span>
+                            </div>
+                        )}
 
-                    {/* Source */}
-                    {source && (
-                        <div className="flex items-center gap-2">
-                            <Server className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground/60" />
-                            <span className="text-sm text-muted-foreground transition-colors duration-200 group-hover:text-foreground/70">
-                                {source}
+                        {/* Message */}
+                        <div className="flex-1 min-w-0">
+                            <span className="text-sm text-foreground font-mono truncate block transition-colors duration-200">
+                                {highlightMessage(message, searchTerm || "")}
                             </span>
                         </div>
-                    )}
 
-                    {/* Message */}
-                    <div className="flex-1 min-w-0">
-                        <span className="text-sm text-foreground font-mono truncate block transition-colors duration-200">
-                            {highlightMessage(message, searchTerm || "")}
-                        </span>
-                    </div>
+                        {/* Action Buttons */}
+                        <div
+                            className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleCopy}
+                                            className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-400 transition-all duration-150"
+                                        >
+                                            {copied ? (
+                                                <Check className="h-3 w-3 text-emerald-400" />
+                                            ) : (
+                                                <Copy className="h-3 w-3" />
+                                            )}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{copied ? 'Copied!' : 'Copy log entry'}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
 
-                    {/* Action Buttons */}
-                    <div
-                        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleCopy}
-                                        className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-400 transition-all duration-150"
-                                    >
-                                        {copied ? (
-                                            <Check className="h-3 w-3 text-emerald-400" />
-                                        ) : (
-                                            <Copy className="h-3 w-3" />
-                                        )}
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>{copied ? 'Copied!' : 'Copy log entry'}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleAskAI}
-                                        className="h-7 w-7 p-0 hover:bg-purple-500/10 hover:text-purple-400 transition-all duration-150"
-                                    >
-                                        <Bot className="h-3 w-3" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Ask AI about this log</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-
-                    {/* Expand Icon */}
-                    {hasDetails && (
-                        <div className="flex items-center justify-center w-8 h-8 hover:bg-muted/50 rounded transition-colors duration-150">
-                            <ChevronRight
-                                className={cn(
-                                    "h-4 w-4 text-muted-foreground transition-all duration-200 flex-shrink-0",
-                                    isExpanded && "rotate-90"
-                                )}
-                            />
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleAskAI}
+                                            className="h-7 w-7 p-0 hover:bg-purple-500/10 hover:text-purple-400 transition-all duration-150"
+                                        >
+                                            <Bot className="h-3 w-3" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Ask AI about this log</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
-                    )}
+
+                        {/* Expand Icon */}
+                        {hasDetails && (
+                            <div className="flex items-center justify-center w-8 h-8 hover:bg-muted/50 rounded transition-colors duration-150">
+                                <ChevronRight
+                                    className={cn(
+                                        "h-4 w-4 text-muted-foreground transition-all duration-200 flex-shrink-0",
+                                        isExpanded && "rotate-90"
+                                    )}
+                                />
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </button>
+            </CollapsibleTrigger>
 
             {hasDetails && (
                 <CollapsibleContent>
