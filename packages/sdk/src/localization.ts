@@ -128,23 +128,6 @@ class LocalizationEngine {
         return results;
     }
 
-    // Convenience method for common error messages
-    async translateError(errorType: string, language?: string): Promise<string> {
-        const errorMessages: Record<string, string> = {
-            'network_error': 'A network error occurred. Please check your connection and try again.',
-            'server_error': 'A server error occurred. Please try again later.',
-            'validation_error': 'Please check your input and try again.',
-            'authentication_error': 'Authentication failed. Please log in again.',
-            'permission_error': 'You do not have permission to perform this action.',
-            'not_found_error': 'The requested resource was not found.',
-            'timeout_error': 'The request timed out. Please try again.',
-            'unknown_error': 'An unexpected error occurred. Please try again.',
-        };
-
-        const key = errorMessages[errorType] || errorMessages.unknown_error || 'An unexpected error occurred. Please try again.';
-        return this.translate(key, { targetLocale: language || 'en' });
-    }
-
     // Clear cache
     clearCache(): void {
         this.cache.clear();
@@ -165,7 +148,6 @@ export function createLocalizer(config: LocalizationConfig) {
 
     return {
         translate: (key: string, language?: string) => localizer.translate(key, { targetLocale: language }),
-        translateError: (errorType: string, language?: string) => localizer.translateError(errorType, language),
         translateMultiple: (keys: string[], language?: string) => localizer.translateMultiple(keys, { targetLocale: language }),
         clearCache: () => localizer.clearCache(),
         getCacheSize: () => localizer.getCacheSize(),
