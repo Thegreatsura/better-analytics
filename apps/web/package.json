@@ -21,7 +21,7 @@
 		"@phosphor-icons/react": "^2.1.10",
 		"@tanstack/react-query": "^5.81.5",
 		"ai": "^4.3.16",
-		"autumn-js": "^0.0.80",
+		"autumn-js": "^0.0.81",
 		"framer-motion": "^12.23.0",
 		"lingo.dev": "^0.105.3",
 		"next": "15.3.5",
@@ -34,7 +34,6 @@
 		"remark-gfm": "^4.0.1",
 		"sonner": "^2.0.6",
 		"use-sound": "^5.0.0",
-		"zod": "^3.25.74",
 		"zod-to-json-schema": "^3.24.6",
 		"zod-validation-error": "^4.0.0-beta.1"
 	},
