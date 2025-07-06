@@ -65,20 +65,17 @@ function toCHDateTime64(date: Date | string | number | null | undefined): string
 }
 
 const app = new Elysia()
-    .onBeforeHandle(({ request, set }) => {
+    .onBeforeHandle(async ({ request, set }) => {
         const origin = request.headers.get("origin");
-        set.headers["Access-Control-Allow-Origin"] = origin || "*";
-        set.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH";
-        set.headers["Access-Control-Allow-Headers"] = "*";
-        set.headers["Access-Control-Allow-Credentials"] = "true";
-        set.headers["Access-Control-Max-Age"] = "86400";
-        set.headers["Access-Control-Expose-Headers"] = "*";
-
-        if (request.method === "OPTIONS") {
-            set.status = 200;
-            return new Response(null, { status: 200 });
+        if (origin) {
+            set.headers ??= {};
+            set.headers["Access-Control-Allow-Origin"] = origin;
+            set.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS, PUT, DELETE, HEAD, PATCH";
+            set.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, databuddy-client-id, databuddy-sdk-name, databuddy-sdk-version";
+            set.headers["Access-Control-Allow-Credentials"] = "true";
         }
     })
+    .options("*", () => new Response(null, { status: 204 }))
     .derive(async ({ request, set, body }) => {
         if (new URL(request.url).pathname === "/") {
             return { userId: null };
