@@ -1,4 +1,3 @@
-import { Button } from "@better-analytics/ui/components/button";
 import {
 	Card,
 	CardContent,
@@ -6,7 +5,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@better-analytics/ui/components/card";
-import { Activity, AlertTriangle, Bug, Shield } from "lucide-react";
 import { ErrorTypesChart } from "@/components/chart/error-types-chart";
 import { SeverityLevelsChart } from "@/components/chart/severity-levels-chart";
 import { ErrorTrendsChart } from "@/components/chart/error-trends-chart";
@@ -19,28 +17,6 @@ import {
 	getRecentErrors,
 	getRecentLogs,
 } from "./actions";
-
-// Helper functions
-function formatNumber(num: number): string {
-	if (num >= 1000000) {
-		return `${(num / 1000000).toFixed(1)}M`;
-	}
-	if (num >= 1000) {
-		return `${(num / 1000).toFixed(1)}K`;
-	}
-	return num.toString();
-}
-
-function formatPercentage(num: number): string {
-	return `${num.toFixed(1)}%`;
-}
-
-function formatDuration(hours: number): string {
-	if (hours < 1) {
-		return `${Math.round(hours * 60)}min`;
-	}
-	return `${hours.toFixed(1)}h`;
-}
 
 // Helper functions for data transformation
 function getErrorTypeColor(type: string): string {
@@ -173,33 +149,6 @@ export async function DashboardClient() {
 
 	return (
 		<div className="flex-1 space-y-4">
-			{/* Recent Errors and Logs */}
-			<div className="grid gap-4 lg:grid-cols-2">
-				<Card>
-					<CardHeader>
-						<CardTitle>Recent Errors</CardTitle>
-						<CardDescription>
-							Latest error events from your application
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<RecentErrorsChart data={recentErrors} />
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>Recent Logs</CardTitle>
-						<CardDescription>
-							Latest log entries from your application
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<RecentLogsChart data={recentLogs} />
-					</CardContent>
-				</Card>
-			</div>
-
 			{/* Error Types and Severity Charts */}
 			<div className="grid gap-4 md:grid-cols-2">
 				<Card>

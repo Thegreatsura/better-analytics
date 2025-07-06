@@ -11,6 +11,7 @@ import {
 	SidebarMenuItem,
 } from "@better-analytics/ui/components/sidebar";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface NavProps {
 	items: SidebarItem[];
@@ -18,6 +19,9 @@ interface NavProps {
 }
 
 export function NavMain({ items, title }: NavProps) {
+	const pathname = usePathname();
+	const isActive = (url: string) => pathname === url;
+
 	return (
 		<SidebarGroup>
 			<SidebarGroupContent className="flex flex-col gap-2">
@@ -30,7 +34,11 @@ export function NavMain({ items, title }: NavProps) {
 				<SidebarMenu>
 					{items.map((item) => (
 						<SidebarMenuItem key={item.title}>
-							<SidebarMenuButton tooltip={getTooltip(title, item)} asChild>
+							<SidebarMenuButton
+								tooltip={getTooltip(title, item)}
+								isActive={isActive(item.url)}
+								asChild
+							>
 								<Link href={item.url}>
 									{item.icon && <item.icon className="text-brand" />}
 									<span>{item.title}</span>
