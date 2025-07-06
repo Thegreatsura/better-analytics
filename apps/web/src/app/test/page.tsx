@@ -1,368 +1,150 @@
+'use client';
+
+import React from 'react';
 import { Suspense } from 'react';
-import { getRecentErrors, getRecentLogs, getAnalyticsStats } from './actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@better-analytics/ui/components/card';
-import { Badge } from '@better-analytics/ui/components/badge';
-import { Skeleton } from '@better-analytics/ui/components/skeleton';
 import { Button } from '@better-analytics/ui/components/button';
-import { BarChart, Activity, AlertTriangle, Info, Bug, Shield, Globe, Clock } from 'lucide-react';
+import { Activity, AlertTriangle, Bug, Shield } from 'lucide-react';
+import { ErrorTypesChart, ErrorTypesChartSkeleton } from '@/components/chart/error-types-chart';
+import { SeverityLevelsChart, SeverityLevelsChartSkeleton } from '@/components/chart/severity-levels-chart';
+import { ErrorTrendsChart, ErrorTrendsChartSkeleton } from '@/components/chart/error-trends-chart';
+import { RecentErrorsChart, RecentErrorsChartSkeleton, RecentErrorItem } from '@/components/chart/recent-errors-chart';
+import { RecentLogsChart, RecentLogsChartSkeleton, RecentLogItem } from '@/components/chart/recent-logs-chart';
+import { ErrorTrendItem, ErrorTypeItem } from '@/components/chart/types';
 
-function formatDate(dateString: string) {
-    return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(new Date(dateString));
-}
+const mockErrorTypes: ErrorTypeItem[] = [
+    { name: 'client', value: 352, percentage: 35, color: '#3B82F6' },
+    { name: 'server', value: 240, percentage: 24, color: '#EF4444' },
+    { name: 'network', value: 220, percentage: 22, color: '#8B5CF6' },
+    { name: 'database', value: 200, percentage: 20, color: '#F59E0B' },
+    { name: 'validation', value: 150, percentage: 15, color: '#10B981' },
+    { name: 'auth', value: 40, percentage: 4, color: '#6366F1' },
+    { name: 'business', value: 20, percentage: 2, color: '#EC4899' }
+];
 
-function formatRelativeTime(dateString: string) {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+const mockSeverityData: ErrorTypeItem[] = [
+    { name: 'critical', value: 120, percentage: 12, color: '#EF4444' },
+    { name: 'high', value: 280, percentage: 28, color: '#F59E0B' },
+    { name: 'medium', value: 420, percentage: 42, color: '#3B82F6' },
+    { name: 'low', value: 180, percentage: 18, color: '#10B981' }
+];
 
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    return `${Math.floor(diffInSeconds / 86400)}d ago`;
-}
+const mockTrendData: ErrorTrendItem[] = Array.from({ length: 14 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (13 - i));
+    const formattedDate = date.toISOString().split('T')[0];
 
-function getSeverityColor(severity: string) {
-    switch (severity) {
-        case 'critical': return 'destructive';
-        case 'high': return 'destructive';
-        case 'medium': return 'default';
-        case 'low': return 'secondary';
-        default: return 'outline';
+    const isWeekend = [0, 6].includes(date.getDay());
+    const baseValue = isWeekend ? 80 : 50;
+    const randomVariation = Math.floor(Math.random() * 30);
+
+    return {
+        date: formattedDate,
+        value: baseValue + randomVariation,
+        client: Math.floor((baseValue + randomVariation) * 0.7),
+        server: Math.floor((baseValue + randomVariation) * 0.3)
+    };
+});
+
+const mockRecentErrors: RecentErrorItem[] = [
+    {
+        id: 'err-001',
+        message: 'Failed to load user data: Network timeout',
+        type: 'network',
+        timestamp: new Date(Date.now() - 12 * 60000).toISOString(),
+        status: 408,
+        path: '/api/users/profile',
+        color: '#8B5CF6'
+    },
+    {
+        id: 'err-002',
+        message: 'Authentication failed: Invalid token',
+        type: 'auth',
+        timestamp: new Date(Date.now() - 45 * 60000).toISOString(),
+        status: 401,
+        path: '/api/auth/validate',
+        color: '#6366F1'
+    },
+    {
+        id: 'err-003',
+        message: 'Server error: Database connection failed',
+        type: 'database',
+        timestamp: new Date(Date.now() - 2 * 3600000).toISOString(),
+        status: 500,
+        path: '/api/products/list',
+        color: '#F59E0B'
+    },
+    {
+        id: 'err-004',
+        message: 'Validation error: Required field missing',
+        type: 'validation',
+        timestamp: new Date(Date.now() - 5 * 3600000).toISOString(),
+        status: 400,
+        path: '/api/orders/create',
+        color: '#10B981'
+    },
+    {
+        id: 'err-005',
+        message: 'Client-side rendering error: Component failed',
+        type: 'client',
+        timestamp: new Date(Date.now() - 8 * 3600000).toISOString(),
+        status: 0,
+        path: '/dashboard/analytics',
+        color: '#3B82F6'
     }
-}
+];
 
-function getSeverityIcon(severity: string) {
-    switch (severity) {
-        case 'critical': return <AlertTriangle className="h-3 w-3" />;
-        case 'high': return <AlertTriangle className="h-3 w-3" />;
-        case 'medium': return <Info className="h-3 w-3" />;
-        case 'low': return <Info className="h-3 w-3" />;
-        default: return <Bug className="h-3 w-3" />;
+const mockRecentLogs: RecentLogItem[] = [
+    {
+        id: 'log-001',
+        message: 'User login successful',
+        level: 'info',
+        timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
+        source: 'AuthService'
+    },
+    {
+        id: 'log-002',
+        message: 'API rate limit approaching threshold',
+        level: 'warning',
+        timestamp: new Date(Date.now() - 23 * 60000).toISOString(),
+        source: 'RateLimiter'
+    },
+    {
+        id: 'log-003',
+        message: 'Database query executed in 1.2s',
+        level: 'debug',
+        timestamp: new Date(Date.now() - 38 * 60000).toISOString(),
+        source: 'DatabaseService'
+    },
+    {
+        id: 'log-004',
+        message: 'Payment processing failed',
+        level: 'error',
+        timestamp: new Date(Date.now() - 1.5 * 3600000).toISOString(),
+        source: 'PaymentGateway'
+    },
+    {
+        id: 'log-005',
+        message: 'System backup completed',
+        level: 'info',
+        timestamp: new Date(Date.now() - 4 * 3600000).toISOString(),
+        source: 'BackupService'
     }
-}
-
-function getLogLevelColor(level: string) {
-    switch (level) {
-        case 'error': return 'destructive';
-        case 'warn': return 'default';
-        case 'info': return 'secondary';
-        case 'debug': return 'outline';
-        case 'trace': return 'outline';
-        default: return 'secondary';
-    }
-}
-
-async function StatsOverview() {
-    const statsResult = await getAnalyticsStats();
-
-    if (!statsResult.success || !statsResult.data) {
-        return (
-            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-                <p className="text-sm text-destructive">Failed to load analytics overview</p>
-            </div>
-        );
-    }
-
-    const { data } = statsResult;
-
-    const stats = [
-        {
-            title: "Total Errors",
-            value: data.totalErrors.toLocaleString(),
-            icon: <AlertTriangle className="h-4 w-4" />,
-            change: "+12% from last month",
-            changeType: "negative" as const,
-        },
-        {
-            title: "Total Logs",
-            value: data.totalLogs.toLocaleString(),
-            icon: <Activity className="h-4 w-4" />,
-            change: "+23% from last month",
-            changeType: "positive" as const,
-        },
-        {
-            title: "Error Types",
-            value: data.errorsByType.length.toString(),
-            icon: <Bug className="h-4 w-4" />,
-            change: "3 new types",
-            changeType: "neutral" as const,
-        },
-        {
-            title: "Severity Levels",
-            value: data.errorsBySeverity.length.toString(),
-            icon: <Shield className="h-4 w-4" />,
-            change: "Stable",
-            changeType: "neutral" as const,
-        },
-    ];
-
-    return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {stats.map((stat, index) => (
-                <Card key={index} className="relative overflow-hidden">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            {stat.title}
-                        </CardTitle>
-                        <div className="text-muted-foreground">
-                            {stat.icon}
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stat.value}</div>
-                        <p className={`text-xs ${stat.changeType === 'positive' ? 'text-green-600' :
-                            stat.changeType === 'negative' ? 'text-red-600' :
-                                'text-muted-foreground'
-                            }`}>
-                            {stat.change}
-                        </p>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    );
-}
-
-async function ErrorBreakdown() {
-    const statsResult = await getAnalyticsStats();
-
-    if (!statsResult.success || !statsResult.data) {
-        return null;
-    }
-
-    const { data } = statsResult;
-
-    return (
-        <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <BarChart className="h-4 w-4" />
-                        Error Types
-                    </CardTitle>
-                    <CardDescription>
-                        Distribution of error types across your application
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-3">
-                        {data.errorsByType.map((item: any) => {
-                            const percentage = data.totalErrors > 0 ?
-                                Math.round((item.count / data.totalErrors) * 100) : 0;
-                            return (
-                                <div key={item.error_type} className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-2 w-2 rounded-full bg-primary" />
-                                        <span className="text-sm font-medium capitalize">
-                                            {item.error_type || 'unknown'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="text-sm text-muted-foreground">
-                                            {percentage}%
-                                        </div>
-                                        <div className="text-sm font-medium">
-                                            {item.count}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Severity Levels
-                    </CardTitle>
-                    <CardDescription>
-                        Error severity distribution and impact assessment
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-3">
-                        {data.errorsBySeverity.map((item: any) => {
-                            const percentage = data.totalErrors > 0 ?
-                                Math.round((item.count / data.totalErrors) * 100) : 0;
-                            return (
-                                <div key={item.severity} className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        {getSeverityIcon(item.severity)}
-                                        <span className="text-sm font-medium capitalize">
-                                            {item.severity || 'unknown'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="text-sm text-muted-foreground">
-                                            {percentage}%
-                                        </div>
-                                        <div className="text-sm font-medium">
-                                            {item.count}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-    );
-}
-
-async function RecentErrorsList() {
-    const errorsResult = await getRecentErrors();
-
-    if (!errorsResult.success || !errorsResult.data) {
-        return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Recent Errors</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">Failed to load recent errors</p>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    const { data: errors } = errorsResult;
-
-    return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        Recent Errors
-                    </CardTitle>
-                    <CardDescription>
-                        Latest error reports from your applications
-                    </CardDescription>
-                </div>
-                <Button variant="outline" size="sm">
-                    View All
-                </Button>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    {errors.slice(0, 10).map((error: any) => (
-                        <div key={error.id} className="flex items-start gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
-                            <div className="flex-shrink-0 mt-1">
-                                <Badge variant={getSeverityColor(error.severity) as any} className="text-xs">
-                                    {error.severity || 'unknown'}
-                                </Badge>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2">
-                                    <p className="font-medium text-sm truncate">
-                                        {error.error_name || 'Unknown Error'}
-                                    </p>
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <Clock className="h-3 w-3" />
-                                        {formatRelativeTime(error.created_at)}
-                                    </div>
-                                </div>
-                                <p className="text-sm text-muted-foreground truncate mt-1">
-                                    {error.message || 'No message available'}
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <Badge variant="outline" className="text-xs">
-                                        {error.error_type || 'unknown'}
-                                    </Badge>
-                                    {error.source && (
-                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                            <Globe className="h-3 w-3" />
-                                            {error.source}
-                                        </div>
-                                    )}
-                                    {error.environment && (
-                                        <Badge variant="secondary" className="text-xs">
-                                            {error.environment}
-                                        </Badge>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
-
-async function RecentLogsList() {
-    const logsResult = await getRecentLogs();
-
-    if (!logsResult.success || !logsResult.data) {
-        return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Recent Logs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">Failed to load recent logs</p>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    const { data: logs } = logsResult;
-
-    return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle className="flex items-center gap-2">
-                        <Activity className="h-4 w-4" />
-                        Recent Logs
-                    </CardTitle>
-                    <CardDescription>
-                        Latest log entries from your systems
-                    </CardDescription>
-                </div>
-                <Button variant="outline" size="sm">
-                    View All
-                </Button>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-3">
-                    {logs.slice(0, 8).map((log: any) => (
-                        <div key={log.id} className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
-                            <Badge variant={getLogLevelColor(log.level) as any} className="text-xs">
-                                {log.level || 'info'}
-                            </Badge>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm truncate">
-                                    {log.message || 'No message'}
-                                </p>
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                                {formatRelativeTime(log.created_at)}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
+];
 
 export default function TestPage() {
+    const [errorTypeData] = React.useState<ErrorTypeItem[]>(mockErrorTypes);
+    const [severityData] = React.useState<ErrorTypeItem[]>(mockSeverityData);
+    const [trendData] = React.useState<ErrorTrendItem[]>(mockTrendData);
+    const [recentErrors] = React.useState<RecentErrorItem[]>(mockRecentErrors);
+    const [recentLogs] = React.useState<RecentLogItem[]>(mockRecentLogs);
+
     return (
-        <div className="flex-1 space-y-6 p-6">
+        <div className="flex-1 space-y-4 p-4">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Analytics Overview</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Analytics Overview</h1>
                     <p className="text-muted-foreground mt-1">
                         Monitor your application's health and performance in real-time
                     </p>
@@ -377,74 +159,128 @@ export default function TestPage() {
                 </div>
             </div>
 
-            {/* Stats Overview */}
-            <Suspense fallback={
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {[...Array(4)].map((_, i) => (
-                        <Card key={i}>
-                            <CardHeader className="pb-2">
-                                <Skeleton className="h-4 w-20" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-8 w-16 mb-2" />
-                                <Skeleton className="h-3 w-24" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            }>
-                <StatsOverview />
-            </Suspense>
-
-            {/* Error Breakdown */}
-            <Suspense fallback={
-                <div className="grid gap-4 md:grid-cols-2">
-                    {[...Array(2)].map((_, i) => (
-                        <Card key={i}>
-                            <CardHeader>
-                                <Skeleton className="h-5 w-32" />
-                                <Skeleton className="h-4 w-48" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-32 w-full" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            }>
-                <ErrorBreakdown />
-            </Suspense>
-
-            {/* Recent Activity */}
-            <div className="grid gap-6 lg:grid-cols-2">
-                <Suspense fallback={
-                    <Card>
-                        <CardHeader>
-                            <Skeleton className="h-6 w-32" />
-                            <Skeleton className="h-4 w-48" />
-                        </CardHeader>
-                        <CardContent>
-                            <Skeleton className="h-64 w-full" />
-                        </CardContent>
-                    </Card>
-                }>
-                    <RecentErrorsList />
-                </Suspense>
-
-                <Suspense fallback={
-                    <Card>
-                        <CardHeader>
-                            <Skeleton className="h-6 w-32" />
-                            <Skeleton className="h-4 w-48" />
-                        </CardHeader>
-                        <CardContent>
-                            <Skeleton className="h-64 w-full" />
-                        </CardContent>
-                    </Card>
-                }>
-                    <RecentLogsList />
-                </Suspense>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center space-y-0">
+                        <AlertTriangle className="h-5 w-5 text-muted-foreground mr-2" />
+                        <div>
+                            <CardTitle className="font-medium">Total Errors</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        <div className="flex items-baseline justify-between">
+                            <div className="text-2xl font-bold">1,238</div>
+                            <div className="text-green-600">+12%</div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center space-y-0">
+                        <Activity className="h-5 w-5 text-muted-foreground mr-2" />
+                        <div>
+                            <CardTitle className="font-medium">Error Rate</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        <div className="flex items-baseline justify-between">
+                            <div className="text-2xl font-bold">2.4%</div>
+                            <div className="text-red-600">-0.3%</div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center space-y-0">
+                        <Bug className="h-5 w-5 text-muted-foreground mr-2" />
+                        <div>
+                            <CardTitle className="font-medium">Avg. Resolution Time</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        <div className="flex items-baseline justify-between">
+                            <div className="text-2xl font-bold">3.2h</div>
+                            <div className="text-red-600">+20min</div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center space-y-0">
+                        <Shield className="h-5 w-5 text-muted-foreground mr-2" />
+                        <div>
+                            <CardTitle className="font-medium">System Health</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        <div className="flex items-baseline justify-between">
+                            <div className="text-2xl font-bold">97.8%</div>
+                            <div className="text-red-600">-0.2%</div>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Recent Errors</CardTitle>
+                        <CardDescription>Latest error events from your application</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Suspense fallback={<RecentErrorsChartSkeleton />}>
+                            <RecentErrorsChart data={recentErrors} />
+                        </Suspense>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Recent Logs</CardTitle>
+                        <CardDescription>Latest log entries from your application</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Suspense fallback={<RecentLogsChartSkeleton />}>
+                            <RecentLogsChart data={recentLogs} />
+                        </Suspense>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Error Types</CardTitle>
+                        <CardDescription>Distribution of error types across your application</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-64">
+                        <Suspense fallback={<ErrorTypesChartSkeleton />}>
+                            <ErrorTypesChart data={errorTypeData} />
+                        </Suspense>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Severity Levels</CardTitle>
+                        <CardDescription>Error severity distribution and impact assessment</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-64">
+                        <Suspense fallback={<SeverityLevelsChartSkeleton />}>
+                            <SeverityLevelsChart data={severityData} />
+                        </Suspense>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Error Trends</CardTitle>
+                    <CardDescription>Error patterns over the past two weeks</CardDescription>
+                </CardHeader>
+                <CardContent className="h-64">
+                    <Suspense fallback={<ErrorTrendsChartSkeleton />}>
+                        <ErrorTrendsChart data={trendData} />
+                    </Suspense>
+                </CardContent>
+            </Card>
         </div>
     );
-} 
+}
