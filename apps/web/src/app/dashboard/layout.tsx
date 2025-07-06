@@ -11,7 +11,6 @@ import {
 } from "@better-analytics/ui/components/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
 import { SiteHeader } from "./components/site-header";
-import { AutumnProvider } from "autumn-js/react";
 
 export const metadata: Metadata = {
 	title: "Better Analytics · Dashboard",
@@ -34,14 +33,15 @@ export default async function DashboardLayout({ children }: LayoutProps) {
 					"--header-height": "calc(var(--spacing) * 12)",
 				} as React.CSSProperties
 			}
+			className="h-screen overflow-hidden"
 		>
-			<AppSidebar variant="inset" className="select-none" />
+			<AppSidebar className="select-none" />
 			<SidebarInset>
 				<SiteHeader />
 
-				<div className="flex flex-1 flex-col">
-					<div className="@container/main flex flex-1 flex-col gap-2">
-						<div className="flex h-full flex-col gap-4 py-4 md:gap-6 md:py-6">
+				<div className="flex flex-1 flex-col overflow-hidden">
+					<div className="@container/main flex flex-1 flex-col gap-2 overflow-hidden">
+						<div className="flex h-full flex-col gap-4 p-4 overflow-auto">
 							{children}
 						</div>
 					</div>
