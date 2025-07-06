@@ -1,10 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
-	"vcs": {
-		"enabled": false,
-		"clientKind": "git",
-		"useIgnoreFile": false
-	},
+	"$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
 	"files": {
 		"ignoreUnknown": false,
 		"includes": [
@@ -19,7 +14,8 @@
 			"!**/src-tauri",
 			"!**/.nuxt",
 			"!bts.jsonc"
-		]
+		],
+		"experimentalScannerIgnores": ["node_modules", "dist"]
 	},
 	"formatter": {
 		"enabled": true,
@@ -37,6 +33,7 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true,
+
 			"correctness": {
 				"useExhaustiveDependencies": "info"
 			},
