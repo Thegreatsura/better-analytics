@@ -4,76 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // TYPES
 // ============================================================================
 
-// StreamingUpdate interface to match API
-interface StreamingUpdate {
-    type: "thinking" | "progress" | "complete" | "error";
-    content: string;
-    data?: {
-        hasVisualization?: boolean;
-        chartType?: string;
-        data?: any[];
-        responseType?: "chart" | "text" | "metric";
-        metricValue?: string | number;
-        metricLabel?: string;
-        chartData?: any;
-    };
-    debugInfo?: Record<string, any>;
-}
-
-// Tool call type for tracking AI actions
-interface ToolCall {
-    id: string;
-    name: string;
-    status: 'pending' | 'running' | 'completed' | 'error';
-    description: string;
-    result?: any;
-}
-
-// Chart data interface
-interface ChartData {
-    title: string;
-    description: string;
-    type: 'bar' | 'line' | 'area' | 'pie' | 'donut' | 'scatter' | 'radial';
-    data: Array<Record<string, any>>;
-    xAxisKey: string;
-    yAxisKey: string;
-    colorScheme?: string[];
-    config: Record<string, { label: string; color: string }>;
-}
-
-// Message interface
-interface Message {
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    chartData?: ChartData;
-    toolCalls?: ToolCall[];
-    isStreaming?: boolean;
-    timestamp: number;
-}
+import type { Message, StreamingUpdate, ToolCall } from '../types';
+import { generateWelcomeMessage } from '../utils';
 
 // ============================================================================
 // HOOK
 // ============================================================================
 
-function generateWelcomeMessage(): string {
-    const examples = [
-        "Show me error trends over the last 7 days",
-        "What are the most common error types?",
-        "How many errors occurred yesterday?",
-        "Show me browser breakdown for errors",
-        "What's the error rate by page?",
-        "Analyze performance metrics",
-    ];
 
-    return `Hello! I'm your Better Analytics AI assistant. I can help you analyze your data, understand error patterns, and provide insights about your application's performance. I can also create beautiful charts and visualizations from your data.
-
-Try asking me questions like:
-
-${examples.map((prompt: string) => `• "${prompt}"`).join("\n")}
-
-I'll automatically choose the best way to present your data - whether it's a chart, a single number, or a detailed explanation.`;
-}
 
 export function useChat() {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -115,12 +53,20 @@ export function useChat() {
     // Cleanup on unmount
     useEffect(() => {
         return () => {
+            // Clear timeout
             if (rateLimitTimeoutRef.current) {
                 clearTimeout(rateLimitTimeoutRef.current);
+                rateLimitTimeoutRef.current = null;
             }
+
+            // Abort ongoing requests
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
+                abortControllerRef.current = null;
             }
+
+            // Reset loading state
+            setIsLoading(false);
         };
     }, []);
 
@@ -131,6 +77,7 @@ export function useChat() {
             abortControllerRef.current = null;
         }
         setIsLoading(false);
+        setError(null);
     }, []);
 
     // Send message function
@@ -241,14 +188,26 @@ export function useChat() {
 
                             if (line.startsWith('data: ')) {
                                 try {
-                                    const update: StreamingUpdate = JSON.parse(line.slice(6));
+                                    const rawData = line.slice(6);
+                                    if (!rawData || rawData.trim() === '') continue;
 
-                                    if (update.type === "thinking") {
-                                        currentThinkingSteps.push(update.content);
-                                        setMessages((prev) =>
-                                            prev.map((msg) =>
-                                                msg.id === assistantId
-                                                    ? {
+                                    const update: StreamingUpdate = JSON.parse(rawData);
+
+                                    // Validate update structure
+                                    if (!update || typeof update !== 'object' || !update.type || !update.content) {
+                                        console.warn("Invalid SSE update structure:", update);
+                                        continue;
+                                    }
+
+                                    // Use a single state update to avoid race conditions
+                                    setMessages((prev) => {
+                                        return prev.map((msg) => {
+                                            if (msg.id !== assistantId) return msg;
+
+                                            switch (update.type) {
+                                                case "thinking":
+                                                    currentThinkingSteps.push(update.content);
+                                                    return {
                                                         ...msg,
                                                         toolCalls: [{
                                                             id: 'thinking',
@@ -256,59 +215,57 @@ export function useChat() {
                                                             status: 'running' as const,
                                                             description: update.content,
                                                         }],
-                                                    }
-                                                    : msg
-                                            )
-                                        );
-                                    } else if (update.type === "progress") {
-                                        setMessages((prev) =>
-                                            prev.map((msg) =>
-                                                msg.id === assistantId
-                                                    ? {
+                                                    };
+                                                case "progress":
+                                                    return {
                                                         ...msg,
                                                         content: update.content,
                                                         chartData: update.data?.chartData,
+                                                        insights: update.data?.insights,
                                                         isStreaming: true,
-                                                    }
-                                                    : msg
-                                            )
-                                        );
-                                        scrollToBottom();
-                                    } else if (update.type === "complete") {
-                                        setMessages((prev) =>
-                                            prev.map((msg) =>
-                                                msg.id === assistantId
-                                                    ? {
+                                                    };
+                                                case "complete":
+                                                    // Set loading to false after state update
+                                                    setTimeout(() => setIsLoading(false), 0);
+                                                    return {
                                                         ...msg,
                                                         content: update.content,
                                                         chartData: update.data?.chartData,
+                                                        insights: update.data?.insights,
                                                         toolCalls: [],
                                                         isStreaming: false,
-                                                    }
-                                                    : msg
-                                            )
-                                        );
-                                        scrollToBottom();
-                                        setIsLoading(false);
-                                        break;
-                                    } else if (update.type === "error") {
-                                        setMessages((prev) =>
-                                            prev.map((msg) =>
-                                                msg.id === assistantId
-                                                    ? {
+                                                    };
+                                                case "error":
+                                                    // Set loading to false after state update
+                                                    setTimeout(() => {
+                                                        setIsLoading(false);
+                                                        setError(update.content);
+                                                    }, 0);
+                                                    return {
                                                         ...msg,
                                                         content: update.content,
                                                         toolCalls: [],
                                                         isStreaming: false,
-                                                    }
-                                                    : msg
-                                            )
-                                        );
-                                        setIsLoading(false);
+                                                    };
+                                                default:
+                                                    console.warn("Unknown update type:", update.type);
+                                                    return msg;
+                                            }
+                                        });
+                                    });
+
+                                    // Handle completion/error actions
+                                    if (update.type === "complete" || update.type === "error") {
+                                        scrollToBottom();
                                         break;
+                                    } else if (update.type === "progress") {
+                                        scrollToBottom();
                                     }
                                 } catch (parseError) {
-                                    console.warn("Failed to parse SSE data:", line);
+                                    console.warn("Failed to parse SSE data:", {
+                                        line: line.substring(0, 100) + (line.length > 100 ? '...' : ''),
+                                        error: parseError instanceof Error ? parseError.message : 'Unknown error'
+                                    });
                                 }
                             }
                         }
@@ -316,9 +273,9 @@ export function useChat() {
                 } finally {
                     reader.releaseLock();
                 }
-            } catch (error: any) {
+            } catch (error: unknown) {
                 // Handle aborted requests gracefully
-                if (error.name === 'AbortError') {
+                if (error instanceof Error && error.name === 'AbortError') {
                     setMessages((prev) =>
                         prev.map((msg) =>
                             msg.id === assistantId
@@ -349,7 +306,9 @@ export function useChat() {
                 }
             } finally {
                 setIsLoading(false);
-                abortControllerRef.current = null;
+                if (abortControllerRef.current) {
+                    abortControllerRef.current = null;
+                }
             }
         },
         [inputValue, isLoading, isRateLimited, isInitialized, messages, scrollToBottom]

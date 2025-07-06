@@ -29,16 +29,7 @@ import {
     RadialBar
 } from 'recharts';
 
-interface ChartData {
-    title: string;
-    description: string;
-    type: 'bar' | 'line' | 'area' | 'pie' | 'donut' | 'scatter' | 'radial';
-    data: Array<Record<string, any>>;
-    xAxisKey: string;
-    yAxisKey: string;
-    colorScheme?: string[];
-    config: ChartConfig;
-}
+import type { ChartData } from '../types';
 
 interface ChartRendererProps {
     chartData: ChartData;
@@ -59,6 +50,10 @@ export function ChartRenderer({ chartData }: ChartRendererProps) {
     // Use provided colors or default mixed palette
     const colors = colorScheme || DEFAULT_COLORS.mixed;
 
+    // Get all value keys from config for multi-series support
+    const valueKeys = Object.keys(config || {});
+    const hasMultipleSeries = valueKeys.length > 1;
+
     const renderChart = () => {
         switch (type) {
             case 'bar':
@@ -75,11 +70,25 @@ export function ChartRenderer({ chartData }: ChartRendererProps) {
                             tickMargin={8}
                         />
                         <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar
-                            dataKey={yAxisKey}
-                            fill={colors[0]}
-                            radius={[4, 4, 0, 0]}
-                        />
+                        {hasMultipleSeries ? (
+                            // Multi-series bars
+                            valueKeys.map((key, index) => (
+                                <Bar
+                                    key={key}
+                                    dataKey={key}
+                                    fill={config[key]?.color || colors[index % colors.length]}
+                                    radius={[4, 4, 0, 0]}
+                                />
+                            ))
+                        ) : (
+                            // Single series bar
+                            <Bar
+                                dataKey={yAxisKey}
+                                fill={colors[0]}
+                                radius={[4, 4, 0, 0]}
+                            />
+                        )}
+                        {hasMultipleSeries && <ChartLegend content={<ChartLegendContent />} />}
                     </BarChart>
                 );
 
@@ -97,14 +106,31 @@ export function ChartRenderer({ chartData }: ChartRendererProps) {
                             tickMargin={8}
                         />
                         <ChartTooltip content={<ChartTooltipContent />} />
-                        <Line
-                            type="monotone"
-                            dataKey={yAxisKey}
-                            stroke={colors[0]}
-                            strokeWidth={2}
-                            dot={{ r: 4 }}
-                            activeDot={{ r: 6 }}
-                        />
+                        {hasMultipleSeries ? (
+                            // Multi-series lines
+                            valueKeys.map((key, index) => (
+                                <Line
+                                    key={key}
+                                    type="monotone"
+                                    dataKey={key}
+                                    stroke={config[key]?.color || colors[index % colors.length]}
+                                    strokeWidth={2}
+                                    dot={{ r: 4 }}
+                                    activeDot={{ r: 6 }}
+                                />
+                            ))
+                        ) : (
+                            // Single series line
+                            <Line
+                                type="monotone"
+                                dataKey={yAxisKey}
+                                stroke={colors[0]}
+                                strokeWidth={2}
+                                dot={{ r: 4 }}
+                                activeDot={{ r: 6 }}
+                            />
+                        )}
+                        {hasMultipleSeries && <ChartLegend content={<ChartLegendContent />} />}
                     </LineChart>
                 );
 
@@ -122,13 +148,29 @@ export function ChartRenderer({ chartData }: ChartRendererProps) {
                             tickMargin={8}
                         />
                         <ChartTooltip content={<ChartTooltipContent />} />
-                        <Area
-                            type="monotone"
-                            dataKey={yAxisKey}
-                            stroke={colors[0]}
-                            fill={colors[0]}
-                            fillOpacity={0.3}
-                        />
+                        {hasMultipleSeries ? (
+                            // Multi-series areas
+                            valueKeys.map((key, index) => (
+                                <Area
+                                    key={key}
+                                    type="monotone"
+                                    dataKey={key}
+                                    stroke={config[key]?.color || colors[index % colors.length]}
+                                    fill={config[key]?.color || colors[index % colors.length]}
+                                    fillOpacity={0.3}
+                                />
+                            ))
+                        ) : (
+                            // Single series area
+                            <Area
+                                type="monotone"
+                                dataKey={yAxisKey}
+                                stroke={colors[0]}
+                                fill={colors[0]}
+                                fillOpacity={0.3}
+                            />
+                        )}
+                        {hasMultipleSeries && <ChartLegend content={<ChartLegendContent />} />}
                     </AreaChart>
                 );
 
