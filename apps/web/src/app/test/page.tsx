@@ -16,7 +16,6 @@ import {
     getDebugInfo
 } from './actions';
 
-// Helper function to get color for error types
 function getErrorTypeColor(type: string): string {
     const colors: Record<string, string> = {
         'client': '#3B82F6',
@@ -31,7 +30,6 @@ function getErrorTypeColor(type: string): string {
     return colors[type] || '#6B7280';
 }
 
-// Helper function to get color for severity levels
 function getSeverityColor(severity: string): string {
     const colors: Record<string, string> = {
         'critical': '#EF4444',
