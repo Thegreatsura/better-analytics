@@ -77,7 +77,9 @@ const app = new Elysia()
     })
     .options("*", () => new Response(null, { status: 204 }))
     .derive(async ({ request, set, body }) => {
-        if (new URL(request.url).pathname === "/") {
+        const pathname = new URL(request.url).pathname;
+
+        if (pathname === "/" || request.method === "OPTIONS") {
             return { userId: null };
         }
 
