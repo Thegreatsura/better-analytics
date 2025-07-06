@@ -63,7 +63,7 @@ export const UserCard = (props: UserCardProps) => {
                         <CalendarDays className="h-4 w-4 text-muted-foreground" />
                         Account Created
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-muted-foreground font-mono bg-muted/50 px-3 py-2 rounded-md">
                         {props.session?.user.createdAt
                             ? formatDate(props.session.user.createdAt)
                             : 'Not available'
