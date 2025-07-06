@@ -101,6 +101,12 @@ class ClientErrorTracker implements ErrorTracker {
         const uaResult = this.parser.getResult();
         const currentUrl = typeof window !== 'undefined' ? window.location.href : undefined;
 
+        // Extract error name from message or stack trace
+        const errorName = this.extractErrorName(data.message, data.stack);
+
+        // Determine error type based on context
+        const errorType = this.determineErrorType(data.customData);
+
         return {
             message: data.message || 'Unknown error',
             stack: data.stack,
@@ -110,25 +116,97 @@ class ClientErrorTracker implements ErrorTracker {
             severity: data.severity || 'medium',
             tags: [...this.globalTags, ...(data.tags || [])],
             customData: {
-                browserName: uaResult.browser.name,
-                browserVersion: uaResult.browser.version,
-                osName: uaResult.os.name,
-                osVersion: uaResult.os.version,
+                // Browser and device info
+                browserName: uaResult.browser.name || 'Unknown',
+                browserVersion: uaResult.browser.version || 'Unknown',
+                osName: uaResult.os.name || 'Unknown',
+                osVersion: uaResult.os.version || 'Unknown',
                 deviceType: uaResult.device.type || 'desktop',
 
-                viewportWidth: window?.innerWidth,
-                viewportHeight: window?.innerHeight,
-                pageTitle: document?.title,
-                referrer: document?.referrer,
+                // Page context
+                viewportWidth: typeof window !== 'undefined' ? window.innerWidth : undefined,
+                viewportHeight: typeof window !== 'undefined' ? window.innerHeight : undefined,
+                pageTitle: typeof document !== 'undefined' ? document.title : undefined,
+                referrer: typeof document !== 'undefined' ? document.referrer : undefined,
 
+                // User context
                 userId: this.userId,
                 sessionId: this.sessionId,
                 timestamp: new Date().toISOString(),
                 environment: this.config.environment,
 
+                // Error classification
+                errorName: errorName,
+                errorType: errorType,
+
+                // Connection info (if available)
+                connectionType: (navigator as any)?.connection?.effectiveType,
+                connectionDownlink: (navigator as any)?.connection?.downlink,
+                connectionRtt: (navigator as any)?.connection?.rtt,
+
+                // Performance info
+                memoryUsage: (performance as any)?.memory?.usedJSHeapSize,
+                memoryLimit: (performance as any)?.memory?.jsHeapSizeLimit,
+
                 ...data.customData,
             },
         };
+    }
+
+    private extractErrorName(message?: string, stack?: string): string {
+        if (!message && !stack) return 'Unknown Error';
+
+        // Try to extract error name from stack trace first
+        if (stack) {
+            const stackLines = stack.split('\n');
+            const firstLine = stackLines[0]?.trim();
+            if (firstLine) {
+                // Extract error name from patterns like "TypeError: Cannot read property"
+                const errorNameMatch = firstLine.match(/^(\w+Error|\w+Exception|\w+):/);
+                if (errorNameMatch) {
+                    return errorNameMatch[1] || 'Unknown Error';
+                }
+            }
+        }
+
+        // Fall back to extracting from message
+        if (message) {
+            const errorNameMatch = message.match(/^(\w+Error|\w+Exception|\w+):/);
+            if (errorNameMatch) {
+                return errorNameMatch[1] || 'Unknown Error';
+            }
+
+            // If no colon pattern, use first word or first few words
+            const words = message.split(' ');
+            if (words.length >= 2) {
+                return words.slice(0, 2).join(' ');
+            }
+            return words[0] || 'Unknown Error';
+        }
+
+        return 'Unknown Error';
+    }
+
+    private determineErrorType(customData?: Record<string, any>): string {
+        if (customData?.type) {
+            return customData.type;
+        }
+
+        // Determine based on context
+        if (customData?.filename || customData?.lineno) {
+            return 'client';
+        }
+
+        if (customData?.networkError || customData?.httpStatus) {
+            return 'network';
+        }
+
+        if (customData?.validationErrors || customData?.formData) {
+            return 'validation';
+        }
+
+        // Default to client-side error
+        return 'client';
     }
 
     private async sendToApi(data: ErrorData): Promise<ApiResponse> {
@@ -143,7 +221,28 @@ class ClientErrorTracker implements ErrorTracker {
                 },
                 body: JSON.stringify({
                     client_id: this.config.clientId,
-                    ...data,
+                    message: data.message,
+                    stack_trace: data.stack, // Map 'stack' to 'stack_trace'
+                    url: data.url,
+                    severity: data.severity,
+                    tags: data.tags,
+                    custom_data: data.customData ? JSON.stringify(data.customData) : undefined,
+                    // Add other fields from customData
+                    browser_name: data.customData?.browserName,
+                    browser_version: data.customData?.browserVersion,
+                    os_name: data.customData?.osName,
+                    os_version: data.customData?.osVersion,
+                    device_type: data.customData?.deviceType,
+                    viewport_width: data.customData?.viewportWidth,
+                    viewport_height: data.customData?.viewportHeight,
+                    page_title: data.customData?.pageTitle,
+                    referrer: data.customData?.referrer,
+                    user_id: data.customData?.userId,
+                    session_id: data.customData?.sessionId,
+                    environment: data.customData?.environment,
+                    // Add error classification fields
+                    error_type: data.customData?.errorType || 'client',
+                    error_name: data.customData?.errorName || data.message.split(':')[0] || 'Unknown Error',
                 }),
             });
 

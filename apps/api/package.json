@@ -4,7 +4,7 @@
 	"packageManager": "bun@1.2.18",
 	"scripts": {
 		"dev": "bun --watch run src/index.ts",
-		"build": "bun build src/index.ts --outfile dist/index.js"
+		"build": "bun build src/index.ts --target bun --outfile dist/index.js"
 	},
 	"dependencies": {
 		"@better-analytics/db": "workspace:*",

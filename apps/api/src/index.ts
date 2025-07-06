@@ -65,13 +65,6 @@ function toCHDateTime64(date: Date | string | number | null | undefined): string
 }
 
 const app = new Elysia()
-    .onError(({ error }) => {
-        logger.error(
-            new Error(
-                `${error instanceof Error ? error.name : "Unknown"}: ${error instanceof Error ? error.message : "Unknown"}`,
-            ),
-        );
-    })
     .onBeforeHandle(async ({ request, set }) => {
         const origin = request.headers.get("origin");
         if (origin) {

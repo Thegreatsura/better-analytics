@@ -1,6 +1,6 @@
 # Better Analytics SDK
 
-A simple, intuitive SDK for error tracking and logging with separate client and server modules.
+JavaScript/TypeScript SDK for Better Analytics error tracking and logging.
 
 ## Installation
 
@@ -8,203 +8,125 @@ A simple, intuitive SDK for error tracking and logging with separate client and 
 npm install @better-analytics/sdk
 ```
 
-## Quick Start
+## Usage
 
-### Client-Side Error Tracking
-
-For React, Next.js, or any client-side JavaScript:
+### Initialize the Error Tracker
 
 ```typescript
-import { createErrorTracker } from '@better-analytics/sdk/client';
+import { createErrorTracker } from '@better-analytics/sdk';
 
-const errorTracker = createErrorTracker({
-    apiUrl: 'https://api.your-domain.com',
-    clientId: 'your-client-id',
-    accessToken: 'your-access-token', // optional
-    environment: 'production',
-    debug: false,
-    autoCapture: true, // Automatically capture unhandled errors
+const analytics = createErrorTracker({
+  apiUrl: 'https://your-api-url.com',
+  clientId: 'your-client-id',
+  accessToken: 'your-access-token',
+  environment: 'production', // or 'development'
+  debug: false,
+  autoCapture: true, // Automatically capture unhandled errors
+  userId: 'user-123' // Optional user ID
+});
+```
+
+### Track Custom Errors
+
+```typescript
+// Track a simple error message
+await analytics.track('Something went wrong', {
+  customField: 'value',
+  userId: 'user-123'
 });
 
-// Track errors manually
+// Capture JavaScript exceptions with full stack traces
 try {
-    // Your code here
+  // Some code that might throw
+  throw new Error('This is a test error');
 } catch (error) {
-    await errorTracker.captureException(error, { userId: '123', feature: 'checkout' });
+  await analytics.captureException(error, {
+    context: 'user-action',
+    additionalData: { userId: 'user-123' }
+  });
 }
-
-// Track custom messages
-await errorTracker.track('Payment failed', { amount: 100, currency: 'USD' });
-
-// Set user context
-errorTracker.setUser('user-123');
-
-// Add global tags
-errorTracker.addTags(['frontend', 'critical']);
 ```
 
-### Server-Side Logging
+### Auto-Capture
 
-For Node.js, Express, or any server-side JavaScript:
+When `autoCapture` is enabled, the SDK automatically captures:
+- Unhandled JavaScript errors
+- Unhandled promise rejections
+- Complete stack traces
+- Browser and device information
+- User session context
+
+### API Field Mappings
+
+The SDK automatically maps fields to match the API schema:
+
+| SDK Field | API Field | Description |
+|-----------|-----------|-------------|
+| `stack` | `stack_trace` | Error stack trace |
+| `message` | `message` | Error message |
+| `customData.browserName` | `browser_name` | Browser name |
+| `customData.osName` | `os_name` | Operating system |
+| `customData.userId` | `user_id` | User identifier |
+| `customData.sessionId` | `session_id` | Session identifier |
+| `customData.environment` | `environment` | Environment (prod/dev) |
+
+### Configuration Options
 
 ```typescript
-import { createLogger } from '@better-analytics/sdk/server';
+interface ErrorTrackerConfig {
+  apiUrl: string;           // Required: API endpoint URL
+  clientId: string;         // Required: Your client ID
+  accessToken?: string;     // Optional: Authentication token
+  environment?: string;     // Optional: Environment name
+  debug?: boolean;          // Optional: Enable debug logging
+  autoCapture?: boolean;    // Optional: Auto-capture errors
+  userId?: string;          // Optional: User identifier
+}
+```
 
-const logger = createLogger({
-    apiUrl: 'https://api.your-domain.com',
-    clientId: 'your-client-id',
-    accessToken: 'your-access-token', // optional
-    environment: 'production',
-    serviceName: 'api-server',
-    serviceVersion: '1.0.0',
-    debug: false,
-    minLevel: 'info', // Only log info and above
-});
+### Methods
 
-// Structured logging
-await logger.info('User logged in', { userId: '123', ip: '192.168.1.1' });
-await logger.warn('High memory usage', { memoryUsage: 85 });
-await logger.error('Database connection failed', { database: 'users', timeout: 5000 });
+#### `track(message, customData?)`
+Track a custom error message with optional context data.
 
-// Log errors with stack traces
+#### `captureException(error, customData?)`
+Capture a JavaScript Error object with full stack trace and context.
+
+#### `setUser(userId)`
+Set the user ID for subsequent error reports.
+
+#### `addTags(tags)`
+Add global tags to all error reports.
+
+## Stack Trace Support
+
+The SDK now properly sends stack traces to the API. When you use `captureException()`, the full stack trace will be available in the dashboard for debugging.
+
+```typescript
 try {
-    // Your code here
+  // Code that might fail
+  await riskyOperation();
 } catch (error) {
-    await logger.error(error, { operation: 'user-creation' });
+  // This will include the full stack trace
+  await analytics.captureException(error, {
+    operation: 'riskyOperation',
+    context: { userId: 'user-123' }
+  });
 }
-
-// Set context
-logger.setUser('user-123');
-logger.setRequestId('req-456');
-logger.addTags(['database', 'critical']);
 ```
 
-## API Reference
+## Troubleshooting
 
-### Client-Side Error Tracker
+### Stack Traces Not Showing
+- Ensure you're using `captureException()` instead of `track()` for Error objects
+- Check that your API endpoint is correctly configured
+- Verify that the error actually has a stack trace (`error.stack`)
 
-#### `createErrorTracker(config)`
+### Authentication Issues
+- Ensure your `accessToken` is valid
+- Check that your `clientId` matches your account
 
-Creates a new error tracker instance.
-
-**Config Options:**
-- `apiUrl` (required): Your API endpoint
-- `clientId` (required): Your client identifier
-- `accessToken` (optional): API access token
-- `environment` (optional): Environment name (default: 'production')
-- `debug` (optional): Enable debug logging (default: false)
-- `autoCapture` (optional): Auto-capture unhandled errors (default: false)
-- `userId` (optional): Initial user ID
-
-**Methods:**
-- `track(message, customData?)`: Track a custom error message
-- `captureException(error, customData?)`: Capture an Error object with stack trace
-- `setUser(userId)`: Set the current user ID
-- `addTags(tags)`: Add global tags to all errors
-
-### Server-Side Logger
-
-#### `createLogger(config)`
-
-Creates a new logger instance.
-
-**Config Options:**
-- `apiUrl` (required): Your API endpoint
-- `clientId` (required): Your client identifier
-- `accessToken` (optional): API access token
-- `environment` (optional): Environment name (default: 'production')
-- `serviceName` (optional): Service name (default: 'unknown-service')
-- `serviceVersion` (optional): Service version (default: '1.0.0')
-- `debug` (optional): Enable debug logging (default: false)
-- `minLevel` (optional): Minimum log level (default: 'info')
-
-**Methods:**
-- `debug(message, context?)`: Log debug message
-- `info(message, context?)`: Log info message
-- `warn(message, context?)`: Log warning message
-- `error(messageOrError, context?)`: Log error message or Error object
-- `setUser(userId)`: Set the current user ID
-- `setRequestId(requestId)`: Set the current request ID
-- `addTags(tags)`: Add global tags to all logs
-
-## Migration from v1
-
-If you're upgrading from the old `BetterAnalyticsSDK`:
-
-### Before
-```typescript
-import { BetterAnalyticsSDK } from '@better-analytics/sdk';
-
-const sdk = new BetterAnalyticsSDK({
-    apiUrl: 'https://api.your-domain.com',
-    clientId: 'your-client-id',
-    // ... many other options
-});
-```
-
-### After
-```typescript
-// For client-side error tracking
-import { createErrorTracker } from '@better-analytics/sdk/client';
-
-const errorTracker = createErrorTracker({
-    apiUrl: 'https://api.your-domain.com',
-    clientId: 'your-client-id',
-});
-
-// For server-side logging
-import { createLogger } from '@better-analytics/sdk/server';
-
-const logger = createLogger({
-    apiUrl: 'https://api.your-domain.com',
-    clientId: 'your-client-id',
-    serviceName: 'my-service',
-});
-```
-
-## Why This Approach?
-
-1. **Separation of Concerns**: Client-side error tracking and server-side logging are different use cases
-2. **Smaller Bundle Size**: Only import what you need
-3. **Better TypeScript Support**: More focused and accurate types
-4. **Easier Configuration**: Fewer options, more intuitive defaults
-5. **Clearer API**: Method names that make sense for each context
-
-## Examples
-
-### Next.js App Router
-
-```typescript
-// app/lib/analytics.ts
-'use client';
-
-import { createErrorTracker } from '@better-analytics/sdk/client';
-
-export const errorTracker = createErrorTracker({
-    apiUrl: process.env.NEXT_PUBLIC_API_URL!,
-    clientId: process.env.NEXT_PUBLIC_CLIENT_ID!,
-    environment: process.env.NODE_ENV,
-    autoCapture: true,
-});
-```
-
-### Express.js Server
-
-```typescript
-// server/logger.ts
-import { createLogger } from '@better-analytics/sdk/server';
-
-export const logger = createLogger({
-    apiUrl: process.env.API_URL!,
-    clientId: process.env.CLIENT_ID!,
-    serviceName: 'api-server',
-    environment: process.env.NODE_ENV,
-});
-
-// Middleware
-app.use((req, res, next) => {
-    logger.setRequestId(req.id);
-    logger.setUser(req.user?.id);
-    next();
-});
-``` 
+### Network Issues
+- Verify the `apiUrl` is correct and accessible
+- Check browser network tab for failed requests
+- Enable `debug: true` to see SDK logs 
