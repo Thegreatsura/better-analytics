@@ -1,7 +1,5 @@
 "use server";
 
-import { AutumnProvider, PricingTable } from "autumn-js/react";
-
 import { auth } from "@better-analytics/auth";
 import { headers } from "next/headers";
 import {
@@ -14,6 +12,7 @@ import {
 import { Badge } from "@better-analytics/ui/components/badge";
 import { Autumn as autumn } from "autumn-js";
 import { redirect } from "next/navigation";
+import PricingTable from "@better-analytics/ui/components/autumn/pricing-table";
 
 export default async function BillingPage() {
 	const session = await auth.api.getSession({
