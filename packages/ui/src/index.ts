@@ -1,10 +1,15 @@
-import type { ClassValue } from 'clsx'
+import type { ClassValue } from "clsx";
 
-import { clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+	return twMerge(clsx(inputs));
 }
 
-export { format, formatDistance, formatDistanceToNow, formatRelative } from 'date-fns';
+export {
+	format,
+	formatDistance,
+	formatDistanceToNow,
+	formatRelative,
+} from "date-fns";
