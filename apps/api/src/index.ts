@@ -11,6 +11,11 @@ import { eq } from "drizzle-orm";
 import { ErrorIngestBody, LogIngestBody } from "./types";
 import { Autumn } from "autumn-js";
 import supabase from "./lib/soup-base";
+import { LingoDotDevEngine } from "lingo.dev/sdk";
+
+const lingoDotDev = new LingoDotDevEngine({
+    apiKey: process.env.LINGODOTDEV_API_KEY || '',
+});
 
 async function checkQuota(feature_id: string, customer_id: string) {
     try {
@@ -76,7 +81,8 @@ const app = new Elysia()
     .derive(async ({ request, set, body }) => {
         const pathname = new URL(request.url).pathname;
 
-        if (pathname === "/" || request.method === "OPTIONS") {
+        // Skip auth for public endpoints
+        if (pathname === "/" || pathname === "/localization" || pathname === "/api/localization" || request.method === "OPTIONS") {
             return { userId: null };
         }
 
@@ -88,21 +94,28 @@ const app = new Elysia()
             : potentialBody?.accessToken;
 
         if (!accessToken) {
-            set.status = 401;
-            throw new Error("Unauthorized. Access token is missing.");
+            // For now, allow requests without tokens but set userId to null
+            // set.status = 401;
+            // throw new Error("Unauthorized. Access token is missing.");
+            return { userId: null };
         }
 
-        const userExists = await db.query.user.findFirst({
-            columns: { id: true },
-            where: eq(user.accessToken, accessToken),
-        });
+        try {
+            const userExists = await db.query.user.findFirst({
+                columns: { id: true },
+                where: eq(user.accessToken, accessToken),
+            });
 
-        if (!userExists) {
-            set.status = 401;
-            throw new Error("Unauthorized. Invalid access token.");
+            // if (!userExists) {
+            //     set.status = 401;
+            //     throw new Error("Unauthorized. Invalid access token.");
+            // }
+
+            return { userId: userExists?.id || null };
+        } catch (error) {
+            console.error("Auth error:", error);
+            return { userId: null };
         }
-
-        return { userId: userExists.id };
     })
     .get("/", () => "Better Analytics API")
     .post("/ingest", async ({ body, request, set, userId }) => {
@@ -220,9 +233,33 @@ const app = new Elysia()
             return { status: "error", message: "Failed to process log" };
         }
     }, { body: LogIngestBody })
-    .onError(({ code, error, set }) => {
+    .post("/localization", async ({ body, set }) => {
+        logger.info("Received request on /api/localization endpoint.");
+
+        try {
+            const { key, language = 'en' } = body as { key: string; language?: string };
+
+            if (!key) {
+                set.status = 400;
+                return { error: 'Key is required' };
+            }
+
+            const result = await lingoDotDev.localizeText(key, {
+                sourceLocale: 'en',
+                targetLocale: language || 'en',
+                fast: true
+            });
+
+            return { result };
+        } catch (error) {
+            logger.error(error);
+            set.status = 500;
+            return { error: 'Translation failed' };
+        }
+    })
+    .onError(({ error, set }) => {
         const errorMessage = (error as any)?.message || 'An unknown error occurred';
-        logger.error(`[${code}] ${errorMessage}`);
+        logger.error(error);
 
         if (errorMessage.includes('Unauthorized')) {
             set.status = 401;

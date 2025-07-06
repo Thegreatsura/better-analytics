@@ -79,7 +79,7 @@ class LocalizationEngine {
         }
 
         try {
-            const response = await fetch(`${this.config.apiUrl}/api/localization`, {
+            const response = await fetch(`${this.config.apiUrl}/localization`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
