@@ -3,8 +3,8 @@
 import { Button } from "@better-analytics/ui/components/button";
 import { useTimeFilter } from "./time-filter-context";
 import { Tabs, TabsList, TabsTrigger } from "@better-analytics/ui/components/tabs";
-import { Loader as LoaderIcon } from "lucide-react";
 import { cn } from "@better-analytics/ui";
+import { CircleNotch } from "@phosphor-icons/react";
 
 export const AnalyticsHeader = () => {
     const { timeFilter, setTimeFilter, isLoading } = useTimeFilter();
@@ -15,7 +15,7 @@ export const AnalyticsHeader = () => {
     };
 
     const Loader = () => (
-        <LoaderIcon className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+        <CircleNotch size={32} className="mr-1.5 animate-spin" />
     );
 
     return (
