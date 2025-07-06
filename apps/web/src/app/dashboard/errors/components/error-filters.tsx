@@ -108,10 +108,11 @@ function FilterPopover({
                             const OptionIcon = option.icon;
 
                             return (
-                                <div
+                                <button
                                     key={option.value}
+                                    type="button"
                                     className={cn(
-                                        "flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors",
+                                        "flex cursor-pointer items-center justify-between rounded-md p-2 transition-colors",
                                         isSelected
                                             ? "bg-blue-500/10 text-blue-400"
                                             : "hover:bg-muted/50"
@@ -125,7 +126,7 @@ function FilterPopover({
                                         <span className="text-sm">{option.label}</span>
                                     </div>
                                     {isSelected && <Check className="h-4 w-4" />}
-                                </div>
+                                </button>
                             );
                         })}
                     </div>
@@ -155,19 +156,20 @@ function LineCountFilter({ lines, setLines }: { lines: number; setLines: (value:
                     <Separator />
                     <div className="space-y-1">
                         {lineOptions.map((option) => (
-                            <div
+                            <button
                                 key={option}
                                 className={cn(
-                                    "flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors",
+                                    "flex cursor-pointer items-center justify-between rounded-md p-2 transition-colors",
                                     lines === option
                                         ? "bg-blue-500/10 text-blue-400"
                                         : "hover:bg-muted/50"
                                 )}
                                 onClick={() => setLines(option)}
+                                type="button"
                             >
                                 <span className="text-sm">{option}</span>
                                 {lines === option && <Check className="h-4 w-4" />}
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </div>

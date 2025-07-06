@@ -323,7 +323,7 @@ export function ErrorsConsole() {
 
                             <div className="flex items-center gap-2 px-3 py-1 bg-muted/30 border border-border/20 rounded-md">
                                 <Switch
-                                    id="autoscroll"
+                                    id={`autoscroll-${Math.random().toString(36).substring(2, 15)}`}
                                     checked={autoScroll}
                                     onCheckedChange={setAutoScroll}
                                 />

@@ -127,16 +127,16 @@ What does this log entry indicate? Are there any potential issues or patterns I 
             )}
         >
             <button
+                type="button"
                 className="flex w-full items-center p-4 cursor-pointer transition-all duration-200"
                 onClick={hasDetails ? onToggleExpand : undefined}
-                type="button"
             >
                 <div className="flex flex-1 items-center gap-4">
                     {/* Level Badge */}
                     <Badge
                         variant="outline"
                         className={cn(
-                            "min-w-[60px] justify-center rounded font-medium transition-all duration-200",
+                            "min-w-[60px] justify-center font-medium rounded transition-all duration-200",
                             "group-hover:shadow-sm group-hover:scale-[1.02]",
                             getLevelColor(level || type)
                         )}
