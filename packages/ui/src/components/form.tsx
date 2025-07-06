@@ -14,7 +14,7 @@ import {
 } from "react-hook-form";
 
 import { cn } from "@better-analytics/ui";
-import { Label } from "src/components/label";
+import { Label } from "@better-analytics/ui/components/label";
 
 const Form = FormProvider;
 

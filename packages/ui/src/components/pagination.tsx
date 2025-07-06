@@ -6,7 +6,10 @@ import {
 } from "lucide-react";
 
 import { cn } from "@better-analytics/ui";
-import { type Button, buttonVariants } from "src/components/button";
+import {
+	type Button,
+	buttonVariants,
+} from "@better-analytics/ui/components/button";
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
 	return (

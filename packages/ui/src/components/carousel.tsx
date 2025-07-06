@@ -7,7 +7,7 @@ import useEmblaCarousel, {
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { cn } from "@better-analytics/ui";
-import { Button } from "src/components/button";
+import { Button } from "@better-analytics/ui/components/button";
 
 type CarouselApi = UseEmblaCarouselType[1];
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>;

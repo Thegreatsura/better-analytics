@@ -11,7 +11,7 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "src/components/dialog";
+} from "@better-analytics/ui/components/dialog";
 
 function Command({
 	className,
