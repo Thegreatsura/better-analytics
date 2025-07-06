@@ -37,17 +37,14 @@ export const SessionActionButton = (props: SessionActionButtonProps) => {
         <Button
             variant="destructive"
             size="sm"
-            className={`text-xs font-normal ${isTerminating === undefined && "cursor-pointer"}`}
+            className="text-xs font-normal h-8 px-3 flex-shrink-0"
             onClick={handleTerminateSession}
             disabled={isTerminating !== undefined}
         >
             {isTerminating === props.sessionId ? (
-                <CircleNotchIcon size={32} className="animate-spin" />
-            ) : props.isCurrentSession ? (
-                "Sign Out"
-            ) : (
-                "Terminate"
-            )}
+                <CircleNotchIcon size={16} className="mr-1.5 animate-spin" />
+            ) : null}
+            {props.isCurrentSession ? "Sign Out" : "Terminate"}
         </Button>
     );
 };

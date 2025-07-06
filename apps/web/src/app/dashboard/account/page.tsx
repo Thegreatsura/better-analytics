@@ -2,19 +2,19 @@ import { auth } from "@better-analytics/auth"
 import { headers } from "next/headers"
 import { UserCard } from "../components/account/user-card"
 import { ActiveSessions } from "../components/account/active-sessions"
+import { ApiConfig } from "../components/account/api-config"
+import { getOrCreateAccessToken } from "./actions"
 
 export default async function DashboardAccount() {
-    const [session, activeSessions] = await Promise.all([
+    const [session, activeSessions, tokenResult] = await Promise.all([
         auth.api.getSession({
             headers: await headers(),
         }),
         auth.api.listSessions({
             headers: await headers(),
         }),
+        getOrCreateAccessToken(),
     ])
-
-    console.log("session", session)
-    console.log("account", activeSessions)
 
     const parsedSession = JSON.parse(JSON.stringify(session));
     const parsedActiveSessions = JSON.parse(JSON.stringify(activeSessions));
@@ -24,7 +24,7 @@ export default async function DashboardAccount() {
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">Account</h1>
                 <p className="text-muted-foreground mt-1">
-                    Manage your account details, view active sessions, and update your personal information.
+                    Manage your account details, view active sessions, and update your API credentials.
                 </p>
             </div>
             <div className="flex flex-col gap-6">
@@ -35,7 +35,10 @@ export default async function DashboardAccount() {
 
                 <div>
                     <h2 className="text-lg font-medium">API Configuration</h2>
-                    test
+                    <ApiConfig
+                        userId={parsedSession?.user?.id}
+                        accessToken={tokenResult.success ? tokenResult.accessToken : undefined}
+                    />
                 </div>
 
                 <div>

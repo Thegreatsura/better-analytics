@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { betterAuth } from "better-auth";
+import { betterAuth, generateId } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@better-analytics/db";
 import env from "@better-analytics/auth/env";
@@ -20,3 +20,4 @@ export const auth = betterAuth({
 });
 
 export type Session = typeof auth.$Infer.Session;
+export { generateId };
