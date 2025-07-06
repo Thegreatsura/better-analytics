@@ -66,11 +66,19 @@ function toCHDateTime64(date: Date | string | number | null | undefined): string
 
 const app = new Elysia()
     .onBeforeHandle(({ request, set }) => {
+
+
+
         set.headers["Access-Control-Allow-Origin"] = request.headers.get("origin") || "*";
         set.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
         set.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Origin, X-Requested-With, Accept";
         set.headers["Access-Control-Allow-Credentials"] = "true";
         set.headers["Access-Control-Max-Age"] = "86400";
+
+        if (request.method === "OPTIONS") {
+            set.status = 200;
+            return;
+        }
     })
     .derive(async ({ request, set, body }) => {
         if (new URL(request.url).pathname === "/") {
