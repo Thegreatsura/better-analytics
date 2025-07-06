@@ -79,6 +79,7 @@ export async function getRecentErrors() {
                 client_id,
                 error_name,
                 message,
+                stack_trace,
                 severity,
                 error_type,
                 source,
@@ -89,11 +90,14 @@ export async function getRecentErrors() {
                 url,
                 endpoint,
                 http_status_code,
+                user_id,
+                session_id,
+                custom_data,
                 created_at,
                 occurrence_count,
                 status
             FROM errors 
-            ORDER BY created_at DESC 
+            ORDER BY created_at ASC 
             LIMIT 50
         `);
 
