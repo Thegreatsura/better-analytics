@@ -259,9 +259,9 @@ export async function getErrorMetrics() {
                 WHERE created_at >= now() - INTERVAL 24 HOUR
             `),
             chQuery<{ error_rate: number }>(`
-                SELECT 
-                    (COUNT(*) * 100.0 / (SELECT COUNT(*) FROM logs WHERE created_at >= now() - INTERVAL 24 HOUR)) as error_rate
-                FROM errors 
+                WITH (SELECT count() FROM logs WHERE created_at >= now() - INTERVAL 24 HOUR) AS total_logs
+                SELECT if(total_logs > 0, count() * 100.0 / total_logs, 0) AS error_rate
+                FROM errors
                 WHERE created_at >= now() - INTERVAL 24 HOUR
             `),
             chQuery<{ avg_resolution_hours: number }>(`
@@ -272,8 +272,8 @@ export async function getErrorMetrics() {
                 AND created_at >= now() - INTERVAL 7 DAY
             `),
             chQuery<{ health_score: number }>(`
-                SELECT 
-                    (100.0 - (COUNT(*) * 100.0 / (SELECT COUNT(*) FROM logs WHERE created_at >= now() - INTERVAL 24 HOUR))) as health_score
+                WITH (SELECT count() FROM logs WHERE created_at >= now() - INTERVAL 24 HOUR) AS total_logs
+                SELECT if(total_logs > 0, 100.0 - (COUNT(*) * 100.0 / total_logs), 100.0) as health_score
                 FROM errors 
                 WHERE severity IN ('high', 'critical') 
                 AND created_at >= now() - INTERVAL 24 HOUR
