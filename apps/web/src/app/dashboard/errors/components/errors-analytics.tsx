@@ -124,29 +124,29 @@ export async function ErrorsAnalytics() {
     };
 
     const stats = analyticsStatsResult.success ? analyticsStatsResult.data : null;
-    const totalErrors = stats ? (typeof stats.totalErrors === 'string' ? parseInt(stats.totalErrors) : stats.totalErrors) : 0;
+    const totalErrors = stats ? (typeof stats.totalErrors === 'string' ? Number.parseInt(stats.totalErrors) : stats.totalErrors) : 0;
     const criticalErrors = stats?.errorsBySeverity.find(s => s.severity === 'critical')?.count || 0;
     const trends = errorTrendsResult.success && errorTrendsResult.data ? errorTrendsResult.data : [];
-    const yesterdayErrors = trends.length > 1 ? (typeof trends[trends.length - 2]?.total_errors === 'string' ? parseInt(trends[trends.length - 2]?.total_errors) : trends[trends.length - 2]?.total_errors) || 0 : 0;
-    const todayErrors = trends.length > 0 ? (typeof trends[trends.length - 1]?.total_errors === 'string' ? parseInt(trends[trends.length - 1]?.total_errors) : trends[trends.length - 1]?.total_errors) || 0 : 0;
+    const yesterdayErrors = trends.length > 1 ? (typeof trends[trends.length - 2]?.total_errors === 'string' ? Number.parseInt(trends[trends.length - 2]?.total_errors) : trends[trends.length - 2]?.total_errors) || 0 : 0;
+    const todayErrors = trends.length > 0 ? (typeof trends[trends.length - 1]?.total_errors === 'string' ? Number.parseInt(trends[trends.length - 1]?.total_errors) : trends[trends.length - 1]?.total_errors) || 0 : 0;
     const errorTrend = todayErrors - yesterdayErrors;
 
     return (
         <div className="space-y-6">
             {/* Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Errors (24h)</CardTitle>
+                        <CardTitle className="font-medium text-sm">Total Errors (24h)</CardTitle>
                         <Activity className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatNumber(typeof metrics.totalErrors === 'string' ? parseInt(metrics.totalErrors) : metrics.totalErrors)}</div>
-                        <div className="flex items-center text-xs text-muted-foreground mt-1">
+                        <div className="text-2xl font-bold">{formatNumber(typeof metrics.totalErrors === 'string' ? Number.parseInt(metrics.totalErrors) : metrics.totalErrors)}</div>
+                        <div className="mt-1 flex items-center text-muted-foreground text-xs">
                             {errorTrend > 0 ? (
-                                <TrendingUp className="h-3 w-3 text-red-500 mr-1" />
+                                <TrendingUp className="mr-1 h-3 w-3 text-red-500" />
                             ) : (
-                                <TrendingDown className="h-3 w-3 text-green-500 mr-1" />
+                                <TrendingDown className="mr-1 h-3 w-3 text-green-500" />
                             )}
                             <span className={errorTrend > 0 ? 'text-red-500' : 'text-green-500'}>
                                 {Math.abs(errorTrend)} from yesterday
@@ -157,12 +157,12 @@ export async function ErrorsAnalytics() {
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
+                        <CardTitle className="font-medium text-sm">Error Rate</CardTitle>
                         <Activity className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatPercentage(metrics.errorRate || 0)}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <div className="font-bold text-2xl">{formatPercentage(metrics.errorRate || 0)}</div>
+                        <div className="mt-1 text-muted-foreground text-xs">
                             vs logs
                         </div>
                     </CardContent>
@@ -170,12 +170,12 @@ export async function ErrorsAnalytics() {
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Critical Errors</CardTitle>
+                        <CardTitle className="font-medium text-sm">Critical Errors</CardTitle>
                         <Zap className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-red-500">{criticalErrors}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <div className="font-bold text-2xl text-red-500">{criticalErrors}</div>
+                        <div className="mt-1 text-muted-foreground text-xs">
                             {totalErrors > 0 ? ((criticalErrors / totalErrors) * 100).toFixed(1) : 0}% of total
                         </div>
                     </CardContent>
@@ -183,12 +183,12 @@ export async function ErrorsAnalytics() {
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">System Health</CardTitle>
+                        <CardTitle className="font-medium text-sm">System Health</CardTitle>
                         <Shield className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-500">{formatPercentage(metrics.systemHealth || 100)}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <div className="font-bold text-2xl text-green-500">{formatPercentage(metrics.systemHealth || 100)}</div>
+                        <div className="mt-1 text-muted-foreground text-xs">
                             Overall health score
                         </div>
                     </CardContent>
@@ -196,7 +196,7 @@ export async function ErrorsAnalytics() {
             </div>
 
             {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {/* Error Types Chart */}
                 <Card>
                     <CardHeader>
@@ -263,7 +263,7 @@ export async function ErrorsAnalytics() {
             </Card>
 
             {/* Most Common Errors & Environment Distribution */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {/* Most Common Errors */}
                 <Card>
                     <CardHeader>
@@ -275,14 +275,14 @@ export async function ErrorsAnalytics() {
                     </CardHeader>
                     <CardContent>
                         {topErrors.length === 0 ? (
-                            <div className="text-center text-muted-foreground py-8">
+                            <div className="py-8 text-center text-muted-foreground">
                                 No errors found
                             </div>
                         ) : (
                             <div className="space-y-3">
                                 {topErrors.slice(0, 6).map((error, index) => (
-                                    <div key={index} className="flex items-start gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors">
-                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <div key={error.error_name + index.toString()} className="flex items-start gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-muted/30">
+                                        <div className="flex min-w-0 flex-1 items-center gap-2">
                                             <Badge
                                                 variant="outline"
                                                 className={`flex items-center gap-1 px-2 py-1 ${error.severity === 'critical' ? "border-red-500/20 bg-red-500/10 text-red-500" :
@@ -294,17 +294,17 @@ export async function ErrorsAnalytics() {
                                                 {error.severity}
                                             </Badge>
                                             <div className="min-w-0 flex-1">
-                                                <div className="font-medium text-sm truncate">
+                                                <div className="truncate font-medium text-sm">
                                                     {error.error_name}
                                                 </div>
-                                                <div className="text-xs text-muted-foreground truncate">
+                                                <div className="truncate text-muted-foreground text-xs">
                                                     {error.message}
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <div className="font-semibold text-sm">{error.count}</div>
-                                            <div className="text-xs text-muted-foreground">occurrences</div>
+                                            <div className="text-muted-foreground text-xs">occurrences</div>
                                         </div>
                                     </div>
                                 ))}
@@ -325,24 +325,24 @@ export async function ErrorsAnalytics() {
                     <CardContent>
                         <div className="space-y-3">
                             {errorsByEnv.length === 0 ? (
-                                <div className="text-center text-muted-foreground py-8">
+                                <div className="py-8 text-center text-muted-foreground">
                                     No environment data available
                                 </div>
                             ) : (
                                 errorsByEnv.map((env) => (
-                                    <div key={env.environment} className="flex items-center justify-between p-3 rounded-lg border border-border/50">
+                                    <div key={env.environment} className="flex items-center justify-between rounded-lg border border-border/50 p-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-3 h-3 rounded-full bg-blue-500/30" />
+                                            <div className="h-3 w-3 rounded-full bg-blue-500/30" />
                                             <div>
                                                 <div className="font-medium text-sm capitalize">{env.environment}</div>
-                                                <div className="text-xs text-muted-foreground">
+                                                <div className="text-muted-foreground text-xs">
                                                     {env.percentage.toFixed(1)}% of errors
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <div className="font-semibold text-sm">{env.count}</div>
-                                            <div className="text-xs text-muted-foreground">errors</div>
+                                            <div className="text-muted-foreground text-xs">errors</div>
                                         </div>
                                     </div>
                                 ))
