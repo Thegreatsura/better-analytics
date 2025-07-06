@@ -3,6 +3,7 @@ import {
 	HouseIcon,
 	BugIcon,
 	FileTextIcon,
+	TerminalIcon,
 } from "@phosphor-icons/react";
 
 export interface SidebarItem {
@@ -27,6 +28,11 @@ export const sidebarConfig: SidebarConfig = {
 			title: "Logs",
 			url: "/dashboard/logs",
 			icon: FileTextIcon,
+		},
+		{
+			title: "Console",
+			url: "/dashboard/console",
+			icon: TerminalIcon,
 		},
 		{
 			title: "Errors",
