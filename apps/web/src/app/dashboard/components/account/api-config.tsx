@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { regenerateAccessToken } from "../../account/actions";
 import { Label } from "@better-analytics/ui/components/label";
+import { Input } from "@better-analytics/ui/components/input";
+import { Button } from "@better-analytics/ui/components/button";
 import { toast } from "sonner";
 import {
     AlertDialog,
@@ -13,11 +15,15 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
+    AlertDialogTrigger,
 } from "@better-analytics/ui/components/alert-dialog";
 import {
     CheckCircleIcon,
     CopyIcon,
-    CircleNotchIcon
+    CircleNotchIcon,
+    KeyIcon,
+    ArrowClockwiseIcon,
+    WarningIcon
 } from "@phosphor-icons/react";
 
 type ApiConfigProps = {
@@ -40,7 +46,8 @@ export const ApiConfig = ({ userId, accessToken }: ApiConfigProps) => {
             if (result.success) {
                 setToken(result.accessToken);
                 setShowNewToken(true);
-                toast.success("Access token regenerated successfully");
+                setIsDialogOpen(false);
+                toast.success("Access token regenerated successfully! Make sure to copy it now.");
             } else {
                 toast.error(result.error || "Failed to regenerate access token");
             }
@@ -55,7 +62,7 @@ export const ApiConfig = ({ userId, accessToken }: ApiConfigProps) => {
         try {
             await navigator.clipboard.writeText(userId);
             setClientIdCopied(true);
-            setTimeout(() => setClientIdCopied(false), 2000);
+            setTimeout(() => setClientIdCopied(false), 3000);
             toast.success("Client ID copied to clipboard");
         } catch (error) {
             toast.error("Failed to copy to clipboard");
@@ -66,7 +73,7 @@ export const ApiConfig = ({ userId, accessToken }: ApiConfigProps) => {
         try {
             await navigator.clipboard.writeText(token || '');
             setTokenCopied(true);
-            setTimeout(() => setTokenCopied(false), 2000);
+            setTimeout(() => setTokenCopied(false), 3000);
             toast.success("Access token copied to clipboard");
         } catch (error) {
             toast.error("Failed to copy to clipboard");
@@ -74,69 +81,113 @@ export const ApiConfig = ({ userId, accessToken }: ApiConfigProps) => {
     };
 
     return (
-        <div className="space-y-4">
-            <div className="space-y-2">
-                <div>
-                    <Label htmlFor="clientId" className="text-sm">Client ID</Label>
-                    <p className="text-xs text-muted-foreground">
-                        Use this Client ID to identify your application when making API requests
-                    </p>
+        <div className="space-y-6">
+            {/* Client ID Section */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <KeyIcon className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="clientId" className="text-sm font-medium">Client ID</Label>
                 </div>
-                <div className="relative max-w-md">
-                    <div className="font-mono text-sm pr-8 py-1">
-                        {userId}
-                    </div>
-                    <button
-                        type="button"
+                <p className="text-sm text-muted-foreground">
+                    Use this Client ID to identify your application when making API requests
+                </p>
+                <div className="flex gap-2">
+                    <Input
+                        id="clientId"
+                        value={userId}
+                        readOnly
+                        className="font-mono text-sm bg-muted/50"
+                    />
+                    <Button
+                        variant="outline"
+                        size="sm"
                         onClick={copyClientId}
-                        className="absolute right-0 top-1/2 transform -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-0"
-                        aria-label="Copy client ID"
+                        className="flex-shrink-0"
                     >
-                        {clientIdCopied ? <CheckCircleIcon size={18} /> : <CopyIcon size={18} />}
-                    </button>
+                        {clientIdCopied ? <CheckCircleIcon size={16} /> : <CopyIcon size={16} />}
+                        {clientIdCopied ? 'Copied!' : 'Copy'}
+                    </Button>
                 </div>
             </div>
 
-            <div className="space-y-2">
-                <div>
-                    <Label htmlFor="accessToken" className="text-sm">Access Token</Label>
-                    <p className="text-xs text-muted-foreground">
-                        Keep your token secret and secure, as it authenticates your API requests.
-                    </p>
+            {/* Access Token Section */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <KeyIcon className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="accessToken" className="text-sm font-medium">Access Token</Label>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                    Keep your token secret and secure, as it authenticates your API requests
+                </p>
 
                 {showNewToken && token ? (
-                    <div className="relative max-w-md">
-                        <div className="font-mono text-sm pr-8 py-1">
-                            {token}
+                    <div className="space-y-3">
+                        {/* Critical Warning */}
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <div className="flex items-start gap-2">
+                                <WarningIcon size={16} className="text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                                        Copy your token now!
+                                    </p>
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                                        This token will only be shown once. If you leave this page without copying it, you'll need to regenerate it again.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                        <button
-                            type="button"
-                            onClick={copyToken}
-                            className="absolute right-0 top-1/2 transform -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-0"
-                            aria-label="Copy access token"
-                        >
-                            {tokenCopied ? <CheckCircleIcon size={18} /> : <CopyIcon size={18} />}
-                        </button>
+
+                        <div className="flex gap-2">
+                            <Input
+                                id="accessToken"
+                                value={token}
+                                readOnly
+                                className="font-mono text-sm bg-muted/50"
+                            />
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={copyToken}
+                                className="flex-shrink-0"
+                            >
+                                {tokenCopied ? <CheckCircleIcon size={16} /> : <CopyIcon size={16} />}
+                                {tokenCopied ? 'Copied!' : 'Copy'}
+                            </Button>
+                        </div>
+
+                        {tokenCopied && (
+                            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                <p className="text-sm text-green-700 dark:text-green-300">
+                                    ✓ Token copied successfully! You can now use it in your applications.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 ) : (
-                    <div className="text-sm text-muted-foreground">
-                        Cannot be displayed after initial onboarding. If you have lost your access token, <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                            <span
-                                onClick={() => setIsDialogOpen(true)}
-                                className="text-destructive hover:underline cursor-pointer ml-1"
-                            >
-                                reset it
-                            </span>.
-
+                    <div className="space-y-3">
+                        <div className="p-3 bg-muted/50 border border-border rounded-lg">
+                            <p className="text-sm text-muted-foreground">
+                                Your access token is hidden for security. If you need to view it again, you'll need to regenerate it.
+                            </p>
+                        </div>
+                        <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline" className="gap-2">
+                                    <ArrowClockwiseIcon size={16} />
+                                    Regenerate Token
+                                </Button>
+                            </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle className="text-lg">Reset service access token</AlertDialogTitle>
-                                    <AlertDialogDescription className="text-sm">
-                                        You're resetting the access token for this service. Make sure to update the settings of any clients that use these credentials.
+                                    <AlertDialogTitle>Regenerate Access Token</AlertDialogTitle>
+                                    <AlertDialogDescription className="space-y-2">
+                                        <p>This will create a new access token and invalidate the current one.</p>
+                                        <p className="font-medium text-destructive">
+                                            ⚠️ Any applications using the old token will stop working immediately.
+                                        </p>
+                                        <p>Make sure you're ready to update your applications with the new token.</p>
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
-
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
@@ -145,15 +196,32 @@ export const ApiConfig = ({ userId, accessToken }: ApiConfigProps) => {
                                         className="bg-destructive hover:bg-destructive/90"
                                     >
                                         {isRegenerating ? (
-                                            <CircleNotchIcon size={18} className="mr-2 animate-spin" />
-                                        ) : null}
-                                        Reset token
+                                            <CircleNotchIcon size={16} className="mr-2 animate-spin" />
+                                        ) : (
+                                            <ArrowClockwiseIcon size={16} className="mr-2" />
+                                        )}
+                                        {isRegenerating ? 'Regenerating...' : 'Yes, Regenerate Token'}
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                     </div>
                 )}
+            </div>
+
+            {/* Integration Instructions */}
+            <div className="space-y-3">
+                <h4 className="text-sm font-medium">Integration Instructions</h4>
+                <div className="p-4 bg-muted/50 border border-border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-2">
+                        Use these credentials in your API requests:
+                    </p>
+                    <pre className="text-xs bg-background p-3 rounded border overflow-x-auto">
+                        {`curl -X GET "https://api.better-analytics.com/v1/analytics" \\
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \\
+  -H "X-Client-ID: ${userId}"`}
+                    </pre>
+                </div>
             </div>
         </div>
     );
