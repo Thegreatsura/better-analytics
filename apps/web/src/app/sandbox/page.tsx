@@ -2,7 +2,7 @@ export default function Sandbox() {
 	const shouldThrow = true;
 
 	if (shouldThrow) {
-		throw new Error("This is a test error");
+		throw new Error("Hello from Customhack");
 	}
 
 	return <div>Sandbox</div>;
