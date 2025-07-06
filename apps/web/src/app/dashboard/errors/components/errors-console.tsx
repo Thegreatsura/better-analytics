@@ -11,7 +11,7 @@ import { Download, Search, Play, Pause, RotateCcw, AlertTriangle, Bug, Zap, Shie
 import { cn } from '@better-analytics/ui';
 import { ErrorLine } from './error-line';
 import { ErrorFilters } from './error-filters';
-import { getRecentErrors } from '../../../test/actions';
+import { getRecentErrors } from '../../actions';
 import { useRealtime, type ErrorEvent } from '@/hooks/use-realtime';
 
 const severityLevels = [

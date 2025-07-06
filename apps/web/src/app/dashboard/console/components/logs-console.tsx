@@ -14,7 +14,7 @@ import { LineCountFilter } from './line-count-filter';
 import { SinceLogsFilter, type TimeFilter } from './since-logs-filter';
 import { StatusLogsFilter } from './status-logs-filter';
 import { type LogLine, getLogType } from './utils';
-import { getRecentLogs } from '../../../test/actions';
+import { getRecentLogs } from '../../actions';
 import { useRealtime, type LogEvent } from '@/hooks/use-realtime';
 
 const priorities = [

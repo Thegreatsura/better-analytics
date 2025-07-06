@@ -15,7 +15,7 @@ import { ErrorTypesChart, ErrorTypesChartSkeleton } from '@/components/chart/err
 import { SeverityLevelsChart, SeverityLevelsChartSkeleton } from '@/components/chart/severity-levels-chart';
 import { ErrorTrendsChart, ErrorTrendsChartSkeleton } from '@/components/chart/error-trends-chart';
 import { RecentErrorsChart, RecentErrorsChartSkeleton } from '@/components/chart/recent-errors-chart';
-import { getAnalyticsStats, getErrorTrends, getTopErrors, getErrorsByEnvironment, getRecentErrors, getErrorMetrics } from '../../../test/actions';
+import { getAnalyticsStats, getErrorTrends, getTopErrors, getErrorsByEnvironment, getRecentErrors, getErrorMetrics } from '../../actions';
 
 interface ErrorStats {
     totalErrors: number;
