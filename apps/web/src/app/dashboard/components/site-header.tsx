@@ -9,7 +9,7 @@ export function SiteHeader() {
 				<SidebarTrigger className="-ml-1" />
 
 				<div className="ml-auto flex items-center gap-2">
-					<LinkButton href="/github" size="sm" external variant="outline">
+					<LinkButton href="https://github.com/databuddy-analytics/better-analytics" size="sm" external variant="outline">
 						<Github />
 						GitHub
 					</LinkButton>
