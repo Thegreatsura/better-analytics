@@ -17,35 +17,6 @@ import { ErrorTrendsChart, ErrorTrendsChartSkeleton } from '@/components/chart/e
 import { RecentErrorsChart, RecentErrorsChartSkeleton } from '@/components/chart/recent-errors-chart';
 import { getAnalyticsStats, getErrorTrends, getTopErrors, getErrorsByEnvironment, getRecentErrors, getErrorMetrics } from '../../actions';
 
-interface ErrorStats {
-    totalErrors: number;
-    totalLogs: number;
-    errorsByType: Array<{ error_type: string; count: number }>;
-    errorsBySeverity: Array<{ severity: string; count: number }>;
-}
-
-interface ErrorTrend {
-    date: string;
-    total_errors: number;
-    client_errors: number;
-    server_errors: number;
-}
-
-interface TopError {
-    error_name: string;
-    message: string;
-    count: number;
-    severity: string;
-    error_type: string;
-    last_occurrence: string;
-}
-
-interface ErrorByEnvironment {
-    environment: string;
-    count: number;
-    percentage: number;
-}
-
 // Helper functions for chart data transformation
 function getErrorTypeColor(type: string): string {
     const colors: Record<string, string> = {
@@ -85,7 +56,6 @@ function formatPercentage(num: number): string {
 }
 
 export async function ErrorsAnalytics() {
-    // Fetch all data in parallel
     const [
         analyticsStatsResult,
         errorTrendsResult,

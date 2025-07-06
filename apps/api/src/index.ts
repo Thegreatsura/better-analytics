@@ -12,7 +12,6 @@ import { ErrorIngestBody, LogIngestBody } from "./types";
 import { Autumn } from "autumn-js";
 import supabase from "./lib/soup-base";
 
-// Helper function to check quota with Autumn
 async function checkQuota(feature_id: string, customer_id: string) {
     try {
         const { data } = await Autumn.check({
@@ -24,12 +23,10 @@ async function checkQuota(feature_id: string, customer_id: string) {
         return data?.allowed ?? false;
     } catch (error) {
         logger.error(`Failed to check quota for ${feature_id}:`, error);
-        // On error, allow the request to proceed (fail open)
         return true;
     }
 }
 
-// Helper function to send real-time events to specific users
 async function sendRealTimeEvent(userId: string, event: string, payload: any) {
     try {
         const channel = supabase.channel(`user:${userId}`);
@@ -111,7 +108,6 @@ const app = new Elysia()
     .post("/ingest", async ({ body, request, set, userId }) => {
         logger.info("Received request on /ingest endpoint.");
 
-        // Check quota for error ingestion
         const isAllowed = await checkQuota("error", body.client_id);
         if (!isAllowed) {
             set.status = 429;
@@ -158,7 +154,6 @@ const app = new Elysia()
         try {
             await clickhouse.insert({ table: 'errors', values: [sanitizedErrorData], format: 'JSONEachRow' });
 
-            // Send real-time event to the specific user
             if (userId) {
                 await sendRealTimeEvent(userId, 'error_ingested', {
                     id: sanitizedErrorData.id,
@@ -186,7 +181,6 @@ const app = new Elysia()
     .post("/log", async ({ body, set, userId }) => {
         logger.info("Received request on /log endpoint.");
 
-        // Check quota for log ingestion
         const isAllowed = await checkQuota("log", body.client_id);
         if (!isAllowed) {
             set.status = 429;
@@ -205,7 +199,6 @@ const app = new Elysia()
         try {
             await clickhouse.insert({ table: 'logs', values: [logData], format: 'JSONEachRow' });
 
-            // Send real-time event to the specific user
             if (userId) {
                 await sendRealTimeEvent(userId, 'log_ingested', {
                     id: logData.id,
@@ -231,7 +224,6 @@ const app = new Elysia()
         const errorMessage = (error as any)?.message || 'An unknown error occurred';
         logger.error(`[${code}] ${errorMessage}`);
 
-        // Handle authentication errors
         if (errorMessage.includes('Unauthorized')) {
             set.status = 401;
             return {
