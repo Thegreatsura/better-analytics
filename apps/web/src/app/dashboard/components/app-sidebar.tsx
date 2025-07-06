@@ -20,10 +20,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { data: session } = authClient.useSession();
 
 	return (
-		<Sidebar collapsible="icon" {...props}>
+		<Sidebar {...props}>
 			<SidebarHeader>
-				<SidebarMenuButton tooltip="Go to Landing Page" asChild>
-					<Link href="/">
+				<SidebarMenuButton tooltip="Better Analytics" asChild>
+					<Link href="/dashboard">
 						<Logo />
 						<span className="font-aeonik font-medium text-xs uppercase">
 							Better Analytics
@@ -36,6 +36,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				<NavMain items={sidebarConfig.main} />
 
 				<NavMain items={sidebarConfig.errors} title="Errors" />
+
+				<NavMain items={sidebarConfig.settings} title="Settings" />
 			</SidebarContent>
 
 			<SidebarFooter>

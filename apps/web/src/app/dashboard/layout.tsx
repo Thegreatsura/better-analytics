@@ -35,7 +35,7 @@ export default async function DashboardLayout({ children }: LayoutProps) {
 			}
 			className="h-screen overflow-hidden"
 		>
-			<AppSidebar className="select-none" />
+			<AppSidebar className="select-none" collapsible="icon" variant="inset" />
 			<SidebarInset>
 				<SiteHeader />
 

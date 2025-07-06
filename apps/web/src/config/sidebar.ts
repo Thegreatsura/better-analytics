@@ -3,6 +3,8 @@ import {
 	BugIcon,
 	TerminalIcon,
 	ChartBarHorizontalIcon,
+	CreditCardIcon,
+	GearIcon,
 } from "@phosphor-icons/react";
 
 export interface SidebarItem {
@@ -14,6 +16,7 @@ export interface SidebarItem {
 export interface SidebarConfig {
 	main: SidebarItem[];
 	errors: SidebarItem[];
+	settings: SidebarItem[];
 }
 
 export const sidebarConfig: SidebarConfig = {
@@ -39,6 +42,18 @@ export const sidebarConfig: SidebarConfig = {
 			title: "Analyics",
 			url: "/dashboard/errors/analytics",
 			icon: ChartBarHorizontalIcon,
+		},
+	],
+	settings: [
+		{
+			title: "Account",
+			url: "/dashboard/account",
+			icon: GearIcon,
+		},
+		{
+			title: "Billing",
+			url: "/dashboard/billing",
+			icon: CreditCardIcon,
 		},
 	],
 };

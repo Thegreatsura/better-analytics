@@ -45,5 +45,5 @@ export function NavMain({ items, title }: NavProps) {
 }
 
 function getTooltip(title: string | undefined, item: SidebarItem) {
-	return title ? `${title} | ${item.title}` : item.title;
+	return title ? `${title} • ${item.title}` : item.title;
 }
