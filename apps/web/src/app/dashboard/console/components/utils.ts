@@ -4,6 +4,11 @@ export interface LogLine {
     rawTimestamp: string | null;
     source?: string;
     level?: string;
+    context?: string;
+    environment?: string;
+    user_id?: string;
+    session_id?: string;
+    tags?: string[];
 }
 
 export interface LogType {
@@ -39,7 +44,6 @@ export function getLogType(message: string): LogType {
         };
     }
 
-    // Default to info
     return {
         type: 'info',
         variant: 'default',
@@ -52,7 +56,6 @@ export function parseLogs(rawLogs: string): LogLine[] {
 
     const lines = rawLogs.trim().split('\n');
     return lines.map(line => {
-        // Try to extract timestamp from the beginning of the line
         const timestampMatch = line.match(/^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})?)/);
 
         let timestamp: Date | null = null;

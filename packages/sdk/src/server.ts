@@ -115,7 +115,10 @@ class ServerLogger implements Logger {
                 },
                 body: JSON.stringify({
                     client_id: this.config.clientId,
-                    ...data,
+                    level: data.level,
+                    message: data.message,
+                    context: data.context ? JSON.stringify(data.context) : undefined,
+                    tags: data.tags,
                 }),
             });
 

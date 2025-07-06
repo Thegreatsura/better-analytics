@@ -23,7 +23,7 @@ interface LogLineProps {
 }
 
 export function TerminalLine({ log, noTimestamp, searchTerm, isExpanded, onToggleExpand }: LogLineProps) {
-    const { timestamp, message, rawTimestamp, source, level } = log;
+    const { timestamp, message, rawTimestamp, source, level, context, environment, user_id, session_id, tags } = log;
     const { type, variant, color } = getLogType(message);
     const [copied, setCopied] = useState(false);
 
@@ -84,7 +84,7 @@ export function TerminalLine({ log, noTimestamp, searchTerm, isExpanded, onToggl
     };
 
     // Check if we have additional details to show
-    const hasDetails = source || rawTimestamp || level || message.length > 80;
+    const hasDetails = source || rawTimestamp || level || context || environment || user_id || session_id || tags?.length || message.length > 80;
 
     const handleCopy = async () => {
         const logText = `${formattedFullTime} [${(level || type).toUpperCase()}] ${message}${source ? ` (${source})` : ''}`;
@@ -267,6 +267,30 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                                 </div>
                             )}
 
+                            {/* Environment */}
+                            {environment && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">Environment</span>
+                                    <span className="font-mono text-foreground">{environment}</span>
+                                </div>
+                            )}
+
+                            {/* User ID */}
+                            {user_id && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">User ID</span>
+                                    <span className="font-mono text-foreground">{user_id}</span>
+                                </div>
+                            )}
+
+                            {/* Session ID */}
+                            {session_id && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">Session ID</span>
+                                    <span className="font-mono text-foreground">{session_id}</span>
+                                </div>
+                            )}
+
                             {/* Raw Timestamp */}
                             {rawTimestamp && (
                                 <div className="flex items-center gap-2">
@@ -275,6 +299,36 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                                 </div>
                             )}
                         </div>
+
+                        {/* Tags */}
+                        {tags && tags.length > 0 && (
+                            <div className="space-y-2">
+                                <span className="text-xs text-muted-foreground">Tags</span>
+                                <div className="flex flex-wrap gap-1">
+                                    {tags.map((tag, index) => (
+                                        <Badge key={index} variant="outline" className="text-xs">
+                                            {tag}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Context Data */}
+                        {context && (
+                            <div className="space-y-2">
+                                <span className="text-xs text-muted-foreground">Context</span>
+                                <pre className="text-xs font-mono whitespace-pre-wrap rounded bg-muted/50 p-3 text-foreground border border-border/[0.08] max-h-96 overflow-y-auto">
+                                    {(() => {
+                                        try {
+                                            return JSON.stringify(JSON.parse(context), null, 2);
+                                        } catch {
+                                            return context;
+                                        }
+                                    })()}
+                                </pre>
+                            </div>
+                        )}
                     </div>
                 </CollapsibleContent>
             )}

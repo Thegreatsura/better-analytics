@@ -60,7 +60,12 @@ export function LogsConsole() {
                     message: log.message,
                     rawTimestamp: log.created_at,
                     source: log.source || 'Unknown',
-                    level: log.level || 'info'
+                    level: log.level || 'info',
+                    context: log.context,
+                    environment: log.environment,
+                    user_id: log.user_id,
+                    session_id: log.session_id,
+                    tags: log.tags
                 }));
                 setLogs(transformedLogs);
             }

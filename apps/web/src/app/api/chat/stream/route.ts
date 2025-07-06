@@ -28,9 +28,8 @@ export interface StreamingUpdate {
 // ============================================================================
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const AI_MODEL = 'openai/gpt-4o-mini';
+const AI_MODEL = 'google/gemini-2.0-flash-001';
 
-// Configure OpenRouter client
 const openrouterClient = createOpenRouter({
     apiKey: OPENROUTER_API_KEY,
     baseURL: "https://openrouter.ai/api/v1",

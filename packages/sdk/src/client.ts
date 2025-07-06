@@ -110,26 +110,22 @@ class ClientErrorTracker implements ErrorTracker {
             severity: data.severity || 'medium',
             tags: [...this.globalTags, ...(data.tags || [])],
             customData: {
-                // Browser info
                 browserName: uaResult.browser.name,
                 browserVersion: uaResult.browser.version,
                 osName: uaResult.os.name,
                 osVersion: uaResult.os.version,
                 deviceType: uaResult.device.type || 'desktop',
 
-                // Page info
                 viewportWidth: window?.innerWidth,
                 viewportHeight: window?.innerHeight,
                 pageTitle: document?.title,
                 referrer: document?.referrer,
 
-                // Session info
                 userId: this.userId,
                 sessionId: this.sessionId,
                 timestamp: new Date().toISOString(),
                 environment: this.config.environment,
 
-                // Custom data
                 ...data.customData,
             },
         };

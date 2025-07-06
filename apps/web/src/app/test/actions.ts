@@ -112,13 +112,15 @@ export async function getRecentLogs() {
                 client_id,
                 level,
                 message,
+                context,
                 source,
                 environment,
                 user_id,
                 session_id,
+                tags,
                 created_at
             FROM logs 
-            ORDER BY created_at DESC 
+            ORDER BY created_at ASC 
             LIMIT 50
         `);
 
