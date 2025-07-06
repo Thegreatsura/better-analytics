@@ -15,7 +15,10 @@
 			"!**/.nuxt",
 			"!bts.jsonc"
 		],
-		"experimentalScannerIgnores": ["node_modules", "dist"]
+		"experimentalScannerIgnores": [
+			"node_modules",
+			"dist"
+		]
 	},
 	"formatter": {
 		"enabled": true,
@@ -33,7 +36,6 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true,
-
 			"correctness": {
 				"useExhaustiveDependencies": "info"
 			},

@@ -6,9 +6,6 @@ const nextConfig: NextConfig = {
 			fullUrl: true,
 		},
 	},
-	images: {
-		remotePatterns: [],
-	},
 };
 
 export default nextConfig;

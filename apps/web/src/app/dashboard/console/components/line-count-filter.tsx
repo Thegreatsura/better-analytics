@@ -26,11 +26,11 @@ export function LineCountFilter({ value, onValueChange, title = "Lines" }: LineC
                 <Button
                     variant="outline"
                     size="sm"
-                    className="h-9 bg-background text-sm w-full sm:w-auto"
+                    className="h-9 w-full bg-background text-sm sm:w-auto"
                 >
                     {title}
                     <Separator orientation="vertical" className="mx-2 h-4" />
-                    <div className="space-x-1 flex">
+                    <div className="flex space-x-1">
                         <Badge variant="secondary" className="rounded-sm px-1 font-normal">
                             {value}
                         </Badge>
@@ -38,19 +38,20 @@ export function LineCountFilter({ value, onValueChange, title = "Lines" }: LineC
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[150px] p-0" align="start">
-                <div className="p-2 space-y-1">
+                <div className="space-y-1 p-2">
                     {lineOptions.map((option) => {
                         const isSelected = value === option;
                         return (
-                            <div
+                            <button
                                 key={option}
+                                type="button"
                                 onClick={() => {
                                     if (!isSelected) {
                                         onValueChange(option);
                                     }
                                 }}
                                 className={cn(
-                                    "flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent",
+                                    "flex cursor-pointer items-center space-x-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent",
                                     isSelected && "bg-accent"
                                 )}
                             >
@@ -65,7 +66,7 @@ export function LineCountFilter({ value, onValueChange, title = "Lines" }: LineC
                                     <CheckIcon className={cn("h-4 w-4")} />
                                 </div>
                                 <span>{option} lines</span>
-                            </div>
+                            </button>
                         );
                     })}
                 </div>

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@better-analytics/ui/components/card';
 import { ErrorTrendsChart } from '@/components/chart/error-trends-chart';
-import { ErrorTrendItem } from '@/components/chart/types';
+import type { ErrorTrendItem } from '@/components/chart/types';
 import { useTimeFilter } from '../time-filter-context';
 
 export const ErrorTrendsSection = () => {

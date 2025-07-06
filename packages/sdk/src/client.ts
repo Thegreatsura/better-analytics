@@ -2,6 +2,7 @@
 
 import { UAParser } from 'ua-parser-js';
 import type { ApiResponse } from './types';
+import lingoDotDev from './localization';
 
 export interface ErrorData {
     message: string;
@@ -29,6 +30,7 @@ export interface ErrorTracker {
     captureException(error: Error, customData?: Record<string, any>): Promise<void>;
     setUser(userId: string): void;
     addTags(tags: string[]): void;
+    localizeError(key: string, language?: string): Promise<string>;
 }
 
 class ClientErrorTracker implements ErrorTracker {
@@ -295,6 +297,24 @@ class ClientErrorTracker implements ErrorTracker {
     addTags(tags: string[]): void {
         this.globalTags.push(...tags);
         this.log('Tags added', { tags, totalTags: this.globalTags.length });
+    }
+
+    async localizeError(key: string, language?: string): Promise<string> {
+        // Auto-detect language if not provided
+        const lang = language || (typeof navigator !== 'undefined' ? navigator.language.split('-')[0] : 'en');
+
+        try {
+            const result = await lingoDotDev.localizeText(key, {
+                sourceLocale: 'en',
+                targetLocale: lang || 'en',
+                fast: true,
+            });
+            return result;
+        } catch (error) {
+            // Fallback to key if translation fails
+            this.log('Translation failed', { key, language: lang, error });
+            return key;
+        }
     }
 }
 

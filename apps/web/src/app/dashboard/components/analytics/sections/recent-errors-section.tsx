@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@better-analytics/ui/components/card';
-import { RecentErrorsChart, RecentErrorItem } from '@/components/chart/recent-errors-chart';
+import { RecentErrorsChart, type RecentErrorItem } from '@/components/chart/recent-errors-chart';
 import { useTimeFilter } from '../time-filter-context';
 
 export const RecentErrorsSection = () => {

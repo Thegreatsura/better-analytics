@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@better-analytics/ui/components/card';
 import { SeverityLevelsChart } from '@/components/chart/severity-levels-chart';
-import { ErrorTypeItem } from '@/components/chart/types';
+import type { ErrorTypeItem } from '@/components/chart/types';
 import { useTimeFilter } from '../time-filter-context';
 
 export const SeverityLevelsSection = () => {

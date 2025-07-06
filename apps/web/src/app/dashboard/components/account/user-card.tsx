@@ -1,4 +1,4 @@
-import { Session } from "@better-analytics/auth";
+import type { Session } from "@better-analytics/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@better-analytics/ui/components/avatar";
 import { Badge } from "@better-analytics/ui/components/badge";
 import { CalendarDays, Mail, User as UserIcon } from "lucide-react";

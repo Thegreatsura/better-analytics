@@ -169,8 +169,8 @@ export async function getAnalyticsStats() {
             errorsByTypeData,
             errorsBySeverityData
         ] = await Promise.all([
-            chQuery<{ count: number }>(`SELECT COUNT(*) as count FROM errors`),
-            chQuery<{ count: number }>(`SELECT COUNT(*) as count FROM logs`),
+            chQuery<{ count: number }>("SELECT COUNT(*) as count FROM errors"),
+            chQuery<{ count: number }>("SELECT COUNT(*) as count FROM logs"),
             chQuery<{ error_type: string; count: number }>(`
                 SELECT 
                     toString(error_type) as error_type,
@@ -383,8 +383,8 @@ export async function getDebugInfo() {
             severityCountData,
             errorTypeCountData
         ] = await Promise.all([
-            chQuery<{ count: number }>(`SELECT COUNT(*) as count FROM errors`),
-            chQuery<{ count: number }>(`SELECT COUNT(*) as count FROM logs`),
+            chQuery<{ count: number }>("SELECT COUNT(*) as count FROM errors"),
+            chQuery<{ count: number }>("SELECT COUNT(*) as count FROM logs"),
             chQuery<{ id: string; severity: string; error_type: string; created_at: string }>(`
                 SELECT id, toString(severity) as severity, toString(error_type) as error_type, created_at
                 FROM errors 

@@ -658,7 +658,7 @@ export async function POST(req: Request) {
                                     // Generate dynamic prose based on actual query results
                                     sendUpdate({
                                         type: 'thinking',
-                                        content: createThinkingStep(`Analyzing results and generating insights...`)
+                                        content: createThinkingStep("Analyzing results and generating insights...")
                                     });
 
                                     const dynamicProse = await generateDynamicProse(userQuery, insight, queryResult as Record<string, unknown>[], clientId);

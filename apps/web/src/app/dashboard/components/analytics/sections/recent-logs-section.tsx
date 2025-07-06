@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@better-analytics/ui/components/card';
-import { RecentLogsChart, RecentLogItem } from '@/components/chart/recent-logs-chart';
+import { RecentLogsChart, type RecentLogItem } from '@/components/chart/recent-logs-chart';
 import { useTimeFilter } from '../time-filter-context';
 
 export const RecentLogsSection = () => {

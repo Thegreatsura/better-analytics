@@ -1,6 +1,6 @@
 'use client';
 
-import React, { JSX } from 'react';
+import React, { type JSX } from 'react';
 import {
     AreaChart,
     Area,
@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import { Skeleton } from '@better-analytics/ui/components/skeleton';
 import { format } from '@better-analytics/ui';
-import { ErrorTrendItem } from './types';
+import type { ErrorTrendItem } from './types';
 
 export type ErrorTrendsChartProps = {
     data: ErrorTrendItem[];

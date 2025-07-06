@@ -6,6 +6,7 @@
 		"ui:add": "bun --filter=@better-analytics/ui ui:add",
 		"dev": "next dev --turbopack",
 		"build": "next build --turbopack",
+		"typecheck": "tsc --noEmit",
 		"start": "next start",
 		"lint": "next lint"
 	},

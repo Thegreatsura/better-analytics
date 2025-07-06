@@ -7,7 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@better-ana
 import { ChevronRight, Clock, Server, User, Globe, Copy, Bot, Check, AlertTriangle, Zap, Bug, Shield, ExternalLink } from 'lucide-react';
 import { cn } from '@better-analytics/ui';
 import { useState } from 'react';
-import { ErrorData } from './errors-console';
+import type { ErrorData } from './errors-console';
 
 // Simple regex escape function
 function escapeRegExp(string: string) {
