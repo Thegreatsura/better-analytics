@@ -192,7 +192,7 @@ export default function AIPage() {
                                         )}
 
                                         {/* Multi-Insight Visualization */}
-                                        {/* <InsightRenderer insights={message.insights || []} /> */}
+                                        <InsightRenderer insights={message.insights || []} />
 
                                         {/* Action Buttons for Assistant Messages */}
                                         {message.role === 'assistant' && message.content && !message.isStreaming && (

@@ -13,7 +13,7 @@ export function InsightRenderer({ insights }: InsightRendererProps) {
     return (
         <div className="mt-3 space-y-4">
             {insights.map((insight, index) => (
-                <div key={index} className="space-y-2">
+                <div key={`insight-${index}-${insight.type}`} className="space-y-2">
                     {/* Chart Insight */}
                     {insight.type === 'chart' && insight.chartData && (
                         <div className="bg-muted/30 border border-border/50 rounded-lg p-3">
@@ -35,17 +35,7 @@ export function InsightRenderer({ insights }: InsightRendererProps) {
                         </div>
                     )}
 
-                    {/* Text Insight */}
-                    {insight.type === 'text' && (
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
-                            <div className="flex items-start gap-3">
-                                <div className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0" />
-                                <div className="text-sm text-amber-700 dark:text-amber-300">
-                                    {insight.prose}
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    {/* Text Insight - Skip rendering as it's already shown in the main message content */}
                 </div>
             ))}
         </div>
