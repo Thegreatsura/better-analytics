@@ -22,7 +22,7 @@ class LocalizationEngine {
             apiUrl: config.apiUrl,
             defaultLanguage: config.defaultLanguage || 'en',
             enableCache: config.enableCache ?? true,
-            cacheTimeout: config.cacheTimeout || 5 * 60 * 1000, // 5 minutes
+            cacheTimeout: config.cacheTimeout || 5 * 60 * 1000,
             fallbackToKey: config.fallbackToKey ?? true,
         };
     }
@@ -41,7 +41,6 @@ class LocalizationEngine {
             return cached.value;
         }
 
-        // Clean up expired cache entry
         if (cached) {
             this.cache.delete(cacheKey);
         }
@@ -58,8 +57,25 @@ class LocalizationEngine {
 
     private detectLanguage(): string {
         if (typeof navigator !== 'undefined') {
-            return navigator.language.split('-')[0] || this.config.defaultLanguage;
+            if (navigator.languages && navigator.languages.length > 0) {
+                const firstLang = navigator.languages[0];
+                if (firstLang) {
+                    const baseLang = firstLang.split('-')[0];
+                    return baseLang || this.config.defaultLanguage;
+                }
+            }
+
+            if (navigator.language) {
+                const baseLang = navigator.language.split('-')[0];
+                return baseLang || this.config.defaultLanguage;
+            }
+
+            if ((navigator as any).userLanguage) {
+                const baseLang = (navigator as any).userLanguage.split('-')[0];
+                return baseLang || this.config.defaultLanguage;
+            }
         }
+
         return this.config.defaultLanguage;
     }
 
@@ -67,12 +83,10 @@ class LocalizationEngine {
         const targetLocale = options.targetLocale || this.detectLanguage();
         const sourceLocale = options.sourceLocale || this.config.defaultLanguage;
 
-        // Return key as-is if source and target are the same
         if (sourceLocale === targetLocale) {
             return key;
         }
 
-        // Check cache first
         const cached = this.getCachedTranslation(key, targetLocale);
         if (cached) {
             return cached;
@@ -97,13 +111,11 @@ class LocalizationEngine {
             const data = await response.json();
             const result = data.result || key;
 
-            // Cache the result
             this.setCachedTranslation(key, targetLocale, result);
             return result;
         } catch (error) {
             console.warn('Translation failed:', { key, targetLocale, error });
 
-            // Return fallback
             return this.config.fallbackToKey ? key : `[${key}]`;
         }
     }
@@ -111,7 +123,6 @@ class LocalizationEngine {
     async translateMultiple(keys: string[], options: LocalizationOptions = {}): Promise<Record<string, string>> {
         const results: Record<string, string> = {};
 
-        // Process translations in parallel
         const translations = await Promise.allSettled(
             keys.map(key => this.translate(key, options))
         );
@@ -135,7 +146,6 @@ class LocalizationEngine {
         const keys = Object.keys(obj);
         const values = Object.values(obj);
 
-        // Translate all values in parallel
         const translations = await Promise.allSettled(
             values.map(value => this.translate(value, options))
         );
@@ -153,21 +163,17 @@ class LocalizationEngine {
         return result;
     }
 
-    // Clear cache
     clearCache(): void {
         this.cache.clear();
     }
 
-    // Get cache size
     getCacheSize(): number {
         return this.cache.size;
     }
 }
 
-// Export the class
 export { LocalizationEngine };
 
-// Export convenience functions that require config
 export function createLocalizer(config: LocalizationConfig) {
     const localizer = new LocalizationEngine(config);
 
