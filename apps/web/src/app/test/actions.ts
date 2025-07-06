@@ -1,6 +1,8 @@
 "use server";
 
 import { chQuery } from "@better-analytics/db/clickhouse";
+import { auth } from "@better-analytics/auth";
+import { headers } from "next/headers";
 
 // Types based on the database schema
 interface ErrorData {
@@ -73,6 +75,17 @@ interface LogData {
 
 export async function getRecentErrors() {
     try {
+        // Get the current user session
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
+
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const clientId = session.user.id;
+
         const data = await chQuery<ErrorData>(`
             SELECT 
                 id,
@@ -97,9 +110,10 @@ export async function getRecentErrors() {
                 occurrence_count,
                 status
             FROM errors 
+            WHERE client_id = {clientId:String}
             ORDER BY created_at ASC 
             LIMIT 50
-        `);
+        `, { clientId });
 
         return { success: true, data };
     } catch (error) {
@@ -110,6 +124,17 @@ export async function getRecentErrors() {
 
 export async function getRecentLogs() {
     try {
+        // Get the current user session
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
+
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const clientId = session.user.id;
+
         const data = await chQuery<LogData>(`
             SELECT 
                 id,
@@ -124,9 +149,10 @@ export async function getRecentLogs() {
                 tags,
                 created_at
             FROM logs 
+            WHERE client_id = {clientId:String}
             ORDER BY created_at ASC 
             LIMIT 50
-        `);
+        `, { clientId });
 
         return { success: true, data };
     } catch (error) {

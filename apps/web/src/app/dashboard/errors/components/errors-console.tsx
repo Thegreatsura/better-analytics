@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@better-analytics/ui/components/button';
 import { Input } from '@better-analytics/ui/components/input';
 import { Card, CardContent, CardHeader } from '@better-analytics/ui/components/card';
 import { Switch } from '@better-analytics/ui/components/switch';
 import { Label } from '@better-analytics/ui/components/label';
 import { Separator } from '@better-analytics/ui/components/separator';
-import { Download, Search, Play, Pause, RotateCcw, AlertTriangle, Bug, Zap, Shield } from 'lucide-react';
+import { Download, Search, Play, Pause, RotateCcw, AlertTriangle, Bug, Zap, Shield, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { cn } from '@better-analytics/ui';
 import { ErrorLine } from './error-line';
 import { ErrorFilters } from './error-filters';
 import { getRecentErrors } from '../../../test/actions';
+import { useRealtime, type ErrorEvent } from '@/hooks/use-realtime';
 
 const severityLevels = [
     { label: "Critical", value: "critical", icon: Zap, color: "text-red-500" },
@@ -67,6 +68,39 @@ export function ErrorsConsole() {
     const [statusFilter, setStatusFilter] = useState<string[]>([]);
     const [expandedErrorId, setExpandedErrorId] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Real-time subscription
+    const handleNewError = useCallback((errorEvent: ErrorEvent) => {
+        const newError: ErrorData = {
+            id: errorEvent.id,
+            error_name: errorEvent.message.split(':')[0] || 'Unknown Error',
+            message: errorEvent.message,
+            severity: errorEvent.severity || 'medium',
+            error_type: errorEvent.error_type || 'unknown',
+            source: errorEvent.source || 'Unknown',
+            environment: 'production',
+            browser_name: errorEvent.browser_name || 'Unknown',
+            os_name: errorEvent.os_name || 'Unknown',
+            country: errorEvent.country || 'Unknown',
+            url: errorEvent.url || '',
+            endpoint: '',
+            http_status_code: 0,
+            created_at: errorEvent.created_at,
+            occurrence_count: 1,
+            status: 'new',
+            stack_trace: undefined,
+            user_id: undefined,
+            session_id: undefined,
+            custom_data: undefined
+        };
+
+        setErrors(prevErrors => [...prevErrors, newError]);
+    }, []);
+
+    const { isConnected } = useRealtime({
+        onError: handleNewError,
+        enabled: isStreaming
+    });
 
     const scrollToBottom = () => {
         if (autoScroll && scrollRef.current) {
@@ -145,12 +179,7 @@ export function ErrorsConsole() {
 
     useEffect(() => {
         fetchErrors();
-        let interval: NodeJS.Timeout;
-        if (isStreaming) {
-            interval = setInterval(fetchErrors, 10000); // Check every 10 seconds for errors
-        }
-        return () => clearInterval(interval);
-    }, [isStreaming]);
+    }, []);
 
     useEffect(() => {
         const filtered = handleFilter(errors);
@@ -214,9 +243,20 @@ export function ErrorsConsole() {
                                             ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
                                             : "bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20"
                                     )}
+                                    title={isStreaming ? "Pause real-time updates" : "Resume real-time updates"}
                                 >
                                     {isStreaming ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                                    {isStreaming ? 'Live' : 'Paused'}
+                                    {isStreaming ? 'Real-time' : 'Paused'}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={fetchErrors}
+                                    className="gap-2 hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-400 transition-all duration-200"
+                                    title="Refresh errors manually"
+                                >
+                                    <RefreshCw className="h-4 w-4" />
+                                    Refresh
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -288,6 +328,26 @@ export function ErrorsConsole() {
                                     onCheckedChange={setAutoScroll}
                                 />
                                 <Label htmlFor="autoscroll" className="text-sm font-medium">Auto-scroll</Label>
+                            </div>
+
+                            {/* Real-time connection indicator */}
+                            <div className={cn(
+                                "flex items-center gap-2 px-3 py-1 border rounded-md transition-all duration-200",
+                                isConnected
+                                    ? "bg-emerald-500/10 border-emerald-500/20"
+                                    : "bg-red-500/10 border-red-500/20"
+                            )}>
+                                {isConnected ? (
+                                    <Wifi className="h-3 w-3 text-emerald-400" />
+                                ) : (
+                                    <WifiOff className="h-3 w-3 text-red-400" />
+                                )}
+                                <span className={cn(
+                                    "text-sm font-medium",
+                                    isConnected ? "text-emerald-400" : "text-red-400"
+                                )}>
+                                    {isConnected ? 'Real-time' : 'Disconnected'}
+                                </span>
                             </div>
 
                             <div className="flex items-center gap-2 px-3 py-1 bg-muted/30 border border-border/20 rounded-md">

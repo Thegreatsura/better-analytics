@@ -1,9 +1,6 @@
 "use client";
 
 import { createErrorTracker } from "@better-analytics/sdk";
-// import env from "@/env";
-
-
 
 
 export const analytics = createErrorTracker({

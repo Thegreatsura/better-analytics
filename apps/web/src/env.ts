@@ -3,11 +3,13 @@ import { z } from "zod";
 
 export default createEnv({
 	schema: {
-		ACCESS_TOKEN: z.string(),
+		NEXT_PUBLIC_ACCESS_TOKEN: z.string(),
 		OPENROUTER_API_KEY: z.string(),
 		OPENROUTER_BASE_URL: z.string().url(),
 		NEXT_PUBLIC_CLIENT_ID: z.string(),
 		NEXT_PUBLIC_API_URL: z.string().url(),
+		NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+		NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string(),
 		NODE_ENV: z.enum(["development", "production"]),
 	},
 	values: {

@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 import { ErrorIngestBody, LogIngestBody } from "./types";
 import { cors } from "@elysiajs/cors";
 import { Autumn } from "autumn-js";
+import supabase from "./lib/soup-base";
 
 // Helper function to check quota with Autumn
 async function checkQuota(feature_id: string, customer_id: string) {
@@ -26,6 +27,21 @@ async function checkQuota(feature_id: string, customer_id: string) {
         logger.error(`Failed to check quota for ${feature_id}:`, error);
         // On error, allow the request to proceed (fail open)
         return true;
+    }
+}
+
+// Helper function to send real-time events to specific users
+async function sendRealTimeEvent(userId: string, event: string, payload: any) {
+    try {
+        const channel = supabase.channel(`user:${userId}`);
+        await channel.send({
+            type: 'broadcast',
+            event,
+            payload
+        });
+        logger.info(`Sent real-time ${event} event to user ${userId}`);
+    } catch (error) {
+        logger.error(`Failed to send real-time event to user ${userId}:`, error);
     }
 }
 
@@ -51,9 +67,9 @@ function toCHDateTime64(date: Date | string | number | null | undefined): string
 
 const app = new Elysia()
     .use(cors())
-    .onBeforeHandle(async ({ request, set, body }) => {
+    .derive(async ({ request, set, body }) => {
         if (new URL(request.url).pathname === "/") {
-            return;
+            return { userId: null };
         }
 
         const authHeader = request.headers.get("Authorization");
@@ -65,10 +81,7 @@ const app = new Elysia()
 
         if (!accessToken) {
             set.status = 401;
-            return {
-                status: "error",
-                message: "Unauthorized. Access token is missing.",
-            };
+            throw new Error("Unauthorized. Access token is missing.");
         }
 
         const userExists = await db.query.user.findFirst({
@@ -78,14 +91,13 @@ const app = new Elysia()
 
         if (!userExists) {
             set.status = 401;
-            return {
-                status: "error",
-                message: "Unauthorized. Invalid access token.",
-            };
+            throw new Error("Unauthorized. Invalid access token.");
         }
+
+        return { userId: userExists.id };
     })
     .get("/", () => "Better Analytics API")
-    .post("/ingest", async ({ body, request, set }) => {
+    .post("/ingest", async ({ body, request, set, userId }) => {
         logger.info("Received request on /ingest endpoint.");
 
         // Check quota for error ingestion
@@ -134,13 +146,33 @@ const app = new Elysia()
         const sanitizedErrorData = replaceUndefinedWithNull(errorData);
         try {
             await clickhouse.insert({ table: 'errors', values: [sanitizedErrorData], format: 'JSONEachRow' });
+
+            // Send real-time event to the specific user
+            if (userId) {
+                await sendRealTimeEvent(userId, 'error_ingested', {
+                    id: sanitizedErrorData.id,
+                    message: sanitizedErrorData.message,
+                    severity: sanitizedErrorData.severity,
+                    error_type: sanitizedErrorData.error_type,
+                    source: sanitizedErrorData.source,
+                    client_id: sanitizedErrorData.client_id,
+                    created_at: sanitizedErrorData.created_at,
+                    url: sanitizedErrorData.url,
+                    browser_name: sanitizedErrorData.browser_name,
+                    os_name: sanitizedErrorData.os_name,
+                    device_type: sanitizedErrorData.device_type,
+                    country: sanitizedErrorData.country,
+                    city: sanitizedErrorData.city
+                });
+            }
+
             return { status: "success", id: sanitizedErrorData.id };
         } catch (error) {
             logger.error({ message: 'Failed to ingest error:', error });
             return { status: "error", message: "Failed to process error" };
         }
     }, { body: ErrorIngestBody })
-    .post("/log", async ({ body, set }) => {
+    .post("/log", async ({ body, set, userId }) => {
         logger.info("Received request on /log endpoint.");
 
         // Check quota for log ingestion
@@ -161,6 +193,23 @@ const app = new Elysia()
 
         try {
             await clickhouse.insert({ table: 'logs', values: [logData], format: 'JSONEachRow' });
+
+            // Send real-time event to the specific user
+            if (userId) {
+                await sendRealTimeEvent(userId, 'log_ingested', {
+                    id: logData.id,
+                    message: logData.message,
+                    level: logData.level,
+                    source: logData.source,
+                    client_id: logData.client_id,
+                    created_at: logData.created_at,
+                    context: logData.context,
+                    environment: logData.environment,
+                    session_id: logData.session_id,
+                    user_id: logData.user_id
+                });
+            }
+
             return { status: "success", id: logData.id };
         } catch (error) {
             logger.error('Failed to ingest log:', error);
@@ -170,6 +219,16 @@ const app = new Elysia()
     .onError(({ code, error, set }) => {
         const errorMessage = (error as any)?.message || 'An unknown error occurred';
         logger.error(`[${code}] ${errorMessage}`);
+
+        // Handle authentication errors
+        if (errorMessage.includes('Unauthorized')) {
+            set.status = 401;
+            return {
+                status: 'error',
+                message: errorMessage
+            };
+        }
+
         set.status = 500;
         return {
             status: 'error',

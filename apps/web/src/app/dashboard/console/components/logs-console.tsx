@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@better-analytics/ui/components/button';
 import { Input } from '@better-analytics/ui/components/input';
 import { Card, CardContent, CardHeader } from '@better-analytics/ui/components/card';
 import { Switch } from '@better-analytics/ui/components/switch';
 import { Label } from '@better-analytics/ui/components/label';
 import { Separator } from '@better-analytics/ui/components/separator';
-import { Download, Search, Play, Pause, RotateCcw } from 'lucide-react';
+import { Download, Search, Play, Pause, RotateCcw, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { cn } from '@better-analytics/ui';
 import { TerminalLine } from './terminal-line';
 import { LineCountFilter } from './line-count-filter';
@@ -15,6 +15,7 @@ import { SinceLogsFilter, type TimeFilter } from './since-logs-filter';
 import { StatusLogsFilter } from './status-logs-filter';
 import { type LogLine, getLogType } from './utils';
 import { getRecentLogs } from '../../../test/actions';
+import { useRealtime, type LogEvent } from '@/hooks/use-realtime';
 
 const priorities = [
     { label: "Info", value: "info" },
@@ -22,8 +23,6 @@ const priorities = [
     { label: "Error", value: "error" },
     { label: "Debug", value: "debug" },
 ];
-
-
 
 export function LogsConsole() {
     const [logs, setLogs] = useState<LogLine[]>([]);
@@ -37,6 +36,29 @@ export function LogsConsole() {
     const [typeFilter, setTypeFilter] = useState<string[]>([]);
     const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Real-time subscription
+    const handleNewLog = useCallback((logEvent: LogEvent) => {
+        const newLog: LogLine = {
+            timestamp: new Date(logEvent.created_at),
+            message: logEvent.message,
+            rawTimestamp: logEvent.created_at,
+            source: logEvent.source || 'Unknown',
+            level: logEvent.level || 'info',
+            context: logEvent.context,
+            environment: logEvent.environment,
+            user_id: logEvent.user_id,
+            session_id: logEvent.session_id,
+            tags: []
+        };
+
+        setLogs(prevLogs => [...prevLogs, newLog]);
+    }, []);
+
+    const { isConnected } = useRealtime({
+        onLog: handleNewLog,
+        enabled: isStreaming
+    });
 
     const scrollToBottom = () => {
         if (autoScroll && scrollRef.current) {
@@ -130,12 +152,7 @@ export function LogsConsole() {
 
     useEffect(() => {
         fetchLogs();
-        let interval: NodeJS.Timeout;
-        if (isStreaming) {
-            interval = setInterval(fetchLogs, 5000);
-        }
-        return () => clearInterval(interval);
-    }, [isStreaming]);
+    }, []);
 
     useEffect(() => {
         const filtered = handleFilter(logs);
@@ -192,9 +209,20 @@ export function LogsConsole() {
                                             ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
                                             : "bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20"
                                     )}
+                                    title={isStreaming ? "Pause real-time updates" : "Resume real-time updates"}
                                 >
                                     {isStreaming ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                                    {isStreaming ? 'Live' : 'Paused'}
+                                    {isStreaming ? 'Real-time' : 'Paused'}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={fetchLogs}
+                                    className="gap-2 hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-400 transition-all duration-200"
+                                    title="Refresh logs manually"
+                                >
+                                    <RefreshCw className="h-4 w-4" />
+                                    Refresh
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -250,6 +278,26 @@ export function LogsConsole() {
                                     onCheckedChange={setAutoScroll}
                                 />
                                 <Label htmlFor="autoscroll" className="text-sm font-medium">Auto-scroll</Label>
+                            </div>
+
+                            {/* Real-time connection indicator */}
+                            <div className={cn(
+                                "flex items-center gap-2 px-3 py-1 border rounded-md transition-all duration-200",
+                                isConnected
+                                    ? "bg-emerald-500/10 border-emerald-500/20"
+                                    : "bg-red-500/10 border-red-500/20"
+                            )}>
+                                {isConnected ? (
+                                    <Wifi className="h-3 w-3 text-emerald-400" />
+                                ) : (
+                                    <WifiOff className="h-3 w-3 text-red-400" />
+                                )}
+                                <span className={cn(
+                                    "text-sm font-medium",
+                                    isConnected ? "text-emerald-400" : "text-red-400"
+                                )}>
+                                    {isConnected ? 'Real-time' : 'Disconnected'}
+                                </span>
                             </div>
 
                             <div className="flex items-center gap-2 px-3 py-1 bg-muted/30 border border-border/20 rounded-md">
