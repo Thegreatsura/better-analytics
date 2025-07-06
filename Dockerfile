@@ -1,4 +1,4 @@
-FROM oven/bun AS build
+FROM oven/bun:alpine AS build
 
 WORKDIR /app
 
@@ -17,13 +17,14 @@ COPY apps/api/src ./apps/api/src
 
 ENV NODE_ENV=production
 
-FROM gcr.io/distroless/base
+FROM oven/bun:alpine
 
 WORKDIR /app
 
+COPY --from=build /app ./
 
 ENV NODE_ENV=production
 
-CMD ["bun", "apps/api/src/index.ts"]
+CMD ["bun", "run", "apps/api/src/index.ts"]
 
 EXPOSE 4000 
