@@ -1,132 +1,283 @@
 # Better Analytics SDK
 
-JavaScript/TypeScript SDK for Better Analytics error tracking and logging.
+The Better Analytics SDK provides comprehensive error tracking and localization for your web applications. Get real-time insights into your application's health with beautiful dashboards and automatic error translation.
 
-## Installation
+## Quick Start
+
+### 1. Sign Up & Get Your API Keys
+
+1. Visit [Better Analytics Dashboard](https://analytics.customhack.dev)
+2. Create your account and verify your email
+3. Create a new project in your dashboard
+4. Copy your **Client ID** and **Access Token** from the project settings
+
+### 2. Installation
 
 ```bash
 npm install @better-analytics/sdk
+# or
+yarn add @better-analytics/sdk
+# or
+bun add @better-analytics/sdk
 ```
 
-## Usage
+### 3. Basic Setup
 
-### Initialize the Error Tracker
+Create an analytics instance in your app:
 
 ```typescript
-import { createErrorTracker } from '@better-analytics/sdk';
+// lib/analytics.ts
+import { createErrorTracker } from "@better-analytics/sdk";
 
-const analytics = createErrorTracker({
-  apiUrl: 'https://your-api-url.com',
-  clientId: 'your-client-id',
-  accessToken: 'your-access-token',
-  environment: 'production', // or 'development'
-  debug: false,
+export const analytics = createErrorTracker({
+  apiUrl: "https://api.analytics.customhack.dev",
+  clientId: "your-client-id-here",
+  accessToken: "your-access-token-here", // Optional but recommended
+  environment: process.env.NODE_ENV,
+  debug: process.env.NODE_ENV === "development",
   autoCapture: true, // Automatically capture unhandled errors
-  userId: 'user-123' // Optional user ID
 });
 ```
 
-### Track Custom Errors
+### 4. Environment Variables
+
+Add these to your `.env.local` file:
+
+```env
+NEXT_PUBLIC_API_URL=https://api.analytics.customhack.dev
+NEXT_PUBLIC_CLIENT_ID=your-client-id-here
+NEXT_PUBLIC_ACCESS_TOKEN=your-access-token-here
+```
+
+Then update your analytics setup:
 
 ```typescript
-// Track a simple error message
-await analytics.track('Something went wrong', {
-  customField: 'value',
-  userId: 'user-123'
-});
+// lib/analytics.ts
+import { createErrorTracker } from "@better-analytics/sdk";
 
-// Capture JavaScript exceptions with full stack traces
-try {
-  // Some code that might throw
-  throw new Error('This is a test error');
-} catch (error) {
-  await analytics.captureException(error, {
-    context: 'user-action',
-    additionalData: { userId: 'user-123' }
+export const analytics = createErrorTracker({
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || "",
+  clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "",
+  accessToken: process.env.NEXT_PUBLIC_ACCESS_TOKEN || "",
+  environment: process.env.NODE_ENV || "",
+  debug: process.env.NODE_ENV === "development",
+  autoCapture: true,
+});
+```
+
+## Features
+
+### 🚨 Automatic Error Tracking
+- Captures unhandled JavaScript errors
+- Tracks unhandled promise rejections
+- Rich context including browser, OS, and device info
+- Real-time error reporting
+
+### 🌍 Multi-Language Support
+- Automatic error message translation
+- Translate entire UI objects at once
+- Cached translations for performance
+- Support for 50+ languages
+
+### 📊 Real-Time Dashboard
+- Live error monitoring
+- Error trends and analytics
+- Geographic distribution
+- Browser and device insights
+
+## Global Error Handling
+
+### Next.js Error Boundary
+
+Create a global error handler with automatic translation:
+
+```typescript
+// app/error.tsx
+"use client";
+
+import { analytics } from "@/lib/analytics";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+
+interface ErrorProps {
+  error: Error & { digest?: string };
+}
+
+export default function GlobalError({ error }: ErrorProps) {
+  const [content, setContent] = useState({
+    title: "Something went wrong",
+    message: "We're working to fix this issue. Please try again later.",
+    errorLabel: "Error:",
+    retryButton: "Try Again",
   });
+  const router = useRouter();
+  const hasTranslated = useRef(false);
+
+  useEffect(() => {
+    // Track the error
+    analytics.captureException(error);
+
+    // Translate all content at once
+    if (!hasTranslated.current) {
+      hasTranslated.current = true;
+      
+      const translateContent = async () => {
+        try {
+          const translated = await analytics.localizeObject({
+            title: "Something went wrong",
+            message: "We're working to fix this issue. Please try again later.",
+            errorLabel: "Error:",
+            retryButton: "Try Again",
+          });
+
+          setContent(translated);
+        } catch (translationError) {
+          console.warn("Translation failed, using default text:", translationError);
+        }
+      };
+
+      translateContent();
+    }
+  }, [error]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">
+          {content.title}
+        </h1>
+        
+        <p className="text-gray-700 mb-4">
+          {content.message}
+        </p>
+
+        <div className="bg-gray-50 p-3 rounded mb-4">
+          <p className="text-sm text-gray-600">
+            {content.errorLabel} {error.message}
+          </p>
+        </div>
+
+        <button
+          onClick={() => router.refresh()}
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+        >
+          {content.retryButton}
+        </button>
+      </div>
+    </div>
+  );
 }
 ```
 
-### Auto-Capture
+## API Reference
 
-When `autoCapture` is enabled, the SDK automatically captures:
-- Unhandled JavaScript errors
-- Unhandled promise rejections
-- Complete stack traces
-- Browser and device information
-- User session context
+### Error Tracking
 
-### API Field Mappings
+```typescript
+// Track a custom error
+await analytics.track("User authentication failed", {
+  userId: "user123",
+  action: "login",
+  customData: { loginMethod: "email" }
+});
 
-The SDK automatically maps fields to match the API schema:
+// Capture an exception
+try {
+  // Your code here
+} catch (error) {
+  await analytics.captureException(error, {
+    context: "payment-processing",
+    userId: "user123"
+  });
+}
 
-| SDK Field | API Field | Description |
-|-----------|-----------|-------------|
-| `stack` | `stack_trace` | Error stack trace |
-| `message` | `message` | Error message |
-| `customData.browserName` | `browser_name` | Browser name |
-| `customData.osName` | `os_name` | Operating system |
-| `customData.userId` | `user_id` | User identifier |
-| `customData.sessionId` | `session_id` | Session identifier |
-| `customData.environment` | `environment` | Environment (prod/dev) |
+// Set user context
+analytics.setUser("user123");
 
-### Configuration Options
+// Add global tags
+analytics.addTags(["production", "checkout-flow"]);
+```
+
+### Localization
+
+```typescript
+// Translate a single string
+const translated = await analytics.localize("Hello world", "es");
+// Returns: "Hola mundo"
+
+// Translate an entire object
+const content = {
+  greeting: "Hello",
+  farewell: "Goodbye",
+  message: "Welcome to our platform",
+};
+
+const translated = await analytics.localizeObject(content, "es");
+// Returns: { greeting: "Hola", farewell: "Adiós", message: "Bienvenido a nuestra plataforma" }
+```
+
+## Configuration Options
 
 ```typescript
 interface ErrorTrackerConfig {
-  apiUrl: string;           // Required: API endpoint URL
-  clientId: string;         // Required: Your client ID
-  accessToken?: string;     // Optional: Authentication token
-  environment?: string;     // Optional: Environment name
-  debug?: boolean;          // Optional: Enable debug logging
-  autoCapture?: boolean;    // Optional: Auto-capture errors
-  userId?: string;          // Optional: User identifier
+  apiUrl: string;           // Better Analytics API URL
+  clientId: string;         // Your project's client ID
+  accessToken?: string;     // Your access token (recommended)
+  environment?: string;     // Environment (development, production, etc.)
+  debug?: boolean;         // Enable debug logging
+  autoCapture?: boolean;   // Auto-capture unhandled errors
+  userId?: string;         // Set initial user ID
 }
 ```
 
-### Methods
+## Best Practices
 
-#### `track(message, customData?)`
-Track a custom error message with optional context data.
-
-#### `captureException(error, customData?)`
-Capture a JavaScript Error object with full stack trace and context.
-
-#### `setUser(userId)`
-Set the user ID for subsequent error reports.
-
-#### `addTags(tags)`
-Add global tags to all error reports.
-
-## Stack Trace Support
-
-The SDK now properly sends stack traces to the API. When you use `captureException()`, the full stack trace will be available in the dashboard for debugging.
-
+### 1. Environment-Specific Configuration
 ```typescript
-try {
-  // Code that might fail
-  await riskyOperation();
-} catch (error) {
-  // This will include the full stack trace
-  await analytics.captureException(error, {
-    operation: 'riskyOperation',
-    context: { userId: 'user-123' }
-  });
-}
+const analytics = createErrorTracker({
+  apiUrl: process.env.NEXT_PUBLIC_API_URL,
+  clientId: process.env.NEXT_PUBLIC_CLIENT_ID,
+  accessToken: process.env.NEXT_PUBLIC_ACCESS_TOKEN,
+  environment: process.env.NODE_ENV,
+  debug: process.env.NODE_ENV === "development",
+  autoCapture: true,
+});
 ```
 
-## Troubleshooting
+### 2. Error Context
+Always provide context when tracking errors:
+```typescript
+analytics.captureException(error, {
+  component: "CheckoutForm",
+  userId: user.id,
+  step: "payment-processing",
+  metadata: { orderId: "12345" }
+});
+```
 
-### Stack Traces Not Showing
-- Ensure you're using `captureException()` instead of `track()` for Error objects
-- Check that your API endpoint is correctly configured
-- Verify that the error actually has a stack trace (`error.stack`)
+### 3. User Identification
+Set user context for better error tracking:
+```typescript
+// When user logs in
+analytics.setUser(user.id);
 
-### Authentication Issues
-- Ensure your `accessToken` is valid
-- Check that your `clientId` matches your account
+// Add relevant tags
+analytics.addTags([user.plan, user.region]);
+```
 
-### Network Issues
-- Verify the `apiUrl` is correct and accessible
-- Check browser network tab for failed requests
-- Enable `debug: true` to see SDK logs 
+### 4. Translation Caching
+Translations are automatically cached for 5 minutes to improve performance and reduce API calls.
+
+## Support
+
+- 📧 Email: support@customhack.dev
+- 📖 Documentation: [docs.analytics.customhack.dev](https://docs.analytics.customhack.dev)
+- 🐛 Issues: [GitHub Issues](https://github.com/customhack/better-analytics/issues)
+
+## Pricing
+
+- **Free Tier**: 1,000 errors/month
+- **Pro**: $9/month - 10,000 errors/month
+- **Enterprise**: Custom pricing for high-volume applications
+
+[View full pricing details](https://analytics.customhack.dev/pricing) 
