@@ -18,23 +18,20 @@ COPY apps/api/src ./apps/api/src
 ENV NODE_ENV=production
 
 RUN bun build \
-	--compile \
 	--minify-whitespace \
 	--minify-syntax \
 	--target bun \
-	--outfile server \
     --sourcemap \
-    --bytecode \
 	./apps/api/src/index.ts
 
 FROM gcr.io/distroless/base
 
 WORKDIR /app
 
-COPY --from=build /app/server server
+COPY --from=build /app/apps/api/src/index.js ./
 
 ENV NODE_ENV=production
 
-CMD ["./server"]
+CMD ["./index.js"]
 
 EXPOSE 4000 
