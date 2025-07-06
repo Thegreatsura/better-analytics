@@ -4,7 +4,7 @@ import type { AnalysisInsight, ChartData } from './types';
  * Processes an analysis insight and creates chart data if applicable
  */
 export function processInsight(insight: AnalysisInsight, queryResult: Record<string, unknown>[]): AnalysisInsight {
-    let processedInsight = { ...insight, data: queryResult };
+    const processedInsight = { ...insight, data: queryResult };
 
     // Create chart data for chart insights
     if (insight.type === 'chart' && insight.chartSpec && queryResult.length > 0) {

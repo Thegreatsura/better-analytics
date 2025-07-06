@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useState, ReactNode, use } from 'react';
+import { createContext, useState, type ReactNode, use } from 'react';
 
 export type TimeFilter = 'realtime' | 'hourly' | 'weekly' | 'monthly';
 

@@ -1,4 +1,4 @@
-import { Session } from "@better-analytics/auth";
+import type { Session } from "@better-analytics/auth";
 import { DeviceMobileCameraIcon, LaptopIcon } from "@phosphor-icons/react/dist/ssr";
 import { UAParser } from "ua-parser-js";
 import { SessionActionButton } from "./session-action-button";

@@ -58,11 +58,11 @@ export function TerminalLine({ log, noTimestamp, searchTerm, isExpanded, onToggl
             <span className="transition-colors">
                 {parts.map((part, index) =>
                     searchRegex.test(part) ? (
-                        <span key={index} className="bg-amber-200/80 dark:bg-amber-900/80 font-bold">
+                        <span key={part} className="bg-amber-200/80 dark:bg-amber-900/80 font-bold">
                             {part}
                         </span>
                     ) : (
-                        <span key={index}>{part}</span>
+                        <span key={part}>{part}</span>
                     )
                 )}
             </span>
@@ -126,16 +126,17 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                     : "border-border/[0.08] hover:bg-muted/[0.03]"
             )}
         >
-            <div
+            <button
                 className="flex w-full items-center p-4 cursor-pointer transition-all duration-200"
                 onClick={hasDetails ? onToggleExpand : undefined}
+                type="button"
             >
                 <div className="flex flex-1 items-center gap-4">
                     {/* Level Badge */}
                     <Badge
                         variant="outline"
                         className={cn(
-                            "min-w-[60px] justify-center font-medium rounded transition-all duration-200",
+                            "min-w-[60px] justify-center rounded font-medium transition-all duration-200",
                             "group-hover:shadow-sm group-hover:scale-[1.02]",
                             getLevelColor(level || type)
                         )}
@@ -228,7 +229,7 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                         </div>
                     )}
                 </div>
-            </div>
+            </button>
 
             {hasDetails && (
                 <CollapsibleContent>
@@ -306,7 +307,7 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                                 <span className="text-xs text-muted-foreground">Tags</span>
                                 <div className="flex flex-wrap gap-1">
                                     {tags.map((tag, index) => (
-                                        <Badge key={index} variant="outline" className="text-xs">
+                                        <Badge key={tag} variant="outline" className="text-xs">
                                             {tag}
                                         </Badge>
                                     ))}

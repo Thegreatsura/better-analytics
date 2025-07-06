@@ -172,7 +172,7 @@ export function useChat() {
 
                 const decoder = new TextDecoder();
                 let buffer = '';
-                let currentThinkingSteps: string[] = [];
+                const currentThinkingSteps: string[] = [];
 
                 try {
                     while (true) {
@@ -258,7 +258,7 @@ export function useChat() {
                                     if (update.type === "complete" || update.type === "error") {
                                         scrollToBottom();
                                         break;
-                                    } else if (update.type === "progress") {
+                                    }if (update.type === "progress") {
                                         scrollToBottom();
                                     }
                                 } catch (parseError) {

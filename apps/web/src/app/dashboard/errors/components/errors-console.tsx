@@ -134,7 +134,7 @@ export function ErrorsConsole() {
                 `URL: ${error.url || 'N/A'}\n` +
                 `Browser: ${error.browser_name || 'Unknown'} on ${error.os_name || 'Unknown'}\n` +
                 `Stack Trace: ${error.stack_trace || 'Not available'}\n` +
-                `---\n`
+                "---\n"
             )
             .join("\n");
 

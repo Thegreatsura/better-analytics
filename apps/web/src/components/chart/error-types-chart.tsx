@@ -1,6 +1,6 @@
 'use client';
 
-import React, { JSX } from 'react';
+import React, { type JSX } from 'react';
 import {
     BarChart,
     Bar,
@@ -12,7 +12,7 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import { Skeleton } from '@better-analytics/ui/components/skeleton';
-import { ErrorTypeItem } from './types';
+import type { ErrorTypeItem } from './types';
 
 export type ErrorTypesChartProps = {
     data: ErrorTypeItem[];

@@ -19,7 +19,7 @@ export default async function AdminAccessTokenPage() {
         );
     }
 
-    let user = await db.query.user.findFirst({
+    const user = await db.query.user.findFirst({
         where: eq(userSchema.id, userId),
         columns: {
             accessToken: true,

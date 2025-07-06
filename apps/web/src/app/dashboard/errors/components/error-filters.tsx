@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import type React from 'react';
 import { Badge } from '@better-analytics/ui/components/badge';
 import { Button } from '@better-analytics/ui/components/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@better-analytics/ui/components/popover';

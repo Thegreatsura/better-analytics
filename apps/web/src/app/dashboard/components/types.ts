@@ -1,4 +1,4 @@
-import { ErrorTypeItem } from '@/components/chart/types';
+import type { ErrorTypeItem } from '@/components/chart/types';
 
 export type DashboardProps = {
     errorTypeData: ErrorTypeItem[];
