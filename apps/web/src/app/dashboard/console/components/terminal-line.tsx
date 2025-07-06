@@ -127,9 +127,9 @@ What does this log entry indicate? Are there any potential issues or patterns I 
             )}
         >
             <CollapsibleTrigger asChild>
-                <div
-                    role="button"
-                    className="flex w-full items-center p-4 cursor-pointer transition-all duration-200"
+                <button
+                    type="button"
+                    className="flex w-full items-center p-4 cursor-pointer transition-all duration-200 text-left"
                 >
                     <div className="flex flex-1 items-center gap-4">
                         {/* Level Badge */}
@@ -175,6 +175,9 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                         <div
                             className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200"
                             onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            role="toolbar"
+                            aria-label="Log line actions"
                         >
                             <TooltipProvider>
                                 <Tooltip>
@@ -229,7 +232,7 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                             </div>
                         )}
                     </div>
-                </div>
+                </button>
             </CollapsibleTrigger>
 
             {hasDetails && (
