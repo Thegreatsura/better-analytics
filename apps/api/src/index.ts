@@ -17,6 +17,30 @@ const lingoDotDev = new LingoDotDevEngine({
     apiKey: process.env.LINGODOTDEV_API_KEY || '',
 });
 
+// Translation cache - stores results for 5 minutes
+const translationCache = new Map<string, { result: any; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(content: string | object, sourceLocale: string, targetLocale: string): string {
+    const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
+    return `${contentStr}-${sourceLocale}-${targetLocale}`;
+}
+
+function getCachedResult(cacheKey: string): any | null {
+    const cached = translationCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        return cached.result;
+    }
+    if (cached) {
+        translationCache.delete(cacheKey); // Clean up expired cache
+    }
+    return null;
+}
+
+function setCachedResult(cacheKey: string, result: any): void {
+    translationCache.set(cacheKey, { result, timestamp: Date.now() });
+}
+
 async function checkQuota(feature_id: string, customer_id: string) {
     try {
         const { data } = await Autumn.check({
@@ -82,7 +106,7 @@ const app = new Elysia()
         const pathname = new URL(request.url).pathname;
 
         // Skip auth for public endpoints
-        if (pathname === "/" || pathname === "/localization" || pathname === "/api/localization" || request.method === "OPTIONS") {
+        if (pathname === "/" || pathname === "/localization" || pathname === "/localization/object" || pathname === "/api/localization" || pathname === "/api/localization/object" || request.method === "OPTIONS") {
             return { userId: null };
         }
 
@@ -244,17 +268,63 @@ const app = new Elysia()
                 return { error: 'Key is required' };
             }
 
+            const cacheKey = getCacheKey(key, 'en', language || 'en');
+            const cachedResult = getCachedResult(cacheKey);
+
+            if (cachedResult) {
+                return { result: cachedResult };
+            }
+
             const result = await lingoDotDev.localizeText(key, {
                 sourceLocale: 'en',
                 targetLocale: language || 'en',
                 fast: true
             });
 
+            setCachedResult(cacheKey, result);
+
             return { result };
         } catch (error) {
             logger.error(error);
             set.status = 500;
             return { error: 'Translation failed' };
+        }
+    })
+    .post("/localization/object", async ({ body, set }) => {
+        logger.info("Received request on /api/localization/object endpoint.");
+
+        try {
+            const { content, sourceLocale = 'en', targetLocale = 'en' } = body as {
+                content: Record<string, string>;
+                sourceLocale?: string;
+                targetLocale?: string;
+            };
+
+            if (!content || typeof content !== 'object') {
+                set.status = 400;
+                return { error: 'Content object is required' };
+            }
+
+            const cacheKey = getCacheKey(content, sourceLocale, targetLocale);
+            const cachedResult = getCachedResult(cacheKey);
+
+            if (cachedResult) {
+                return { result: cachedResult };
+            }
+
+            const result = await lingoDotDev.localizeObject(content, {
+                sourceLocale,
+                targetLocale: 'ar',
+                fast: true
+            });
+
+            setCachedResult(cacheKey, result);
+
+            return { result };
+        } catch (error) {
+            logger.error(error);
+            set.status = 500;
+            return { error: 'Object translation failed' };
         }
     })
     .onError(({ error, set }) => {

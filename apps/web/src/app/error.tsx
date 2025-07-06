@@ -3,7 +3,7 @@
 import { analytics } from "@/lib/analytics";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import useSound from "use-sound";
 
 interface ErrorProps {
@@ -13,13 +13,45 @@ interface ErrorProps {
 export default function GlobalError({ error }: ErrorProps) {
 	const [play] = useSound("/bsod.mp3", { volume: 0.25 });
 	const [progress, setProgress] = useState(0);
-	const [message, setMessage] = useState(error.message);
+	const [content, setContent] = useState({
+		sadFace: ":(",
+		mainMessage: "This website ran into a problem and needs to restart. We're just collecting some error info, and then we'll restart for you.",
+		percentComplete: "% complete",
+		moreInfoText: "For more information about this issue and possible fixes, visit",
+		supportContactText: "If you contact support, give them this info:",
+		errorLabel: "Error:",
+		errorMessage: error.message,
+	});
 	const router = useRouter();
+	const hasTranslated = useRef(false);
 
 	useEffect(() => {
 		play();
 
-		analytics.localize(error.message).then(setMessage);
+		// Translate all content at once - but only once
+		if (!hasTranslated.current) {
+			hasTranslated.current = true;
+
+			const translateContent = async () => {
+				try {
+					const translated = await analytics.localizeObject({
+						sadFace: ":(",
+						mainMessage: "This website ran into a problem and needs to restart. We're just collecting some error info, and then we'll restart for you.",
+						percentComplete: "% complete",
+						moreInfoText: "For more information about this issue and possible fixes, visit",
+						supportContactText: "If you contact support, give them this info:",
+						errorLabel: "Error:",
+						errorMessage: error.message,
+					});
+
+					setContent(translated);
+				} catch (translationError) {
+					console.warn("Translation failed, using default text:", translationError);
+				}
+			};
+
+			translateContent();
+		}
 
 		const delay = 1000;
 		const rate = Math.floor(Math.random() * 100) + 150;
@@ -40,23 +72,22 @@ export default function GlobalError({ error }: ErrorProps) {
 		}, delay);
 
 		return () => clearTimeout(timeoutId);
-	}, [play, router, error.message]);
+	}, [play, router]);
 
 	return (
 		<div className="absolute z-[900] flex h-screen w-full flex-col items-center justify-center gap-4 bg-[#047cd4]">
 			<div className="flex max-w-2xl select-none flex-col space-y-10">
-				<h1 className="text-9xl">{":("}</h1>
+				<h1 className="text-9xl">{content.sadFace}</h1>
 
 				<p className="text-2xl">
-					This website ran into a problem and needs to restart. We&apos;re just
-					collecting some error info, and then we&apos;ll restart for you.
+					{content.mainMessage}
 				</p>
 
-				<p className="text-xl">{progress}% complete</p>
+				<p className="text-xl">{progress}{content.percentComplete}</p>
 
 				<div className="space-y-8 text-sm">
 					<p>
-						For more information about this issue and possible fixes, visit
+						{content.moreInfoText}
 						<Link
 							href="https://www.customhack.dev"
 							className="ml-1 hover:underline"
@@ -66,9 +97,9 @@ export default function GlobalError({ error }: ErrorProps) {
 					</p>
 
 					<div className="space-y-4">
-						<p>If you contact support, give them this info:</p>
+						<p>{content.supportContactText}</p>
 
-						<p>Error: {message}</p>
+						<p>{content.errorLabel} {content.errorMessage}</p>
 					</div>
 				</div>
 			</div>

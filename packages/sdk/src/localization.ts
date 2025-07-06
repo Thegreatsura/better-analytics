@@ -128,6 +128,31 @@ class LocalizationEngine {
         return results;
     }
 
+    async localizeObject<T extends Record<string, string>>(
+        obj: T,
+        options: LocalizationOptions = {}
+    ): Promise<T> {
+        const keys = Object.keys(obj);
+        const values = Object.values(obj);
+
+        // Translate all values in parallel
+        const translations = await Promise.allSettled(
+            values.map(value => this.translate(value, options))
+        );
+
+        const result = {} as T;
+        keys.forEach((key, index) => {
+            const translation = translations[index];
+            if (translation && translation.status === 'fulfilled') {
+                result[key as keyof T] = translation.value as T[keyof T];
+            } else {
+                result[key as keyof T] = obj[key as keyof T];
+            }
+        });
+
+        return result;
+    }
+
     // Clear cache
     clearCache(): void {
         this.cache.clear();
@@ -149,6 +174,7 @@ export function createLocalizer(config: LocalizationConfig) {
     return {
         translate: (key: string, language?: string) => localizer.translate(key, { targetLocale: language }),
         translateMultiple: (keys: string[], language?: string) => localizer.translateMultiple(keys, { targetLocale: language }),
+        localizeObject: <T extends Record<string, string>>(obj: T, language?: string) => localizer.localizeObject(obj, { targetLocale: language }),
         clearCache: () => localizer.clearCache(),
         getCacheSize: () => localizer.getCacheSize(),
     };

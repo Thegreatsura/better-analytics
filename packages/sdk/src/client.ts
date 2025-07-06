@@ -30,6 +30,7 @@ export interface ErrorTracker {
     setUser(userId: string): void;
     addTags(tags: string[]): void;
     localize(key: string, language?: string): Promise<string>;
+    localizeObject<T extends Record<string, string>>(obj: T, language?: string): Promise<T>;
 }
 
 class ClientErrorTracker implements ErrorTracker {
@@ -319,9 +320,34 @@ class ClientErrorTracker implements ErrorTracker {
             const data = await response.json();
             return data.result || key;
         } catch (error) {
-            // Fallback to key if translation fails
             this.log('Translation failed', { key, language, error });
             return key;
+        }
+    }
+
+    async localizeObject<T extends Record<string, string>>(obj: T, language?: string): Promise<T> {
+        try {
+            const response = await fetch(`${this.config.apiUrl}/localization/object`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    content: obj,
+                    sourceLocale: 'en',
+                    targetLocale: language || (typeof navigator !== 'undefined' ? navigator.language.split('-')[0] : 'en'),
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.result || obj;
+        } catch (error) {
+            this.log('Object translation failed', { obj, language, error });
+            return obj;
         }
     }
 }
