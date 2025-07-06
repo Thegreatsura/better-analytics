@@ -6,8 +6,10 @@ WORKDIR /app
 COPY package.json package.json
 COPY apps/api/package.json ./apps/api/package.json
 COPY packages/*/package.json ./packages/
+COPY tooling/*/package.json ./tooling/
 
 COPY packages/ ./packages/
+COPY tooling/ ./tooling/
 
 RUN bun install
 
