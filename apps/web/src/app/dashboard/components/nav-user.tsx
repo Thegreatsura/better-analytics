@@ -61,7 +61,7 @@ export function NavUser({ user }: NavUserProps) {
 									</span>
 								</div>
 
-								<DotsThreeVerticalIcon
+								<DotsThreeVerticalIcon weight="bold"
 									className={cn("ml-auto size-4", isMobile && "hidden")}
 								/>
 							</SidebarMenuButton>
