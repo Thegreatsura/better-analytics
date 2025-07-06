@@ -1,10 +1,10 @@
 import {
 	HouseIcon,
 	BugIcon,
-	TerminalIcon,
 	ChartBarHorizontalIcon,
 	CreditCardIcon,
 	GearIcon,
+	Brain,
 } from "@phosphor-icons/react";
 
 export interface SidebarItem {
@@ -15,7 +15,7 @@ export interface SidebarItem {
 
 export interface SidebarConfig {
 	main: SidebarItem[];
-	errors: SidebarItem[];
+	console: SidebarItem[];
 	settings: SidebarItem[];
 }
 
@@ -27,20 +27,20 @@ export const sidebarConfig: SidebarConfig = {
 			icon: HouseIcon,
 		},
 		{
-			title: "Console",
-			url: "/dashboard/console",
-			icon: TerminalIcon,
+			title: "AI",
+			url: "/dashboard/ai",
+			icon: Brain,
 		},
 	],
-	errors: [
+	console: [
 		{
-			title: "Console",
-			url: "/dashboard/errors/console",
+			title: "Errors",
+			url: "/dashboard/errors",
 			icon: BugIcon,
 		},
 		{
-			title: "Analyics",
-			url: "/dashboard/errors/analytics",
+			title: "Logs",
+			url: "/dashboard/logs",
 			icon: ChartBarHorizontalIcon,
 		},
 	],

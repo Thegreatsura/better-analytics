@@ -35,7 +35,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			<SidebarContent>
 				<NavMain items={sidebarConfig.main} />
 
-				<NavMain items={sidebarConfig.errors} title="Errors" />
+				<NavMain items={sidebarConfig.console} title="Console" />
 
 				<NavMain items={sidebarConfig.settings} title="Settings" />
 			</SidebarContent>
