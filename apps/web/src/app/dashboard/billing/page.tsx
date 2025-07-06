@@ -157,15 +157,7 @@ export default async function BillingPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<AutumnProvider
-						backendUrl="http://localhost:3000"
-						customerData={{
-							name: session?.user.name,
-							email: session?.user.email,
-						}}
-					>
-						<PricingTable />
-					</AutumnProvider>
+					<PricingTable />
 				</CardContent>
 			</Card>
 		</div>

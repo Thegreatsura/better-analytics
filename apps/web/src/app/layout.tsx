@@ -12,7 +12,7 @@ import { TooltipProvider } from "@better-analytics/ui/components/tooltip";
 import { IconProvider } from "@better-analytics/ui/providers/icon.provider";
 import { cn } from "@better-analytics/ui";
 import { Toaster } from "@/components/sonner";
-import { AutumnProvider } from "autumn-js/next";
+import { AutumnProvider } from "autumn-js/react";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
