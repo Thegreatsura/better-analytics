@@ -2,10 +2,13 @@
 
 import { Button } from '@better-analytics/ui/components/button';
 import { Input } from '@better-analytics/ui/components/input';
-import { PaperPlaneTilt, Robot, User, Copy, ThumbsUp, ThumbsDown, StopCircle } from '@phosphor-icons/react';
+import { Card, CardContent, CardHeader } from '@better-analytics/ui/components/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@better-analytics/ui/components/tooltip';
+import { PaperPlaneTilt, Robot, User, Copy, ThumbsUp, ThumbsDown, StopCircle, Sparkle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { ChartRenderer } from './components/chart-renderer';
+import { cn } from '@better-analytics/ui';
 
 // Type for chart data from AI tool calls
 interface ChartData {
@@ -80,14 +83,14 @@ export default function AIPage() {
         };
     }, [currentEventSource]);
 
-    const copyMessage = (content: string) => {
+    const copyMessage = useCallback((content: string) => {
         navigator.clipboard.writeText(content);
         toast.success('Message copied to clipboard');
-    };
+    }, []);
 
-    const handleVote = (messageId: string, vote: 'up' | 'down') => {
+    const handleVote = useCallback((messageId: string, vote: 'up' | 'down') => {
         toast.success(`Feedback recorded: ${vote === 'up' ? 'Helpful' : 'Not helpful'}`);
-    };
+    }, []);
 
     const stopStreaming = useCallback(() => {
         if (currentEventSource) {
@@ -246,9 +249,31 @@ export default function AIPage() {
         }
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInput(e.target.value);
-    };
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        if (value.length <= 500) {
+            setInput(value);
+        }
+    }, []);
+
+    // Keyboard shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Escape to stop streaming
+            if (e.key === 'Escape' && isLoading) {
+                stopStreaming();
+            }
+            // Ctrl/Cmd + K to focus input
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                const inputElement = document.querySelector('input[placeholder*="Ask me about"]') as HTMLInputElement;
+                inputElement?.focus();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isLoading, stopStreaming]);
 
     const reload = () => {
         // Remove the last assistant message and retry
@@ -260,42 +285,68 @@ export default function AIPage() {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-var(--header-height)-3rem)] max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground">AI Assistant</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Chat with AI about your analytics data and get insights with beautiful visualizations.
-                    </p>
-                </div>
-
-                {isLoading && (
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <div className="flex gap-1">
-                                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
-                                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+        <Card className="h-full flex flex-col pb-2 mb-2 gap-0 overflow-hidden">
+            <CardHeader className="pb-4">
+                <div className="space-y-3">
+                    {/* Enhanced Header Bar */}
+                    <div className="backdrop-blur-xl bg-muted/30 border border-border/20 shadow-lg p-4 rounded-lg">
+                        <div className="flex flex-col lg:flex-row gap-4">
+                            {/* Left Section: Title & Description */}
+                            <div className="flex items-center gap-3 flex-1">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 bg-gradient-to-br bg-secondary rounded-lg flex items-center justify-center">
+                                        <Sparkle className="h-4 w-4 text-white" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
+                                        <p className="text-xs text-muted-foreground">
+                                            Chat with AI about your analytics data and get insights with visualizations
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            <span>AI is analyzing...</span>
+
+                            {/* Right Section: Status & Actions */}
+                            <div className="flex items-center gap-2">
+                                {isLoading && (
+                                    <>
+                                        <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                                            <div className="flex gap-1">
+                                                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" />
+                                                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                                                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                                            </div>
+                                            <span className="text-sm text-emerald-400 font-medium">AI is analyzing...</span>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={stopStreaming}
+                                            className="gap-2 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-all duration-200"
+                                        >
+                                            <StopCircle className="h-4 w-4" />
+                                            Stop
+                                        </Button>
+                                    </>
+                                )}
+
+                                {!isLoading && (
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-muted/30 border border-border/20 rounded-md">
+                                        <div className="w-2 h-2 bg-blue-400 rounded-full" />
+                                        <span className="text-sm text-muted-foreground font-mono">
+                                            {messages.length} message{messages.length !== 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={stopStreaming}
-                            className="flex items-center gap-2"
-                        >
-                            <StopCircle className="h-4 w-4" />
-                            Stop
-                        </Button>
                     </div>
-                )}
-            </div>
+                </div>
+            </CardHeader>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-hidden">
-                <div className="h-full overflow-y-auto px-6" ref={scrollAreaRef}>
+            <CardContent className="flex-1 p-0 overflow-hidden">
+                <div className="h-full overflow-y-auto px-6 custom-scrollbar" ref={scrollAreaRef}>
                     <div className="space-y-6 py-6">
                         {messages.map((message) => (
                             <div
@@ -312,10 +363,12 @@ export default function AIPage() {
                                     {/* Text Message */}
                                     {message.content && (
                                         <div
-                                            className={`rounded-lg px-4 py-3 ${message.role === 'user'
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'bg-muted'
-                                                }`}
+                                            className={cn(
+                                                "rounded-lg px-4 py-3 transition-all duration-200 border",
+                                                message.role === 'user'
+                                                    ? 'bg-primary text-primary-foreground border-primary/20 shadow-sm'
+                                                    : 'bg-muted/50 border-border/20 hover:bg-muted/70 hover:border-border/30'
+                                            )}
                                         >
                                             <div className="text-sm leading-relaxed break-words">
                                                 {message.content}
@@ -355,95 +408,191 @@ export default function AIPage() {
 
                                     {/* Action Buttons for Assistant Messages */}
                                     {message.role === 'assistant' && message.content && !message.isStreaming && (
-                                        <div className="flex items-center gap-1 pl-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => copyMessage(message.content)}
-                                                className="h-7 px-2 text-xs hover:bg-muted"
-                                            >
-                                                <Copy className="h-3 w-3" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleVote(message.id, 'up')}
-                                                className="h-7 px-2 text-xs hover:bg-muted"
-                                            >
-                                                <ThumbsUp className="h-3 w-3" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleVote(message.id, 'down')}
-                                                className="h-7 px-2 text-xs hover:bg-muted"
-                                            >
-                                                <ThumbsDown className="h-3 w-3" />
-                                            </Button>
+                                        <div className="flex items-center gap-1 pl-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => copyMessage(message.content)}
+                                                            className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-400 transition-all duration-150"
+                                                        >
+                                                            <Copy className="h-3 w-3" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Copy message</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleVote(message.id, 'up')}
+                                                            className="h-7 w-7 p-0 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all duration-150"
+                                                        >
+                                                            <ThumbsUp className="h-3 w-3" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Helpful response</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleVote(message.id, 'down')}
+                                                            className="h-7 w-7 p-0 hover:bg-red-500/10 hover:text-red-400 transition-all duration-150"
+                                                        >
+                                                            <ThumbsDown className="h-3 w-3" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Not helpful</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         </div>
                                     )}
                                 </div>
 
                                 {message.role === 'user' && (
-                                    <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                        <User className="h-4 w-4 text-primary" />
+                                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-sm transition-all duration-200 group-hover:shadow-md group-hover:scale-105">
+                                        <User className="h-4 w-4 text-white" />
                                     </div>
                                 )}
                             </div>
                         ))}
 
                         {error && (
-                            <div className="flex gap-3">
-                                <div className="flex-shrink-0 w-8 h-8 bg-destructive/10 rounded-full flex items-center justify-center">
-                                    <Robot className="h-4 w-4 text-destructive" />
+                            <div className="group flex gap-3 transition-all duration-300 ease-out hover:shadow-sm">
+                                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center shadow-sm transition-all duration-200 group-hover:shadow-md group-hover:scale-105">
+                                    <Robot className="h-4 w-4 text-white" />
                                 </div>
-                                <div className="flex-1 bg-destructive/10 rounded-lg px-4 py-3">
+                                <div className="flex-1 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 transition-all duration-200 hover:bg-red-500/15 hover:border-red-500/30">
                                     <div className="flex items-center justify-between gap-3">
-                                        <span className="text-sm text-destructive">
+                                        <span className="text-sm text-red-600 dark:text-red-400 font-medium">
                                             {error}
                                         </span>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={reload}
-                                            className="h-7 px-2 text-xs flex-shrink-0"
-                                        >
-                                            Retry
-                                        </Button>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={reload}
+                                                        className="h-7 w-7 p-0 flex-shrink-0 hover:bg-red-500/10 hover:text-red-400 transition-all duration-150"
+                                                    >
+                                                        <PaperPlaneTilt className="h-3 w-3" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Retry last message</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </div>
                                 </div>
                             </div>
                         )}
                     </div>
                 </div>
-            </div>
+            </CardContent>
 
             {/* Input Area */}
-            <div className="border-t bg-background px-6 py-4">
+            <div className="border-t bg-background/50 backdrop-blur-sm px-6 py-4">
                 <form onSubmit={handleSubmit}>
-                    <div className="flex gap-3">
-                        <Input
-                            value={input}
-                            onChange={handleInputChange}
-                            placeholder="Ask me about your analytics data and I'll create charts..."
-                            disabled={isLoading}
-                            className="flex-1"
-                        />
+                    <div className="flex gap-3 items-end">
+                        <div className="flex-1 relative">
+                            <Input
+                                value={input}
+                                onChange={handleInputChange}
+                                placeholder="Ask me about your analytics data and I'll create charts... (⌘K to focus)"
+                                disabled={isLoading}
+                                className="pr-16 bg-background/50 border-border/50 focus:bg-background focus:border-border transition-all duration-200 min-h-[44px]"
+                                maxLength={500}
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">
+                                {input.length}/500
+                            </div>
+                        </div>
                         <Button
                             type="submit"
                             disabled={isLoading || !input.trim()}
                             size="sm"
-                            className="px-4"
+                            className={cn(
+                                "px-4 h-[44px] transition-all duration-200",
+                                isLoading
+                                    ? "bg-emerald-500 hover:bg-emerald-600"
+                                    : "bg-primary hover:bg-primary/90"
+                            )}
                         >
                             {isLoading ? (
-                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             ) : (
                                 <PaperPlaneTilt className="h-4 w-4" />
                             )}
                         </Button>
                     </div>
+
+                    {/* Quick Actions */}
+                    {!isLoading && (
+                        <div className="flex flex-wrap items-center gap-2 mt-3">
+                            <span className="text-xs text-muted-foreground font-medium">Quick actions:</span>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-6 px-2 text-xs hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-400 transition-all duration-150"
+                                onClick={() => setInput("Show me error trends for the last 7 days")}
+                                disabled={isLoading}
+                            >
+                                📈 Error trends
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-6 px-2 text-xs hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-all duration-150"
+                                onClick={() => setInput("What are the most common errors in my app?")}
+                                disabled={isLoading}
+                            >
+                                🔍 Top errors
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-6 px-2 text-xs hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:text-emerald-400 transition-all duration-150"
+                                onClick={() => setInput("Create a performance dashboard")}
+                                disabled={isLoading}
+                            >
+                                ⚡ Performance
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-6 px-2 text-xs hover:bg-purple-500/10 hover:border-purple-500/20 hover:text-purple-400 transition-all duration-150"
+                                onClick={() => setInput("Analyze user behavior patterns")}
+                                disabled={isLoading}
+                            >
+                                👥 User patterns
+                            </Button>
+                        </div>
+                    )}
                 </form>
             </div>
-        </div>
+        </Card>
     );
 } 
