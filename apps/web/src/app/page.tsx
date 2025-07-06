@@ -52,7 +52,7 @@ export default function Landing() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<Link href="/test">
+							<Link href="/dashboard">
 								<Button className="w-full" variant="outline">
 									View Dashboard
 								</Button>
