@@ -57,7 +57,7 @@ export function LogsConsole() {
             if (result.success && result.data) {
                 const transformedLogs: LogLine[] = result.data.map(log => ({
                     timestamp: new Date(log.created_at),
-                    message: `[${log.level?.toUpperCase() || 'INFO'}] ${log.message}`,
+                    message: log.message,
                     rawTimestamp: log.created_at,
                     source: log.source || 'Unknown',
                     level: log.level || 'info'

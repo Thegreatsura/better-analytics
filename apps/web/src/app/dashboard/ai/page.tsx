@@ -54,6 +54,15 @@ export default function AIPage() {
     const [error, setError] = useState<string | null>(null);
     const [currentEventSource, setCurrentEventSource] = useState<EventSource | null>(null);
 
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const preFilledMessage = urlParams.get('message');
+        if (preFilledMessage) {
+            setInput(decodeURIComponent(preFilledMessage));
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+    }, []);
+
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {

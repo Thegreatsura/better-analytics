@@ -1,11 +1,13 @@
 'use client';
 
 import { Badge } from '@better-analytics/ui/components/badge';
+import { Button } from '@better-analytics/ui/components/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@better-analytics/ui/components/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@better-analytics/ui/components/collapsible';
-import { ChevronRight, Clock, Server, User, Globe } from 'lucide-react';
+import { ChevronRight, Clock, Server, User, Globe, Copy, Bot, Check } from 'lucide-react';
 import { cn } from '@better-analytics/ui';
 import { type LogLine, getLogType } from './utils';
+import { useState } from 'react';
 
 // Simple regex escape function
 function escapeRegExp(string: string) {
@@ -23,6 +25,7 @@ interface LogLineProps {
 export function TerminalLine({ log, noTimestamp, searchTerm, isExpanded, onToggleExpand }: LogLineProps) {
     const { timestamp, message, rawTimestamp, source, level } = log;
     const { type, variant, color } = getLogType(message);
+    const [copied, setCopied] = useState(false);
 
     const formattedTime = timestamp
         ? timestamp.toLocaleString([], {
@@ -83,25 +86,57 @@ export function TerminalLine({ log, noTimestamp, searchTerm, isExpanded, onToggl
     // Check if we have additional details to show
     const hasDetails = source || rawTimestamp || level || message.length > 80;
 
+    const handleCopy = async () => {
+        const logText = `${formattedFullTime} [${(level || type).toUpperCase()}] ${message}${source ? ` (${source})` : ''}`;
+        try {
+            await navigator.clipboard.writeText(logText);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy log:', err);
+        }
+    };
+
+    const handleAskAI = () => {
+        const logContext = `Please analyze this log entry and explain what it means, potential issues, and any recommendations:
+
+**Log Entry:**
+- Timestamp: ${formattedFullTime}
+- Level: ${(level || type).toUpperCase()}
+- Message: ${message}
+${source ? `- Source: ${source}` : ''}
+${rawTimestamp ? `- Raw Timestamp: ${rawTimestamp}` : ''}
+
+What does this log entry indicate? Are there any potential issues or patterns I should be aware of?`;
+
+        // Navigate to AI page with pre-filled message
+        const encodedMessage = encodeURIComponent(logContext);
+        window.open(`/dashboard/ai?message=${encodedMessage}`, '_self');
+    };
+
     return (
         <Collapsible
             open={isExpanded}
             onOpenChange={onToggleExpand}
             className={cn(
-                "group rounded-lg border transition-all duration-200",
-                isExpanded ? "border-border/20 bg-muted/[0.03]" : "border-border/[0.08] hover:bg-muted/[0.02]"
+                "group rounded-lg border transition-all duration-300 ease-out",
+                "hover:shadow-sm hover:border-border/30",
+                isExpanded
+                    ? "border-border/30 bg-muted/[0.05] shadow-sm"
+                    : "border-border/[0.08] hover:bg-muted/[0.03]"
             )}
         >
-            <CollapsibleTrigger
-                className="flex w-full items-center p-4 text-left"
-                disabled={!hasDetails}
+            <div
+                className="flex w-full items-center p-4 cursor-pointer transition-all duration-200"
+                onClick={hasDetails ? onToggleExpand : undefined}
             >
                 <div className="flex flex-1 items-center gap-4">
                     {/* Level Badge */}
                     <Badge
                         variant="outline"
                         className={cn(
-                            "min-w-[60px] justify-center font-medium rounded",
+                            "min-w-[60px] justify-center font-medium rounded transition-all duration-200",
+                            "group-hover:shadow-sm group-hover:scale-[1.02]",
                             getLevelColor(level || type)
                         )}
                     >
@@ -110,9 +145,9 @@ export function TerminalLine({ log, noTimestamp, searchTerm, isExpanded, onToggl
 
                     {/* Timestamp */}
                     {!noTimestamp && (
-                        <div className="flex items-center gap-2 min-w-[90px]">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <time className="text-sm text-muted-foreground font-mono">
+                        <div className="flex items-center gap-2 min-w-[90px] transition-all duration-200 group-hover:text-foreground/80">
+                            <Clock className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground/60" />
+                            <time className="text-sm text-muted-foreground font-mono transition-colors duration-200 group-hover:text-foreground/70">
                                 {formattedTime}
                             </time>
                         </div>
@@ -121,8 +156,8 @@ export function TerminalLine({ log, noTimestamp, searchTerm, isExpanded, onToggl
                     {/* Source */}
                     {source && (
                         <div className="flex items-center gap-2">
-                            <Server className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">
+                            <Server className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground/60" />
+                            <span className="text-sm text-muted-foreground transition-colors duration-200 group-hover:text-foreground/70">
                                 {source}
                             </span>
                         </div>
@@ -130,22 +165,70 @@ export function TerminalLine({ log, noTimestamp, searchTerm, isExpanded, onToggl
 
                     {/* Message */}
                     <div className="flex-1 min-w-0">
-                        <span className="text-sm text-foreground font-mono truncate block">
+                        <span className="text-sm text-foreground font-mono truncate block transition-colors duration-200">
                             {highlightMessage(message, searchTerm || "")}
                         </span>
                     </div>
 
+                    {/* Action Buttons */}
+                    <div
+                        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleCopy}
+                                        className="h-7 w-7 p-0 hover:bg-blue-500/10 hover:text-blue-400 transition-all duration-150"
+                                    >
+                                        {copied ? (
+                                            <Check className="h-3 w-3 text-emerald-400" />
+                                        ) : (
+                                            <Copy className="h-3 w-3" />
+                                        )}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{copied ? 'Copied!' : 'Copy log entry'}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleAskAI}
+                                        className="h-7 w-7 p-0 hover:bg-purple-500/10 hover:text-purple-400 transition-all duration-150"
+                                    >
+                                        <Bot className="h-3 w-3" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Ask AI about this log</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+
                     {/* Expand Icon */}
                     {hasDetails && (
-                        <ChevronRight
-                            className={cn(
-                                "h-4 w-4 text-muted-foreground transition-all duration-200 flex-shrink-0",
-                                isExpanded && "rotate-90"
-                            )}
-                        />
+                        <div className="flex items-center justify-center w-8 h-8 hover:bg-muted/50 rounded transition-colors duration-150">
+                            <ChevronRight
+                                className={cn(
+                                    "h-4 w-4 text-muted-foreground transition-all duration-200 flex-shrink-0",
+                                    isExpanded && "rotate-90"
+                                )}
+                            />
+                        </div>
                     )}
                 </div>
-            </CollapsibleTrigger>
+            </div>
 
             {hasDetails && (
                 <CollapsibleContent>
