@@ -1,4 +1,4 @@
-import { type CheckProductPreview } from "autumn-js";
+import type { CheckProductPreview } from "autumn-js";
 
 export const getAttachContent = (preview: CheckProductPreview) => {
   const {
@@ -42,17 +42,16 @@ export const getAttachContent = (preview: CheckProductPreview) => {
             </p>
           ),
         };
-      } else {
-        return {
-          title: <p>Purchase {product_name}</p>,
-          message: (
-            <p>
-              By clicking confirm, you will purchase {product_name} and your
-              card will be charged immediately.
-            </p>
-          ),
-        };
       }
+      return {
+        title: <p>Purchase {product_name}</p>,
+        message: (
+          <p>
+            By clicking confirm, you will purchase {product_name} and your
+            card will be charged immediately.
+          </p>
+        ),
+      };
 
     case "renew":
       return {
