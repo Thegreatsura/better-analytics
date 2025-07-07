@@ -516,3 +516,84 @@ export async function getAnalyticsTrends() {
         return { success: false, error: 'Failed to fetch analytics trends' };
     }
 }
+
+export const getRecentErrorsChart = async () => {
+    try {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+        const clientId = session.user.id;
+
+        const data = await chQuery<{ hour: number; severity: string; count: number }>(`
+            SELECT 
+                toHour(created_at) as hour,
+                severity,
+                toUInt32(COUNT(*)) as count
+            FROM errors
+            WHERE created_at >= now() - INTERVAL 24 HOUR AND client_id = {clientId:String}
+            GROUP BY hour, severity
+            ORDER BY hour, severity
+        `, { clientId });
+
+        // Transform data into chart format with severity breakdown
+        const chartData = Array.from({ length: 24 }, (_, i) => {
+            const hourData = data.filter(d => d.hour === i);
+            return {
+                hour: i,
+                critical: hourData.find(d => d.severity === 'critical')?.count || 0,
+                high: hourData.find(d => d.severity === 'high')?.count || 0,
+                medium: hourData.find(d => d.severity === 'medium')?.count || 0,
+                low: hourData.find(d => d.severity === 'low')?.count || 0,
+                total: hourData.reduce((sum, d) => sum + d.count, 0)
+            };
+        });
+
+        return { success: true, data: chartData };
+    } catch (error) {
+        console.error('Failed to get recent errors chart data:', error);
+        return { success: false, error: 'Failed to get recent errors chart data' };
+    }
+}
+
+export const getNewErrors = async () => {
+    try {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+        const clientId = session.user.id;
+
+        const data = await chQuery<ErrorData>(`
+            SELECT * FROM errors
+            WHERE status = 'new' AND client_id = {clientId:String}
+            ORDER BY created_at DESC
+            LIMIT 5
+        `, { clientId });
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('Failed to get new errors:', error);
+        return { success: false, error: 'Failed to get new errors' };
+    }
+}
+
+export const getTopErrors = async () => {
+    try {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+        const clientId = session.user.id;
+
+        const data = await chQuery<{ name: string, count: number }>(`
+            SELECT 
+                toString(error_name) as name,
+                toUInt32(COUNT(*)) as count
+            FROM errors
+            WHERE client_id = {clientId:String} AND error_name IS NOT NULL
+            GROUP BY name
+            ORDER BY count DESC
+            LIMIT 5
+        `, { clientId });
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('Failed to get top errors:', error);
+        return { success: false, error: 'Failed to get top errors' };
+    }
+}

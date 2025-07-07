@@ -20,7 +20,8 @@ import {
     logPerformanceMetrics,
     logBusinessEvent,
     logDebugInfo,
-    logWarning
+    logWarning,
+    generateMultipleRandomErrors
 } from "./actions";
 import { useState, useEffect, useRef } from "react";
 import React from "react";
@@ -132,6 +133,25 @@ export default function ErrorsPage() {
                 formData: componentState.formData,
             },
         });
+    };
+
+    const handleBulkErrorGeneration = async (event?: React.MouseEvent) => {
+        trackInteraction('bulk-error-generation', {
+            mousePosition: event ? { x: event.clientX, y: event.clientY } : undefined,
+        });
+
+        try {
+            toast.info("Generating 15 random errors with varied severities...");
+            const result = await generateMultipleRandomErrors(15);
+
+            if (result.success) {
+                toast.success(`Successfully generated ${result.summary.successful} errors with dynamic severities and types!`);
+            } else {
+                toast.error("Failed to generate bulk errors");
+            }
+        } catch (error) {
+            toast.error("Error during bulk generation");
+        }
     };
 
     const handleClientError = (event?: React.MouseEvent) => {
@@ -1274,6 +1294,13 @@ export default function ErrorsPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <p>Generate Multiple Random Errors</p>
+                            <Button variant="destructive" onClick={handleBulkErrorGeneration}>
+                                Generate 15 Dynamic Errors
+                            </Button>
+                        </div>
+                        <Separator />
                         <div className="flex items-center justify-between">
                             <p>Server Action Error</p>
                             <Button variant="destructive" onClick={handleServerActionError}>

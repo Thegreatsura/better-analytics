@@ -8,11 +8,14 @@ import {
 	getAnalyticsStats,
 	getErrorsByEnvironment,
 	getLogsByLevel,
+	getRecentErrorsChart,
 	getErrorVsLogTrends,
 	getTopErrorUrls,
 	getErrorsByBrowser,
 	getErrorsByLocation,
 	getAnalyticsTrends,
+	getNewErrors,
+	getTopErrors,
 } from "./actions";
 import { DashboardUI } from "./dashboard-ui";
 
@@ -71,6 +74,9 @@ export async function DashboardClient() {
 		errorsByBrowserResult,
 		errorsByLocationResult,
 		analyticsTrendsResult,
+		recentErrorsChartResult,
+		newErrorsResult,
+		topErrorsResult,
 	] = await Promise.all([
 		getAnalyticsStats(),
 		getErrorVsLogTrends(),
@@ -78,6 +84,9 @@ export async function DashboardClient() {
 		getErrorsByBrowser(),
 		getErrorsByLocation(),
 		getAnalyticsTrends(),
+		getRecentErrorsChart(),
+		getNewErrors(),
+		getTopErrors(),
 	]);
 
 	// Transform data for the client component
@@ -121,6 +130,9 @@ export async function DashboardClient() {
 	const topUrlsData = topErrorUrlsResult.success ? topErrorUrlsResult.data : [];
 	const topBrowsersData = errorsByBrowserResult.success ? errorsByBrowserResult.data : [];
 	const topLocationsData = errorsByLocationResult.success ? errorsByLocationResult.data : [];
+	const recentErrorsChartData = recentErrorsChartResult.success ? recentErrorsChartResult.data : [];
+	const newErrorsData = newErrorsResult.success ? newErrorsResult.data : [];
+	const topErrorsData = topErrorsResult.success ? topErrorsResult.data : [];
 
 	return (
 		<DashboardUI
@@ -132,6 +144,9 @@ export async function DashboardClient() {
 			topUrlsData={topUrlsData || []}
 			topBrowsersData={topBrowsersData || []}
 			topLocationsData={topLocationsData || []}
+			recentErrorsChartData={recentErrorsChartData || []}
+			newErrorsData={newErrorsData || []}
+			topErrorsData={topErrorsData || []}
 		/>
 	);
 }
