@@ -13,7 +13,7 @@ import { Badge } from "@better-analytics/ui/components/badge";
 import { Autumn as autumn } from "autumn-js";
 import { redirect } from "next/navigation";
 import PricingTable from "@better-analytics/ui/components/autumn/pricing-table";
-import { CreditCard, ChartBar, ChartLine, Package } from "@phosphor-icons/react";
+import { CreditCard, ChartBar, ChartLine, Package } from "@phosphor-icons/react/ssr";
 import { Button } from "@better-analytics/ui/components/button";
 
 export default async function BillingPage() {

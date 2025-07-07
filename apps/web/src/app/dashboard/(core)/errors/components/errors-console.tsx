@@ -371,18 +371,6 @@ export function ErrorsConsole() {
 
             <CardContent className="flex-1 p-0 overflow-hidden">
                 <div className="h-full flex flex-col">
-                    {/* Search Bar */}
-                    <div className="p-4 border-b border-border/20">
-                        <div className="relative">
-                            <MagnifyingGlass className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search by error name, message..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-9"
-                            />
-                        </div>
-                    </div>
                     <div className="flex-1 overflow-y-auto" ref={scrollRef} onScroll={handleScroll}>
                         {isLoading ? (
                             <LoadingSkeleton />
