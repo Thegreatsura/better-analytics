@@ -127,11 +127,10 @@ What does this log entry indicate? Are there any potential issues or patterns I 
             )}
         >
             <CollapsibleTrigger asChild>
-                <button
-                    type="button"
+                <div
                     className="flex w-full items-center p-4 cursor-pointer transition-all duration-200 text-left"
                 >
-                    <div className="flex flex-1 items-center gap-4">
+                    <div className="flex flex-1 items-center gap-4" onClick={hasDetails ? onToggleExpand : undefined}>
                         {/* Level Badge */}
                         <Badge
                             variant="outline"
@@ -232,7 +231,7 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                             </div>
                         )}
                     </div>
-                </button>
+                </div>
             </CollapsibleTrigger>
 
             {hasDetails && (
