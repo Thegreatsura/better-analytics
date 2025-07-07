@@ -163,32 +163,43 @@ export async function getRecentLogs() {
 
 export async function getAnalyticsStats() {
     try {
+        // Get the current user session
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
+
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const clientId = session.user.id;
+
         const [
             errorCountData,
             logCountData,
             errorsByTypeData,
             errorsBySeverityData
         ] = await Promise.all([
-            chQuery<{ count: number }>("SELECT COUNT(*) as count FROM errors"),
-            chQuery<{ count: number }>("SELECT COUNT(*) as count FROM logs"),
+            chQuery<{ count: number }>("SELECT COUNT(*) as count FROM errors WHERE client_id = {clientId:String}", { clientId }),
+            chQuery<{ count: number }>("SELECT COUNT(*) as count FROM logs WHERE client_id = {clientId:String}", { clientId }),
             chQuery<{ error_type: string; count: number }>(`
                 SELECT 
                     toString(error_type) as error_type,
                     toUInt32(COUNT(*)) as count
                 FROM errors 
-                WHERE error_type IS NOT NULL
+                WHERE error_type IS NOT NULL AND client_id = {clientId:String}
                 GROUP BY error_type 
                 ORDER BY count DESC
-            `),
+            `, { clientId }),
             chQuery<{ severity: string; count: number }>(`
                 SELECT 
                     toString(severity) as severity,
                     toUInt32(COUNT(*)) as count
                 FROM errors 
-                WHERE severity IS NOT NULL
+                WHERE severity IS NOT NULL AND client_id = {clientId:String}
                 GROUP BY severity 
                 ORDER BY count DESC
-            `)
+            `, { clientId })
         ]);
 
         return {
@@ -208,6 +219,16 @@ export async function getAnalyticsStats() {
 
 export async function getErrorVsLogTrends() {
     try {
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
+
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const clientId = session.user.id;
+
         const data = await chQuery<{
             date: string;
             total_errors: number;
@@ -223,7 +244,7 @@ export async function getErrorVsLogTrends() {
                     toDate(created_at) as date,
                     COUNT(*) as total_errors
                 FROM errors 
-                WHERE created_at >= now() - INTERVAL 14 DAY
+                WHERE created_at >= now() - INTERVAL 14 DAY AND client_id = {clientId:String}
                 GROUP BY toDate(created_at)
             ),
             log_data AS (
@@ -231,7 +252,7 @@ export async function getErrorVsLogTrends() {
                     toDate(created_at) as date,
                     COUNT(*) as total_logs
                 FROM logs 
-                WHERE created_at >= now() - INTERVAL 14 DAY
+                WHERE created_at >= now() - INTERVAL 14 DAY AND client_id = {clientId:String}
                 GROUP BY toDate(created_at)
             )
             SELECT 
@@ -242,7 +263,7 @@ export async function getErrorVsLogTrends() {
             LEFT JOIN error_data ON date_range.date = error_data.date
             LEFT JOIN log_data ON date_range.date = log_data.date
             ORDER BY date ASC
-        `);
+        `, { clientId });
 
         return { success: true, data };
     } catch (error) {
@@ -253,20 +274,31 @@ export async function getErrorVsLogTrends() {
 
 export async function getErrorsByEnvironment() {
     try {
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
+
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const clientId = session.user.id;
+
         const data = await chQuery<{
             environment: string;
             count: number;
             percentage: number;
         }>(`
+            WITH total AS (SELECT COUNT(*) as total_count FROM errors WHERE environment IS NOT NULL AND client_id = {clientId:String})
             SELECT 
                 environment,
                 COUNT(*) as count,
-                (COUNT(*) * 100.0 / (SELECT COUNT(*) FROM errors)) as percentage
-            FROM errors 
-            WHERE environment IS NOT NULL
-            GROUP BY environment
+                (COUNT(*) * 100.0 / total.total_count) as percentage
+            FROM errors, total
+            WHERE environment IS NOT NULL AND client_id = {clientId:String}
+            GROUP BY environment, total.total_count
             ORDER BY count DESC
-        `);
+        `, { clientId });
 
         return { success: true, data };
     } catch (error) {
@@ -277,20 +309,31 @@ export async function getErrorsByEnvironment() {
 
 export async function getLogsByLevel() {
     try {
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
+
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const clientId = session.user.id;
+
         const data = await chQuery<{
             level: string;
             count: number;
             percentage: number;
         }>(`
+            WITH total AS (SELECT COUNT(*) as total_count FROM logs WHERE level IS NOT NULL AND client_id = {clientId:String})
             SELECT 
                 toString(level) as level,
                 COUNT(*) as count,
-                (COUNT(*) * 100.0 / (SELECT COUNT(*) FROM logs)) as percentage
-            FROM logs 
-            WHERE level IS NOT NULL
-            GROUP BY level
+                (COUNT(*) * 100.0 / total.total_count) as percentage
+            FROM logs, total
+            WHERE level IS NOT NULL AND client_id = {clientId:String}
+            GROUP BY level, total.total_count
             ORDER BY count DESC
-        `);
+        `, { clientId });
 
         return { success: true, data };
     } catch (error) {
@@ -301,22 +344,32 @@ export async function getLogsByLevel() {
 
 export async function getTopErrorUrls() {
     try {
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
+
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const clientId = session.user.id;
+
         const data = await chQuery<{
             url: string;
             count: number;
             percentage: number;
         }>(`
-            WITH total AS (SELECT COUNT(*) as total_count FROM errors WHERE url IS NOT NULL)
+            WITH total AS (SELECT COUNT(*) as total_count FROM errors WHERE url IS NOT NULL AND client_id = {clientId:String})
             SELECT 
                 url,
                 COUNT(*) as count,
                 (COUNT(*) * 100.0 / total.total_count) as percentage
             FROM errors, total
-            WHERE url IS NOT NULL
+            WHERE url IS NOT NULL AND client_id = {clientId:String}
             GROUP BY url, total.total_count
             ORDER BY count DESC
-            LIMIT 10
-        `);
+            LIMIT 25
+        `, { clientId });
 
         return { success: true, data };
     } catch (error) {
@@ -327,22 +380,32 @@ export async function getTopErrorUrls() {
 
 export async function getErrorsByBrowser() {
     try {
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
+
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const clientId = session.user.id;
+
         const data = await chQuery<{
             browser_name: string;
             count: number;
             percentage: number;
         }>(`
-            WITH total AS (SELECT COUNT(*) as total_count FROM errors WHERE browser_name IS NOT NULL)
+            WITH total AS (SELECT COUNT(*) as total_count FROM errors WHERE browser_name IS NOT NULL AND client_id = {clientId:String})
             SELECT 
                 browser_name,
                 COUNT(*) as count,
                 (COUNT(*) * 100.0 / total.total_count) as percentage
             FROM errors, total
-            WHERE browser_name IS NOT NULL
+            WHERE browser_name IS NOT NULL AND client_id = {clientId:String}
             GROUP BY browser_name, total.total_count
             ORDER BY count DESC
-            LIMIT 10
-        `);
+            LIMIT 25
+        `, { clientId });
 
         return { success: true, data };
     } catch (error) {
@@ -353,22 +416,32 @@ export async function getErrorsByBrowser() {
 
 export async function getErrorsByLocation() {
     try {
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
+
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const clientId = session.user.id;
+
         const data = await chQuery<{
             country: string;
             count: number;
             percentage: number;
         }>(`
-            WITH total AS (SELECT COUNT(*) as total_count FROM errors WHERE country IS NOT NULL)
+            WITH total AS (SELECT COUNT(*) as total_count FROM errors WHERE country IS NOT NULL AND client_id = {clientId:String})
             SELECT 
                 country,
                 COUNT(*) as count,
                 (COUNT(*) * 100.0 / total.total_count) as percentage
             FROM errors, total
-            WHERE country IS NOT NULL
+            WHERE country IS NOT NULL AND client_id = {clientId:String}
             GROUP BY country, total.total_count
             ORDER BY count DESC
-            LIMIT 10
-        `);
+            LIMIT 25
+        `, { clientId });
 
         return { success: true, data };
     } catch (error) {

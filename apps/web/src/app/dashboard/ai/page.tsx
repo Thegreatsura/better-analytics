@@ -2,16 +2,15 @@
 
 import { Button } from '@better-analytics/ui/components/button';
 import { Input } from '@better-analytics/ui/components/input';
-import { Card, CardContent, CardHeader } from '@better-analytics/ui/components/card';
+import { Card, CardContent } from '@better-analytics/ui/components/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@better-analytics/ui/components/tooltip';
 import { PaperPlaneTilt, Robot, User, Copy, ThumbsUp, ThumbsDown, StopCircle, Sparkle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { ChartRenderer } from './components/chart-renderer';
 import { MarkdownRenderer } from './components/markdown-renderer';
 import { InsightRenderer } from './components/insight-renderer';
 import { cn } from '@better-analytics/ui';
-import type { Message, ToolCall, AnalysisInsight } from './types';
 
 import { useChat } from './hooks/use-chat';
 

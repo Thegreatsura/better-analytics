@@ -6,7 +6,6 @@ import {
     ChartTooltipContent,
     ChartLegend,
     ChartLegendContent,
-    type ChartConfig
 } from '@better-analytics/ui/components/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@better-analytics/ui/components/card';
 import {
@@ -24,7 +23,6 @@ import {
     XAxis,
     YAxis,
     CartesianGrid,
-    ResponsiveContainer,
     RadialBarChart,
     RadialBar
 } from 'recharts';
@@ -88,7 +86,7 @@ export function ChartRenderer({ chartData }: ChartRendererProps) {
                                 radius={[4, 4, 0, 0]}
                             />
                         )}
-                        {hasMultipleSeries && <ChartLegend content={<ChartLegendContent />} />}
+                        {hasMultipleSeries && <ChartLegend content={<ChartLegendContent payload={[]} />} />}
                     </BarChart>
                 );
 
@@ -130,7 +128,7 @@ export function ChartRenderer({ chartData }: ChartRendererProps) {
                                 activeDot={{ r: 6 }}
                             />
                         )}
-                        {hasMultipleSeries && <ChartLegend content={<ChartLegendContent />} />}
+                        {hasMultipleSeries && <ChartLegend content={<ChartLegendContent payload={[]} />} />}
                     </LineChart>
                 );
 
@@ -170,7 +168,7 @@ export function ChartRenderer({ chartData }: ChartRendererProps) {
                                 fillOpacity={0.3}
                             />
                         )}
-                        {hasMultipleSeries && <ChartLegend content={<ChartLegendContent />} />}
+                        {hasMultipleSeries && <ChartLegend content={<ChartLegendContent payload={[]} />} />}
                     </AreaChart>
                 );
 
@@ -190,8 +188,8 @@ export function ChartRenderer({ chartData }: ChartRendererProps) {
                             fill="#8884d8"
                             dataKey={yAxisKey}
                         >
-                            {data.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                            {data.map((entry: any, index: number) => (
+                                <Cell key={entry.name} fill={colors[index % colors.length]} />
                             ))}
                         </Pie>
                     </PieChart>
