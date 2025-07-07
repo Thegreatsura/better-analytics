@@ -113,6 +113,7 @@ export async function DashboardClient() {
 			recentErrorsChartData={data.recentErrorsChartData}
 			newErrorsData={data.newErrorsData}
 			topErrorsData={data.topErrorsData}
+			notFoundPages={data.notFoundPages}
 		/>
 	);
 }

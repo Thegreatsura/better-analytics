@@ -301,7 +301,7 @@ const app = new Elysia()
 		async ({ body, request, set }) => {
 			logger.info("Received request on /track-404 endpoint.");
 
-			const isAllowed = await checkQuota("404", body.client_id);
+			const isAllowed = await checkQuota("404_page_tracking", body.client_id);
 			if (!isAllowed) {
 				set.status = 429;
 				return {

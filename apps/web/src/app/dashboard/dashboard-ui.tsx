@@ -53,6 +53,28 @@ const genericColumns: ColumnDef<TableData>[] = [
     },
 ];
 
+const notFoundColumns: ColumnDef<any>[] = [
+    {
+        accessorKey: "url",
+        header: "URL",
+        cell: ({ row }) => (
+            <div className="truncate font-medium">{row.getValue("url")}</div>
+        ),
+    },
+    {
+        accessorKey: "referrer",
+        header: "Referrer",
+        cell: ({ row }) => (
+            <div className="truncate">{row.getValue("referrer") || 'Direct'}</div>
+        ),
+    },
+    {
+        accessorKey: "created_at",
+        header: "Last Seen",
+        cell: ({ row }) => formatDistanceToNow(new Date(row.getValue("created_at")), { addSuffix: true }),
+    },
+];
+
 export function DashboardUI({
     analyticsStats,
     analyticsTrends,
@@ -65,6 +87,7 @@ export function DashboardUI({
     recentErrorsChartData,
     newErrorsData,
     topErrorsData,
+    notFoundPages,
 }: {
     analyticsStats: any;
     analyticsTrends: any;
@@ -77,6 +100,7 @@ export function DashboardUI({
     recentErrorsChartData: any[];
     newErrorsData: any[];
     topErrorsData: any[];
+    notFoundPages: any[];
 }) {
     const browserData = topBrowsersData?.map((item) => ({
         ...item,
@@ -113,6 +137,12 @@ export function DashboardUI({
             label: "Locations",
             data: locationData,
             columns: genericColumns,
+        },
+        {
+            id: "notFound",
+            label: "Not Found",
+            data: notFoundPages,
+            columns: notFoundColumns,
         },
     ];
     return (
