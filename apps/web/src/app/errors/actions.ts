@@ -1,19 +1,14 @@
 "use server";
 
 import { analytics } from "@/lib/analytics";
-import { createLogger } from "@better-analytics/sdk";
+import { initLogger } from "@better-analytics/sdk";
 import { headers } from "next/headers";
 
-// Create server-side logger for proper logging (goes to logs table)
-const logger = createLogger({
+const logger = initLogger({
     apiUrl: process.env.NEXT_PUBLIC_API_URL || "",
     clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "",
     accessToken: process.env.NEXT_PUBLIC_ACCESS_TOKEN || "",
-    environment: process.env.NODE_ENV || "",
     serviceName: 'better-analytics-web',
-    serviceVersion: '1.0.0',
-    debug: process.env.NODE_ENV === 'development',
-    minLevel: 'debug',
 });
 
 // ============================================================================
