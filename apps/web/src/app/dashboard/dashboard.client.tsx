@@ -5,17 +5,7 @@ import {
 	CardTitle,
 } from "@better-analytics/ui/components/card";
 import {
-	getAnalyticsStats,
-	getErrorsByEnvironment,
-	getLogsByLevel,
-	getRecentErrorsChart,
-	getErrorVsLogTrends,
-	getTopErrorUrls,
-	getErrorsByBrowser,
-	getErrorsByLocation,
-	getAnalyticsTrends,
-	getNewErrors,
-	getTopErrors,
+	getDashboardData,
 } from "./actions";
 import { DashboardUI } from "./dashboard-ui";
 
@@ -67,72 +57,48 @@ export const MetricCard = ({ title, value, description }: MetricCardProps) => {
 
 
 export async function DashboardClient() {
-	const [
-		analyticsStatsResult,
-		errorVsLogTrendsResult,
-		topErrorUrlsResult,
-		errorsByBrowserResult,
-		errorsByLocationResult,
-		analyticsTrendsResult,
-		recentErrorsChartResult,
-		newErrorsResult,
-		topErrorsResult,
-	] = await Promise.all([
-		getAnalyticsStats(),
-		getErrorVsLogTrends(),
-		getTopErrorUrls(),
-		getErrorsByBrowser(),
-		getErrorsByLocation(),
-		getAnalyticsTrends(),
-		getRecentErrorsChart(),
-		getNewErrors(),
-		getTopErrors(),
-	]);
+	// Use unified data fetching for consistency
+	const dashboardDataResult = await getDashboardData();
+
+	if (!dashboardDataResult.success || !dashboardDataResult.data) {
+		return (
+			<div className="flex items-center justify-center h-64">
+				<p className="text-muted-foreground">
+					{dashboardDataResult.error || 'Failed to load dashboard data'}
+				</p>
+			</div>
+		);
+	}
+
+	const data = dashboardDataResult.data;
 
 	// Transform data for the client component
-	const analyticsStats = analyticsStatsResult.success ? analyticsStatsResult.data : null;
-	const analyticsTrends = analyticsTrendsResult.success ? analyticsTrendsResult.data : null;
+	const analyticsStats = data.analyticsStats;
+	const analyticsTrends = data.analyticsTrends;
 
-	const errorTypeData =
-		analyticsStatsResult.success && analyticsStatsResult.data
-			? analyticsStatsResult.data.errorsByType.map((item) => ({
-				name: item.error_type,
-				value: item.count,
-				percentage: Math.round(
-					(item.count / (analyticsStatsResult.data?.totalErrors || 1)) * 100,
-				),
-				color: getErrorTypeColor(item.error_type),
-			}))
-			: [];
+	const errorTypeData = analyticsStats.errorsByType.map((item) => ({
+		name: item.error_type,
+		value: item.count,
+		percentage: Math.round(
+			(item.count / (analyticsStats.totalErrors || 1)) * 100,
+		),
+		color: getErrorTypeColor(item.error_type),
+	}));
 
-	const severityData =
-		analyticsStatsResult.success && analyticsStatsResult.data
-			? analyticsStatsResult.data.errorsBySeverity.map((item) => ({
-				name: item.severity,
-				value: item.count,
-				percentage: Math.round(
-					(item.count / (analyticsStatsResult.data?.totalErrors || 1)) * 100,
-				),
-				color: getSeverityColor(item.severity),
-			}))
-			: [];
+	const severityData = analyticsStats.errorsBySeverity.map((item) => ({
+		name: item.severity,
+		value: item.count,
+		percentage: Math.round(
+			(item.count / (analyticsStats.totalErrors || 1)) * 100,
+		),
+		color: getSeverityColor(item.severity),
+	}));
 
-	const errorVsLogTrendData =
-		errorVsLogTrendsResult.success && errorVsLogTrendsResult.data
-			? errorVsLogTrendsResult.data.map((item) => ({
-				date: item.date,
-				errors: typeof item.total_errors === "string" ? Number.parseInt(item.total_errors) : (item.total_errors || 0),
-				logs: typeof item.total_logs === "string" ? Number.parseInt(item.total_logs) : (item.total_logs || 0),
-			}))
-			: []
-
-	// Safe fallbacks for all data
-	const topUrlsData = topErrorUrlsResult.success ? topErrorUrlsResult.data : [];
-	const topBrowsersData = errorsByBrowserResult.success ? errorsByBrowserResult.data : [];
-	const topLocationsData = errorsByLocationResult.success ? errorsByLocationResult.data : [];
-	const recentErrorsChartData = recentErrorsChartResult.success ? recentErrorsChartResult.data : [];
-	const newErrorsData = newErrorsResult.success ? newErrorsResult.data : [];
-	const topErrorsData = topErrorsResult.success ? topErrorsResult.data : [];
+	const errorVsLogTrendData = data.errorVsLogTrendData.map((item) => ({
+		date: item.date,
+		errors: typeof item.total_errors === "string" ? Number.parseInt(item.total_errors) : (item.total_errors || 0),
+		logs: typeof item.total_logs === "string" ? Number.parseInt(item.total_logs) : (item.total_logs || 0),
+	}));
 
 	return (
 		<DashboardUI
@@ -141,12 +107,12 @@ export async function DashboardClient() {
 			errorTypeData={errorTypeData}
 			severityData={severityData}
 			errorVsLogTrendData={errorVsLogTrendData}
-			topUrlsData={topUrlsData || []}
-			topBrowsersData={topBrowsersData || []}
-			topLocationsData={topLocationsData || []}
-			recentErrorsChartData={recentErrorsChartData || []}
-			newErrorsData={newErrorsData || []}
-			topErrorsData={topErrorsData || []}
+			topUrlsData={data.topUrlsData}
+			topBrowsersData={data.topBrowsersData}
+			topLocationsData={data.topLocationsData}
+			recentErrorsChartData={data.recentErrorsChartData}
+			newErrorsData={data.newErrorsData}
+			topErrorsData={data.topErrorsData}
 		/>
 	);
 }
