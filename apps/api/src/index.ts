@@ -8,7 +8,7 @@ import { logger } from "./lib/logger";
 import { extractIpFromRequest, getGeoData } from "./lib/ip-geo";
 import { db, user } from "@better-analytics/db";
 import { eq } from "drizzle-orm";
-import { ErrorIngestBody, LogIngestBody } from "./types";
+import { ErrorIngestBody, LogIngestBody, NotFoundIngestBody } from "./types";
 import { Autumn } from "autumn-js";
 import supabase from "./lib/soup-base";
 import { LingoDotDevEngine } from "lingo.dev/sdk";
@@ -286,6 +286,8 @@ const app = new Elysia()
 					});
 				}
 
+				await sendRealTimeEvent(body.client_id, "new-log", logData);
+
 				return { status: "success", id: logData.id };
 			} catch (error) {
 				logger.error("Failed to ingest log:", error);
@@ -293,6 +295,54 @@ const app = new Elysia()
 			}
 		},
 		{ body: LogIngestBody },
+	)
+	.post(
+		"/track-404",
+		async ({ body, request, set }) => {
+			logger.info("Received request on /track-404 endpoint.");
+
+			const isAllowed = await checkQuota("404_page_tracking", body.client_id);
+			if (!isAllowed) {
+				set.status = 429;
+				return {
+					status: "error",
+					message: "Quota exceeded for 404 tracking.",
+				};
+			}
+
+			const userAgent = request.headers.get("user-agent") || "";
+			const ip = extractIpFromRequest(request);
+			const geo = await getGeoData(ip);
+
+			const data = {
+				id: randomUUID(),
+				...body,
+				user_agent: userAgent,
+				ip_address: ip,
+				country: geo.country,
+				region: geo.region,
+				city: geo.city,
+				created_at: toCHDateTime64(new Date()),
+			};
+
+			const cleanedData = replaceUndefinedWithNull(data);
+
+			await clickhouse.insert({
+				table: 'not_found_pages',
+				values: [cleanedData],
+				format: 'JSONEachRow'
+			});
+
+			await sendRealTimeEvent(body.client_id, "new-404", cleanedData);
+
+			return {
+				status: "success",
+				id: data.id
+			};
+		},
+		{
+			body: NotFoundIngestBody
+		},
 	)
 	.post("/localization", async ({ body, set }) => {
 		logger.info("Received request on /api/localization endpoint.");

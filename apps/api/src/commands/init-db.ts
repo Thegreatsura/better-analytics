@@ -99,15 +99,36 @@ ORDER BY (client_id, level, created_at)
 SETTINGS index_granularity = 8192, allow_nullable_key = 1;
 `;
 
+const notFoundPagesTable = `
+CREATE TABLE IF NOT EXISTS not_found_pages (
+    id UUID,
+    client_id LowCardinality(String),
+    url String,
+    referrer Nullable(String),
+    user_agent Nullable(String),
+    user_id Nullable(String),
+    session_id Nullable(String),
+    ip_address Nullable(String),
+    country LowCardinality(Nullable(String)),
+    region LowCardinality(Nullable(String)),
+    city LowCardinality(Nullable(String)),
+    created_at DateTime64(3) DEFAULT now64()
+)
+ENGINE = MergeTree()
+PARTITION BY toYYYYMM(created_at)
+ORDER BY (client_id, url, created_at)
+SETTINGS index_granularity = 8192, allow_nullable_key = 1;
+`;
+
 const errorIndexes = [
-	"CREATE INDEX IF NOT EXISTS idx_errors_user_id ON errors (user_id) TYPE bloom_filter GRANULARITY 1;",
-	"CREATE INDEX IF NOT EXISTS idx_errors_session_id ON errors (session_id) TYPE bloom_filter GRANULARITY 1;",
-	"CREATE INDEX IF NOT EXISTS idx_errors_url ON errors (url) TYPE bloom_filter GRANULARITY 1;",
-	"CREATE INDEX IF NOT EXISTS idx_errors_endpoint ON errors (endpoint) TYPE bloom_filter GRANULARITY 1;",
-	"CREATE INDEX IF NOT EXISTS idx_errors_message ON errors (message) TYPE bloom_filter GRANULARITY 1;",
-	"CREATE INDEX IF NOT EXISTS idx_errors_stack_trace ON errors (stack_trace) TYPE bloom_filter GRANULARITY 1;",
-	"CREATE INDEX IF NOT EXISTS idx_errors_tags ON errors (tags) TYPE bloom_filter GRANULARITY 1;",
-	"CREATE INDEX IF NOT EXISTS idx_errors_client_id ON errors (client_id) TYPE bloom_filter GRANULARITY 1;",
+    "CREATE INDEX IF NOT EXISTS idx_errors_user_id ON errors (user_id) TYPE bloom_filter GRANULARITY 1;",
+    "CREATE INDEX IF NOT EXISTS idx_errors_session_id ON errors (session_id) TYPE bloom_filter GRANULARITY 1;",
+    "CREATE INDEX IF NOT EXISTS idx_errors_url ON errors (url) TYPE bloom_filter GRANULARITY 1;",
+    "CREATE INDEX IF NOT EXISTS idx_errors_endpoint ON errors (endpoint) TYPE bloom_filter GRANULARITY 1;",
+    "CREATE INDEX IF NOT EXISTS idx_errors_message ON errors (message) TYPE bloom_filter GRANULARITY 1;",
+    "CREATE INDEX IF NOT EXISTS idx_errors_stack_trace ON errors (stack_trace) TYPE bloom_filter GRANULARITY 1;",
+    "CREATE INDEX IF NOT EXISTS idx_errors_tags ON errors (tags) TYPE bloom_filter GRANULARITY 1;",
+    "CREATE INDEX IF NOT EXISTS idx_errors_client_id ON errors (client_id) TYPE bloom_filter GRANULARITY 1;",
 ];
 
 const errorSummaryView = `
@@ -153,44 +174,46 @@ ORDER BY total_errors DESC;
 `;
 
 async function initializeDatabase() {
-	console.log("Dropping existing tables and views to apply new schema...");
-	await Promise.all([
-		clickhouse.exec({ query: "DROP VIEW IF EXISTS error_summary;" }),
-		clickhouse.exec({ query: "DROP VIEW IF EXISTS user_error_summary;" }),
-		clickhouse.exec({ query: "DROP TABLE IF EXISTS errors;" }),
-		clickhouse.exec({ query: "DROP TABLE IF EXISTS logs;" }),
-	]);
-	console.log("Tables and views dropped.");
+    console.log("Dropping existing tables and views to apply new schema...");
+    // await Promise.all([
+    //     clickhouse.exec({ query: "DROP VIEW IF EXISTS error_summary;" }),
+    //     clickhouse.exec({ query: "DROP VIEW IF EXISTS user_error_summary;" }),
+    //     clickhouse.exec({ query: "DROP TABLE IF EXISTS errors;" }),
+    //     clickhouse.exec({ query: "DROP TABLE IF EXISTS logs;" }),
+    //     clickhouse.exec({ query: "DROP TABLE IF EXISTS not_found_pages;" }),
+    // ]);
+    console.log("Tables and views dropped.");
 
-	console.log("Creating tables with new schema...");
-	await Promise.all([
-		clickhouse.exec({ query: errorTable }),
-		clickhouse.exec({ query: logsTable }),
-	]);
-	console.log("Tables created.");
+    console.log("Creating tables with new schema...");
+    await Promise.all([
+        clickhouse.exec({ query: errorTable }),
+        clickhouse.exec({ query: logsTable }),
+        clickhouse.exec({ query: notFoundPagesTable }),
+    ]);
+    console.log("Tables created.");
 
-	console.log("Creating indexes...");
-	await Promise.all(
-		errorIndexes.map((indexQuery) => clickhouse.exec({ query: indexQuery })),
-	);
-	console.log("Indexes created.");
+    console.log("Creating indexes...");
+    await Promise.all(
+        errorIndexes.map((indexQuery) => clickhouse.exec({ query: indexQuery })),
+    );
+    console.log("Indexes created.");
 
-	console.log("Creating views...");
-	await Promise.all([
-		clickhouse.exec({ query: errorSummaryView }),
-		clickhouse.exec({ query: userErrorSummaryView }),
-	]);
-	console.log("Views created.");
+    console.log("Creating views...");
+    await Promise.all([
+        clickhouse.exec({ query: errorSummaryView }),
+        clickhouse.exec({ query: userErrorSummaryView }),
+    ]);
+    console.log("Views created.");
 }
 
 async function run() {
-	try {
-		await initializeDatabase();
-		console.log("Database initialized successfully.");
-	} catch (error) {
-		console.error("Failed to initialize database:", error);
-		throw error;
-	}
+    try {
+        await initializeDatabase();
+        console.log("Database initialized successfully.");
+    } catch (error) {
+        console.error("Failed to initialize database:", error);
+        throw error;
+    }
 }
 
 run();

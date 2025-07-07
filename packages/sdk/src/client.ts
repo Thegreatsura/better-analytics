@@ -44,6 +44,7 @@ export interface ErrorTracker {
 		obj: T,
 		language?: string,
 	): Promise<T>;
+	track404(url: string, referrer?: string): Promise<void>;
 }
 
 class ClientErrorTracker implements ErrorTracker {
@@ -231,9 +232,9 @@ class ClientErrorTracker implements ErrorTracker {
 		return "client";
 	}
 
-	private async sendToApi(data: ErrorData): Promise<ApiResponse> {
+	private async sendToApi(data: ErrorData, endpoint: string = "/ingest"): Promise<ApiResponse> {
 		try {
-			const response = await fetch(`${this.config.apiUrl}/ingest`, {
+			const response = await fetch(`${this.config.apiUrl}${endpoint}`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -395,6 +396,20 @@ class ClientErrorTracker implements ErrorTracker {
 		} catch (error) {
 			this.log("Object translation failed", { obj, language, error });
 			return obj;
+		}
+	}
+
+	async track404(url: string, referrer?: string): Promise<void> {
+		try {
+			const data = this.enrichErrorData({
+				message: `404 Not Found: ${url}`,
+				customData: { url, referrer, type: '404' },
+			});
+
+			await this.sendToApi(data, "/track-404");
+			this.log("404 tracked", { url });
+		} catch (error) {
+			this.log("Failed to track 404", error);
 		}
 	}
 }

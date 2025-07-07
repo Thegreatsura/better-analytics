@@ -73,6 +73,21 @@ interface LogData {
     created_at: string;
 }
 
+interface NotFoundData {
+    id: string;
+    client_id: string;
+    url: string;
+    referrer: string;
+    user_agent: string;
+    user_id: string;
+    session_id: string;
+    ip_address: string;
+    country: string;
+    region: string;
+    city: string;
+    created_at: string;
+}
+
 export async function getRecentErrors() {
     try {
         // Get the current user session
@@ -598,6 +613,45 @@ export const getTopErrors = async () => {
     }
 }
 
+export async function getNotFoundPages() {
+    try {
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
+
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const clientId = session.user.id;
+
+        const data = await chQuery<NotFoundData>(`
+            SELECT
+                id,
+                client_id,
+                url,
+                referrer,
+                user_agent,
+                user_id,
+                session_id,
+                ip_address,
+                country,
+                region,
+                city,
+                created_at
+            FROM not_found_pages
+            WHERE client_id = {clientId:String}
+            ORDER BY created_at DESC
+            LIMIT 50
+        `, { clientId });
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('Failed to fetch not found pages:', error);
+        return { success: false, error: 'Failed to fetch not found pages' };
+    }
+}
+
 // Add a unified dashboard data function for consistency
 export async function getDashboardData() {
     try {
@@ -637,7 +691,8 @@ export async function getDashboardData() {
             topUrlsData,
             topBrowsersData,
             topLocationsData,
-            errorVsLogTrendsData
+            errorVsLogTrendsData,
+            notFoundPagesData
         ] = await Promise.all([
             // All-time totals
             chQuery<{ count: number }>("SELECT toUInt32(COUNT(*)) as count FROM errors WHERE client_id = {clientId:String}", { clientId }),
@@ -774,6 +829,27 @@ export async function getDashboardData() {
                 LEFT JOIN error_data ON date_range.date = error_data.date
                 LEFT JOIN log_data ON date_range.date = log_data.date
                 ORDER BY date ASC
+            `, { clientId }),
+
+            // Not found pages (all-time)
+            chQuery<NotFoundData>(`
+                SELECT
+                    id,
+                    client_id,
+                    url,
+                    referrer,
+                    user_agent,
+                    user_id,
+                    session_id,
+                    ip_address,
+                    country,
+                    region,
+                    city,
+                    created_at
+                FROM not_found_pages
+                WHERE client_id = {clientId:String}
+                ORDER BY created_at DESC
+                LIMIT 50
             `, { clientId })
         ]);
 
@@ -838,6 +914,7 @@ export async function getDashboardData() {
                 topUrlsData: topUrlsData,
                 topBrowsersData: topBrowsersData,
                 topLocationsData: topLocationsData,
+                notFoundPages: notFoundPagesData
             }
         };
 
