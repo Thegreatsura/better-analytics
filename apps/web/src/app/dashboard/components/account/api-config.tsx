@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { regenerateAccessToken } from "../../account/actions";
+import { regenerateAccessToken } from "../../(core)/account/actions";
 import { Label } from "@better-analytics/ui/components/label";
 import { Input } from "@better-analytics/ui/components/input";
 import { Button } from "@better-analytics/ui/components/button";

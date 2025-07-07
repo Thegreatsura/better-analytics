@@ -13,6 +13,8 @@ import { Badge } from "@better-analytics/ui/components/badge";
 import { Autumn as autumn } from "autumn-js";
 import { redirect } from "next/navigation";
 import PricingTable from "@better-analytics/ui/components/autumn/pricing-table";
+import { CreditCard, BarChart, LineChart, Package } from "lucide-react";
+import { Button } from "@better-analytics/ui/components/button";
 
 export default async function BillingPage() {
 	const session = await auth.api.getSession({
@@ -50,19 +52,34 @@ export default async function BillingPage() {
 	};
 
 	return (
-		<div className="container mx-auto max-w-6xl space-y-8 px-4">
-			<div className="space-y-2">
-				<h1 className="font-bold text-3xl tracking-tight">Billing & Usage</h1>
-				<p className="text-muted-foreground">
-					Manage your subscription, monitor usage, and upgrade your plan.
-				</p>
+		<div className="flex-1 space-y-4">
+			{/* Header */}
+			<div className="flex items-center justify-between">
+				<div>
+					<h1 className="text-2xl font-bold tracking-tight">Billing & Usage</h1>
+					<p className="text-muted-foreground mt-1">
+						Manage your subscription, monitor usage, and upgrade your plan
+					</p>
+				</div>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" size="sm">
+						Billing History
+					</Button>
+					<Button size="sm">
+						Manage Subscription
+					</Button>
+				</div>
 			</div>
 
-			<div className="grid gap-6 md:grid-cols-3">
+			{/* Usage Cards */}
+			<div className="grid gap-4 md:grid-cols-3">
 				<Card>
-					<CardHeader>
-						<CardTitle>Current Plan</CardTitle>
-						<CardDescription>Your active subscription</CardDescription>
+					<CardHeader className="flex flex-row items-center space-y-0">
+						<CreditCard className="h-5 w-5 text-muted-foreground mr-2" />
+						<div>
+							<CardTitle className="font-medium">Current Plan</CardTitle>
+							<CardDescription>Your active subscription</CardDescription>
+						</div>
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-2">
@@ -77,9 +94,12 @@ export default async function BillingPage() {
 				</Card>
 
 				<Card>
-					<CardHeader>
-						<CardTitle>Error Tracking</CardTitle>
-						<CardDescription>This month's usage</CardDescription>
+					<CardHeader className="flex flex-row items-center space-y-0">
+						<BarChart className="h-5 w-5 text-muted-foreground mr-2" />
+						<div>
+							<CardTitle className="font-medium">Error Tracking</CardTitle>
+							<CardDescription>This month's usage</CardDescription>
+						</div>
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-4">
@@ -113,9 +133,12 @@ export default async function BillingPage() {
 				</Card>
 
 				<Card>
-					<CardHeader>
-						<CardTitle>Log Analytics</CardTitle>
-						<CardDescription>This month's usage</CardDescription>
+					<CardHeader className="flex flex-row items-center space-y-0">
+						<LineChart className="h-5 w-5 text-muted-foreground mr-2" />
+						<div>
+							<CardTitle className="font-medium">Log Analytics</CardTitle>
+							<CardDescription>This month's usage</CardDescription>
+						</div>
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-4">
@@ -148,12 +171,15 @@ export default async function BillingPage() {
 					</CardContent>
 				</Card>
 			</div>
+
+			{/* Pricing Card */}
 			<Card>
-				<CardHeader>
-					<CardTitle>Available Plans</CardTitle>
-					<CardDescription>
-						Choose the perfect plan for your needs
-					</CardDescription>
+				<CardHeader className="flex flex-row items-center space-y-0">
+					<Package className="h-5 w-5 text-muted-foreground mr-2" />
+					<div>
+						<CardTitle className="font-medium">Available Plans</CardTitle>
+						<CardDescription>Choose the perfect plan for your needs</CardDescription>
+					</div>
 				</CardHeader>
 				<CardContent>
 					<PricingTable />
