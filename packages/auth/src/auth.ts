@@ -6,7 +6,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@better-analytics/db";
 import env from "@better-analytics/auth/env";
 import { resend } from "@better-analytics/email";
-import  WelcomeEmail from "@better-analytics/email/welcome";
+import WelcomeEmail from "@better-analytics/email/welcome";
 
 export const auth = betterAuth({
 	database: drizzleAdapter(db, {
