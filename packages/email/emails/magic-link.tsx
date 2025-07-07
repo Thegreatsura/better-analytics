@@ -13,15 +13,13 @@ import {
 } from "@react-email/components";
 
 interface EmailProps {
-	username: string;
 	url: string;
 }
 
 export default function MagicLinkEmail({
-	username = "armful",
 	url = "https://better-analytics.vercel.app",
 }: EmailProps) {
-	const previewText = `Login link for ${username}`;
+	const previewText = `Login to Better Analytics`;
 
 	return (
 		<Html>
@@ -31,8 +29,6 @@ export default function MagicLinkEmail({
 				<Body className="py-10 font-sans">
 					<Container>
 						<Heading>Login to Your Account</Heading>
-
-						<Text>Hi {username},</Text>
 
 						<Text>
 							Click the link below to securely log in to your{" "}
