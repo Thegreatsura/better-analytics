@@ -8,7 +8,12 @@ import {
     CardTitle,
 } from "@better-analytics/ui/components/card";
 import type { ColumnDef } from "@tanstack/react-table";
-import { AlertTriangle, BarChart, Bug, MessageSquare } from "lucide-react";
+import {
+    Warning,
+    ChartBar,
+    BugBeetle,
+    Chat,
+} from "@phosphor-icons/react";
 import { ErrorTypesChart } from "@/components/chart/error-types-chart";
 import { ErrorVsLogsChart } from "@/components/chart/error-vs-logs-chart";
 import { SeverityLevelsChart } from "@/components/chart/severity-levels-chart";
@@ -100,7 +105,7 @@ export function DashboardUI({
                 <StatCard
                     title="Total Errors"
                     value={analyticsStats?.totalErrors || 0}
-                    icon={Bug}
+                    icon={BugBeetle}
                     trend={analyticsTrends?.totalErrorsTrend}
                     trendLabel="vs last 7 days"
                     invertTrend
@@ -108,7 +113,7 @@ export function DashboardUI({
                 <StatCard
                     title="Total Logs"
                     value={analyticsStats?.totalLogs || 0}
-                    icon={MessageSquare}
+                    icon={Chat}
                     trend={analyticsTrends?.totalLogsTrend}
                     trendLabel="vs last 7 days"
                 />
@@ -117,14 +122,14 @@ export function DashboardUI({
                     value={analyticsStats?.errorsByType.length || 0}
                     description={`Most common: ${analyticsStats?.errorsByType[0]?.error_type || "N/A"
                         }`}
-                    icon={AlertTriangle}
+                    icon={Warning}
                 />
                 <StatCard
                     title="Errors by Severity"
                     value={analyticsStats?.errorsBySeverity.length || 0}
                     description={`Most common: ${analyticsStats?.errorsBySeverity[0]?.severity || "N/A"
                         }`}
-                    icon={BarChart}
+                    icon={ChartBar}
                 />
             </div>
             <div className="grid gap-4 md:grid-cols-2">

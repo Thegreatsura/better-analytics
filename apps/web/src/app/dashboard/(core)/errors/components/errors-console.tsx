@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from '@better-analytics/ui/components/c
 import { Switch } from '@better-analytics/ui/components/switch';
 import { Label } from '@better-analytics/ui/components/label';
 import { Separator } from '@better-analytics/ui/components/separator';
-import { Download, Search, Play, Pause, RotateCcw, AlertTriangle, Bug, Zap, Shield, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { DownloadSimple, MagnifyingGlass, Play, Pause, ArrowCounterClockwise, Warning, BugBeetle, Lightning, Shield, WifiHigh, WifiSlash, ArrowClockwise } from '@phosphor-icons/react';
 import { cn } from '@better-analytics/ui';
 import { ErrorLine } from './error-line';
 import { ErrorFilters } from './error-filters';
@@ -15,9 +15,9 @@ import { useRealtime, type ErrorEvent } from '@/hooks/use-realtime';
 import { getRecentErrors } from '@/app/dashboard/actions';
 
 const severityLevels = [
-    { label: "Critical", value: "critical", icon: Zap, color: "text-red-500" },
-    { label: "High", value: "high", icon: AlertTriangle, color: "text-orange-500" },
-    { label: "Medium", value: "medium", icon: Bug, color: "text-yellow-500" },
+    { label: "Critical", value: "critical", icon: Lightning, color: "text-red-500" },
+    { label: "High", value: "high", icon: Warning, color: "text-orange-500" },
+    { label: "Medium", value: "medium", icon: BugBeetle, color: "text-yellow-500" },
     { label: "Low", value: "low", icon: Shield, color: "text-blue-500" },
 ];
 
@@ -42,6 +42,8 @@ export interface ErrorData {
     environment: string;
     browser_name: string;
     os_name: string;
+    browser_version?: string;
+    os_version?: string;
     country: string;
     url: string;
     endpoint: string;
@@ -255,7 +257,7 @@ export function ErrorsConsole() {
                                     className="gap-2 hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-400 transition-all duration-200"
                                     title="Refresh errors manually"
                                 >
-                                    <RefreshCw className="h-4 w-4" />
+                                    <ArrowClockwise className="h-4 w-4" />
                                     Refresh
                                 </Button>
                                 <Button
@@ -264,7 +266,7 @@ export function ErrorsConsole() {
                                     onClick={() => setErrors([])}
                                     className="gap-2 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-all duration-200"
                                 >
-                                    <RotateCcw className="h-4 w-4" />
+                                    <ArrowCounterClockwise className="h-4 w-4" />
                                     Clear
                                 </Button>
                                 <Button
@@ -274,7 +276,7 @@ export function ErrorsConsole() {
                                     disabled={filteredErrors.length === 0}
                                     className="gap-2 hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-400 transition-all duration-200 disabled:opacity-50"
                                 >
-                                    <Download className="h-4 w-4" />
+                                    <DownloadSimple className="h-4 w-4" />
                                     Export
                                 </Button>
                             </div>
@@ -285,9 +287,9 @@ export function ErrorsConsole() {
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-4 flex-1">
                             <div className="relative flex-1 max-w-md">
-                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <MagnifyingGlass className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search errors..."
+                                    placeholder="Search by error name, message..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="pl-9 bg-background/50 border-border/50 focus:bg-background focus:border-border transition-all duration-200"
@@ -309,13 +311,13 @@ export function ErrorsConsole() {
                             <div className="flex items-center gap-2">
                                 {errorStats.critical > 0 && (
                                     <div className="flex items-center gap-1 px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-md">
-                                        <Zap className="h-3 w-3 text-red-500" />
+                                        <Lightning className="h-3 w-3 text-red-500" />
                                         <span className="text-xs text-red-500 font-medium">{errorStats.critical}</span>
                                     </div>
                                 )}
                                 {errorStats.high > 0 && (
                                     <div className="flex items-center gap-1 px-2 py-1 bg-orange-500/10 border border-orange-500/20 rounded-md">
-                                        <AlertTriangle className="h-3 w-3 text-orange-500" />
+                                        <Warning className="h-3 w-3 text-orange-500" />
                                         <span className="text-xs text-orange-500 font-medium">{errorStats.high}</span>
                                     </div>
                                 )}
@@ -338,9 +340,9 @@ export function ErrorsConsole() {
                                     : "bg-red-500/10 border-red-500/20"
                             )}>
                                 {isConnected ? (
-                                    <Wifi className="h-3 w-3 text-emerald-400" />
+                                    <WifiHigh className="h-3 w-3 text-emerald-400" />
                                 ) : (
-                                    <WifiOff className="h-3 w-3 text-red-400" />
+                                    <WifiSlash className="h-3 w-3 text-red-400" />
                                 )}
                                 <span className={cn(
                                     "text-sm font-medium",
@@ -361,39 +363,52 @@ export function ErrorsConsole() {
                 </div>
             </CardHeader>
 
-            <CardContent className="flex-1 p-0 min-h-0">
-                <div
-                    ref={scrollRef}
-                    onScroll={handleScroll}
-                    className="h-full overflow-auto bg-muted/20 border-t custom-scrollbar"
-                    style={{
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: 'hsl(var(--border) / 0.3) transparent'
-                    }}
-                >
-                    {filteredErrors.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                            <div className="text-center">
-                                <div className="text-lg font-medium mb-2">No errors found</div>
-                                <div className="text-sm">
-                                    {search ? 'Try adjusting your search terms or filters' : 'No errors detected - your application is running smoothly!'}
-                                </div>
+            <CardContent className="flex-1 p-0 overflow-hidden">
+                <div className="h-full flex flex-col">
+                    {/* Search Bar */}
+                    <div className="p-4 border-b border-border/20">
+                        <div className="relative">
+                            <MagnifyingGlass className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search by error name, message..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-9"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto" ref={scrollRef} onScroll={handleScroll}>
+                        {filteredErrors.length > 0 ? (
+                            <div className="divide-y divide-border/20">
+                                {filteredErrors.map((error) => (
+                                    <ErrorLine
+                                        key={error.id}
+                                        error={error}
+                                        noTimestamp={!showTimestamp}
+                                        searchTerm={search}
+                                        isExpanded={expandedErrorId === error.id}
+                                        onToggleExpand={() => handleErrorToggle(error.id)}
+                                    />
+                                ))}
                             </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                                <BugBeetle className="w-16 h-16 text-muted-foreground/30 mb-4" />
+                                <h3 className="text-lg font-semibold text-foreground">No errors found</h3>
+                                <p className="text-sm text-muted-foreground max-w-xs">
+                                    It looks like everything is running smoothly. If you were expecting to see errors, please check your filters.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                    {/* Footer */}
+                    <div className="p-2 border-t border-border/20 text-xs text-muted-foreground flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <div className={cn("h-2 w-2 rounded-full", isConnected ? "bg-emerald-400" : "bg-red-400")} />
+                            {isConnected ? 'Real-time connection active' : 'Disconnected from real-time updates'}
                         </div>
-                    ) : (
-                        <div className="space-y-1 p-2">
-                            {filteredErrors.map((error) => (
-                                <ErrorLine
-                                    key={error.id}
-                                    error={error}
-                                    searchTerm={search}
-                                    noTimestamp={!showTimestamp}
-                                    isExpanded={expandedErrorId === error.id}
-                                    onToggleExpand={() => handleErrorToggle(error.id)}
-                                />
-                            ))}
-                        </div>
-                    )}
+                        <span>Showing {filteredErrors.length} of {errors.length} errors</span>
+                    </div>
                 </div>
             </CardContent>
         </Card>

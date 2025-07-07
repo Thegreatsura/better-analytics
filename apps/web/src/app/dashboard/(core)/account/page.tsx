@@ -5,7 +5,7 @@ import { ActiveSessions } from "../../components/account/active-sessions"
 import { ApiConfig } from "../../components/account/api-config"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@better-analytics/ui/components/card"
 import { Button } from "@better-analytics/ui/components/button"
-import { User, Key, Shield } from "lucide-react"
+import { User, Key, ShieldCheck } from "@phosphor-icons/react/ssr"
 import { getOrCreateAccessToken } from "./actions"
 
 export default async function DashboardAccount() {
@@ -76,7 +76,7 @@ export default async function DashboardAccount() {
             {/* Active Sessions Card */}
             <Card>
                 <CardHeader className="flex flex-row items-center space-y-0">
-                    <Shield className="h-5 w-5 text-muted-foreground mr-2" />
+                    <ShieldCheck className="h-5 w-5 text-muted-foreground mr-2" />
                     <div>
                         <CardTitle className="font-medium">Active Sessions</CardTitle>
                         <CardDescription>Monitor and manage your active login sessions</CardDescription>

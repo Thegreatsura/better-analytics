@@ -1,13 +1,22 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@better-analytics/ui/components/button';
 import { Input } from '@better-analytics/ui/components/input';
 import { Card, CardContent, CardHeader } from '@better-analytics/ui/components/card';
 import { Switch } from '@better-analytics/ui/components/switch';
 import { Label } from '@better-analytics/ui/components/label';
 import { Separator } from '@better-analytics/ui/components/separator';
-import { Download, Search, Play, Pause, RotateCcw, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import {
+    DownloadSimple,
+    MagnifyingGlass,
+    Play,
+    Pause,
+    ArrowCounterClockwise,
+    WifiHigh,
+    WifiSlash,
+    ArrowClockwise,
+} from '@phosphor-icons/react';
 import { cn } from '@better-analytics/ui';
 import { TerminalLine } from './terminal-line';
 import { LineCountFilter } from './line-count-filter';
@@ -211,7 +220,7 @@ export function LogsConsole() {
                                     )}
                                     title={isStreaming ? "Pause real-time updates" : "Resume real-time updates"}
                                 >
-                                    {isStreaming ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                                    {isStreaming ? <Pause size={14} /> : <Play size={14} />}
                                     {isStreaming ? 'Real-time' : 'Paused'}
                                 </Button>
                                 <Button
@@ -221,7 +230,7 @@ export function LogsConsole() {
                                     className="gap-2 hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-400 transition-all duration-200"
                                     title="Refresh logs manually"
                                 >
-                                    <RefreshCw className="h-4 w-4" />
+                                    <ArrowClockwise size={14} />
                                     Refresh
                                 </Button>
                                 <Button
@@ -230,7 +239,7 @@ export function LogsConsole() {
                                     onClick={() => setLogs([])}
                                     className="gap-2 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-all duration-200"
                                 >
-                                    <RotateCcw className="h-4 w-4" />
+                                    <ArrowCounterClockwise size={14} />
                                     Clear
                                 </Button>
                                 <Button
@@ -240,7 +249,7 @@ export function LogsConsole() {
                                     disabled={filteredLogs.length === 0}
                                     className="gap-2 hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-400 transition-all duration-200 disabled:opacity-50"
                                 >
-                                    <Download className="h-4 w-4" />
+                                    <DownloadSimple size={14} />
                                     Export
                                 </Button>
                             </div>
@@ -251,7 +260,7 @@ export function LogsConsole() {
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-4 flex-1">
                             <div className="relative flex-1 max-w-md">
-                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <MagnifyingGlass className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search logs..."
                                     value={search}
@@ -288,9 +297,9 @@ export function LogsConsole() {
                                     : "bg-red-500/10 border-red-500/20"
                             )}>
                                 {isConnected ? (
-                                    <Wifi className="h-3 w-3 text-emerald-400" />
+                                    <WifiHigh className="h-3 w-3 text-emerald-400" />
                                 ) : (
-                                    <WifiOff className="h-3 w-3 text-red-400" />
+                                    <WifiSlash className="h-3 w-3 text-red-400" />
                                 )}
                                 <span className={cn(
                                     "text-sm font-medium",

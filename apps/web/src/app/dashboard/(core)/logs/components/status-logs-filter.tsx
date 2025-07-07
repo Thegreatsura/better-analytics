@@ -15,7 +15,7 @@ import {
 } from "@better-analytics/ui/components/popover";
 import { Separator } from "@better-analytics/ui/components/separator";
 import { cn } from "@better-analytics/ui";
-import { CheckIcon } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
 import type React from "react";
 
 interface StatusLogsFilterProps {
@@ -109,7 +109,7 @@ export function StatusLogsFilter({
                                             : "opacity-50 [&_svg]:invisible",
                                     )}
                                 >
-                                    <CheckIcon className={cn("h-4 w-4")} />
+                                    <Check className={cn("h-4 w-4")} />
                                 </div>
                                 <Badge variant="secondary">All</Badge>
                             </CommandItem>
@@ -136,7 +136,7 @@ export function StatusLogsFilter({
                                                     : "opacity-50 [&_svg]:invisible",
                                             )}
                                         >
-                                            <CheckIcon className={cn("h-4 w-4")} />
+                                            <Check className={cn("h-4 w-4")} />
                                         </div>
                                         {option.icon && (
                                             <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />

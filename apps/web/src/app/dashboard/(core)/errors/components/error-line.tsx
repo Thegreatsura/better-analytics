@@ -4,7 +4,7 @@ import { Badge } from '@better-analytics/ui/components/badge';
 import { Button } from '@better-analytics/ui/components/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@better-analytics/ui/components/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@better-analytics/ui/components/collapsible';
-import { ChevronRight, Clock, Server, User, Globe, Copy, Bot, Check, AlertTriangle, Zap, Bug, Shield, ExternalLink } from 'lucide-react';
+import { CaretRight, Clock, HardDrives, User, Globe, Copy, Robot, Check, Warning, Lightning, BugBeetle, Shield, ArrowSquareOut } from '@phosphor-icons/react';
 import { cn } from '@better-analytics/ui';
 import { useState } from 'react';
 import type { ErrorData } from './errors-console';
@@ -52,11 +52,11 @@ export function ErrorLine({ error, noTimestamp, searchTerm, isExpanded, onToggle
             <span className="transition-colors">
                 {parts.map((part, index) =>
                     searchRegex.test(part) ? (
-                        <span key={index} className="bg-amber-200/80 dark:bg-amber-900/80 font-bold">
+                        <span key={`${error.id}-${part}-${index}`} className="bg-amber-200/80 dark:bg-amber-900/80 font-bold">
                             {part}
                         </span>
                     ) : (
-                        <span key={index}>{part}</span>
+                        <span key={`${error.id}-${part}-${index}`}>{part}</span>
                     )
                 )}
             </span>
@@ -67,19 +67,19 @@ export function ErrorLine({ error, noTimestamp, searchTerm, isExpanded, onToggle
         switch (severity.toLowerCase()) {
             case 'critical':
                 return {
-                    icon: Zap,
+                    icon: Lightning,
                     color: 'text-red-500 border-red-500/20 bg-red-500/10',
                     bgColor: 'bg-red-500/5 border-red-500/10'
                 };
             case 'high':
                 return {
-                    icon: AlertTriangle,
+                    icon: Warning,
                     color: 'text-orange-500 border-orange-500/20 bg-orange-500/10',
                     bgColor: 'bg-orange-500/5 border-orange-500/10'
                 };
             case 'medium':
                 return {
-                    icon: Bug,
+                    icon: BugBeetle,
                     color: 'text-yellow-500 border-yellow-500/20 bg-yellow-500/10',
                     bgColor: 'bg-yellow-500/5 border-yellow-500/10'
                 };
@@ -91,7 +91,7 @@ export function ErrorLine({ error, noTimestamp, searchTerm, isExpanded, onToggle
                 };
             default:
                 return {
-                    icon: Bug,
+                    icon: BugBeetle,
                     color: 'text-gray-500 border-gray-500/20 bg-gray-500/10',
                     bgColor: 'bg-gray-500/5 border-gray-500/10'
                 };
@@ -157,8 +157,9 @@ What could be causing this error and how can it be resolved?`;
                 severityConfig.bgColor
             )}
         >
-            <div
-                className="flex w-full items-center p-4 cursor-pointer transition-all duration-200"
+            <button
+                type="button"
+                className="flex w-full items-center p-4 cursor-pointer transition-all duration-200 text-left"
                 onClick={hasDetails ? onToggleExpand : undefined}
             >
                 <div className="flex flex-1 items-center gap-4">
@@ -210,7 +211,7 @@ What could be causing this error and how can it be resolved?`;
                     {/* Source */}
                     {error.source && (
                         <div className="flex items-center gap-2">
-                            <Server className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground/60" />
+                            <HardDrives className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground/60" />
                             <span className="text-sm text-muted-foreground transition-colors duration-200 group-hover:text-foreground/70">
                                 {error.source}
                             </span>
@@ -221,7 +222,27 @@ What could be causing this error and how can it be resolved?`;
                     <div
                         className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200"
                         onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        role="toolbar"
                     >
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => window.open(`/errors/${error.id}`, '_blank')}
+                                        className="h-7 w-7 p-0 hover:bg-sky-500/10 hover:text-sky-400 transition-all duration-150"
+                                    >
+                                        <ArrowSquareOut className="h-3 w-3" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>View error details</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -253,7 +274,7 @@ What could be causing this error and how can it be resolved?`;
                                         onClick={handleAskAI}
                                         className="h-7 w-7 p-0 hover:bg-purple-500/10 hover:text-purple-400 transition-all duration-150"
                                     >
-                                        <Bot className="h-3 w-3" />
+                                        <Robot className="h-3 w-3" />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -261,32 +282,12 @@ What could be causing this error and how can it be resolved?`;
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
-
-                        {error.url && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => window.open(error.url, '_blank')}
-                                            className="h-7 w-7 p-0 hover:bg-green-500/10 hover:text-green-400 transition-all duration-150"
-                                        >
-                                            <ExternalLink className="h-3 w-3" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Open URL</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
                     </div>
 
                     {/* Expand Icon */}
                     {hasDetails && (
                         <div className="flex items-center justify-center w-8 h-8 hover:bg-muted/50 rounded transition-colors duration-150">
-                            <ChevronRight
+                            <CaretRight
                                 className={cn(
                                     "h-4 w-4 text-muted-foreground transition-all duration-200 flex-shrink-0",
                                     isExpanded && "rotate-90"
@@ -295,7 +296,7 @@ What could be causing this error and how can it be resolved?`;
                         </div>
                     )}
                 </div>
-            </div>
+            </button>
 
             {hasDetails && (
                 <CollapsibleContent>
@@ -357,18 +358,20 @@ What could be causing this error and how can it be resolved?`;
                                             <Badge variant="outline" className="text-xs">{error.environment}</Badge>
                                         </div>
                                     )}
-                                    {error.browser_name && (
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Browser:</span>
-                                            <Badge variant="outline" className="text-xs">{error.browser_name}</Badge>
-                                        </div>
-                                    )}
-                                    {error.os_name && (
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">OS:</span>
-                                            <Badge variant="outline" className="text-xs">{error.os_name}</Badge>
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-medium text-muted-foreground w-24">Browser</p>
+                                        <p className="font-mono text-foreground flex items-center gap-2">
+                                            <Globe className="h-4 w-4" />
+                                            {error.browser_name || 'Unknown'} {error.browser_version || ''}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-medium text-muted-foreground w-24">OS</p>
+                                        <p className="font-mono text-foreground flex items-center gap-2">
+                                            <HardDrives className="h-4 w-4" />
+                                            {error.os_name || 'Unknown'} {error.os_version || ''}
+                                        </p>
+                                    </div>
                                     {error.country && (
                                         <div className="flex justify-between">
                                             <span className="text-muted-foreground">Country:</span>
@@ -405,12 +408,13 @@ What could be causing this error and how can it be resolved?`;
                             <div className="space-y-2">
                                 <h4 className="text-xs font-semibold text-foreground">User Context</h4>
                                 <div className="space-y-1 text-xs">
-                                    {error.user_id && (
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-muted-foreground">User ID:</span>
-                                            <code className="font-mono text-xs bg-muted/50 px-2 py-1 rounded break-all">{error.user_id}</code>
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-medium text-muted-foreground w-24">User ID</p>
+                                        <p className="font-mono text-foreground flex items-center gap-2">
+                                            <User className="h-4 w-4" />
+                                            {error.user_id || 'N/A'}
+                                        </p>
+                                    </div>
                                     {error.session_id && (
                                         <div className="flex flex-col gap-1">
                                             <span className="text-muted-foreground">Session ID:</span>

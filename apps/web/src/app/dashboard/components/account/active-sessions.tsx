@@ -4,7 +4,7 @@ import { UAParser } from "ua-parser-js";
 import { SessionActionButton } from "./session-action-button";
 import { Badge } from "@better-analytics/ui/components/badge";
 import { Card, CardContent } from "@better-analytics/ui/components/card";
-import { MapPin, Clock, Wifi } from "lucide-react";
+import { MapPin, Clock, WifiHigh } from "@phosphor-icons/react/ssr";
 
 type ActiveSessionsProps = {
     activeSessions: Session["session"][];
@@ -121,7 +121,7 @@ export const ActiveSessions = ({ activeSessions, currentSessionId }: ActiveSessi
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     {isCurrentSession ? (
-                                                        <Wifi className="h-3 w-3 text-green-500" />
+                                                        <WifiHigh className="h-3 w-3 text-green-500" />
                                                     ) : (
                                                         <Clock className="h-3 w-3" />
                                                     )}

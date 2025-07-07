@@ -1,7 +1,7 @@
 import type { Session } from "@better-analytics/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@better-analytics/ui/components/avatar";
 import { Badge } from "@better-analytics/ui/components/badge";
-import { CalendarDays, Mail, User as UserIcon } from "lucide-react";
+import { CalendarBlank, Envelope, User as UserIcon } from "@phosphor-icons/react/ssr";
 
 type UserCardProps = {
     session: Session | null;
@@ -40,7 +40,7 @@ export const UserCard = (props: UserCardProps) => {
                         </Badge>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Mail className="h-4 w-4" />
+                        <Envelope className="h-4 w-4" />
                         {props.session?.user.email || 'No email provided'}
                     </div>
                 </div>
@@ -60,7 +60,7 @@ export const UserCard = (props: UserCardProps) => {
 
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm font-medium">
-                        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                        <CalendarBlank className="h-4 w-4 text-muted-foreground" />
                         Account Created
                     </div>
                     <div className="text-sm text-muted-foreground font-mono bg-muted/50 px-3 py-2 rounded-md">

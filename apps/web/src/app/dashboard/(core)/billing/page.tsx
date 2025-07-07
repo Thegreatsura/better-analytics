@@ -13,7 +13,7 @@ import { Badge } from "@better-analytics/ui/components/badge";
 import { Autumn as autumn } from "autumn-js";
 import { redirect } from "next/navigation";
 import PricingTable from "@better-analytics/ui/components/autumn/pricing-table";
-import { CreditCard, BarChart, LineChart, Package } from "lucide-react";
+import { CreditCard, ChartBar, ChartLine, Package } from "@phosphor-icons/react";
 import { Button } from "@better-analytics/ui/components/button";
 
 export default async function BillingPage() {
@@ -95,7 +95,7 @@ export default async function BillingPage() {
 
 				<Card>
 					<CardHeader className="flex flex-row items-center space-y-0">
-						<BarChart className="h-5 w-5 text-muted-foreground mr-2" />
+						<ChartBar className="h-5 w-5 text-muted-foreground mr-2" />
 						<div>
 							<CardTitle className="font-medium">Error Tracking</CardTitle>
 							<CardDescription>This month's usage</CardDescription>
@@ -134,7 +134,7 @@ export default async function BillingPage() {
 
 				<Card>
 					<CardHeader className="flex flex-row items-center space-y-0">
-						<LineChart className="h-5 w-5 text-muted-foreground mr-2" />
+						<ChartLine className="h-5 w-5 text-muted-foreground mr-2" />
 						<div>
 							<CardTitle className="font-medium">Log Analytics</CardTitle>
 							<CardDescription>This month's usage</CardDescription>

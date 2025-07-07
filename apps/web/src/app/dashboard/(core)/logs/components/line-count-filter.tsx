@@ -9,7 +9,7 @@ import {
 } from "@better-analytics/ui/components/popover";
 import { Separator } from "@better-analytics/ui/components/separator";
 import { cn } from "@better-analytics/ui";
-import { CheckIcon } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
 
 interface LineCountFilterProps {
     value: number;
@@ -63,7 +63,7 @@ export function LineCountFilter({ value, onValueChange, title = "Lines" }: LineC
                                             : "opacity-50 [&_svg]:invisible",
                                     )}
                                 >
-                                    <CheckIcon className={cn("h-4 w-4")} />
+                                    <Check className={cn("h-4 w-4")} />
                                 </div>
                                 <span>{option} lines</span>
                             </button>

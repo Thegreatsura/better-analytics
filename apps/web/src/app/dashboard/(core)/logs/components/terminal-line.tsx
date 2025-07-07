@@ -4,7 +4,7 @@ import { Badge } from '@better-analytics/ui/components/badge';
 import { Button } from '@better-analytics/ui/components/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@better-analytics/ui/components/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@better-analytics/ui/components/collapsible';
-import { ChevronRight, Clock, Server, User, Globe, Copy, Bot, Check } from 'lucide-react';
+import { CaretRight, Clock, HardDrives, User, Globe, Copy, Robot, Check } from '@phosphor-icons/react';
 import { cn } from '@better-analytics/ui';
 import { type LogLine, getLogType } from './utils';
 import { useState } from 'react';
@@ -157,7 +157,7 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                         {/* Source */}
                         {source && (
                             <div className="flex items-center gap-2">
-                                <Server className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground/60" />
+                                <HardDrives className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground/60" />
                                 <span className="text-sm text-muted-foreground transition-colors duration-200 group-hover:text-foreground/70">
                                     {source}
                                 </span>
@@ -210,7 +210,7 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                                             onClick={handleAskAI}
                                             className="h-7 w-7 p-0 hover:bg-purple-500/10 hover:text-purple-400 transition-all duration-150"
                                         >
-                                            <Bot className="h-3 w-3" />
+                                            <Robot className="h-3 w-3" />
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
@@ -223,7 +223,7 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                         {/* Expand Icon */}
                         {hasDetails && (
                             <div className="flex items-center justify-center w-8 h-8 hover:bg-muted/50 rounded transition-colors duration-150">
-                                <ChevronRight
+                                <CaretRight
                                     className={cn(
                                         "h-4 w-4 text-muted-foreground transition-all duration-200 flex-shrink-0",
                                         isExpanded && "rotate-90"
@@ -249,58 +249,41 @@ What does this log entry indicate? Are there any potential issues or patterns I 
                         )}
 
                         {/* Details Grid */}
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                            {/* Full Timestamp */}
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground">Created</span>
-                                <span className="font-mono text-foreground">
-                                    {formattedFullTime}
-                                </span>
-                            </div>
-
-                            {/* Level */}
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground">Level</span>
-                                <span className="font-mono text-foreground">{level || type}</span>
-                            </div>
-
-                            {/* Source */}
-                            {source && (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">Source</span>
-                                    <span className="font-mono text-foreground">{source}</span>
-                                </div>
-                            )}
-
-                            {/* Environment */}
-                            {environment && (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">Environment</span>
-                                    <span className="font-mono text-foreground">{environment}</span>
-                                </div>
-                            )}
-
-                            {/* User ID */}
-                            {user_id && (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">User ID</span>
-                                    <span className="font-mono text-foreground">{user_id}</span>
-                                </div>
-                            )}
-
-                            {/* Session ID */}
-                            {session_id && (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">Session ID</span>
-                                    <span className="font-mono text-foreground">{session_id}</span>
-                                </div>
-                            )}
-
-                            {/* Raw Timestamp */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {rawTimestamp && (
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">Raw Timestamp</span>
-                                    <span className="font-mono text-foreground text-xs">{rawTimestamp}</span>
+                                    <Clock className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Timestamp</p>
+                                        <p className="text-xs font-mono">{formattedFullTime}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {environment && (
+                                <div className="flex items-center gap-2">
+                                    <Globe className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Environment</p>
+                                        <p className="text-xs font-mono">{environment}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {user_id && (
+                                <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">User ID</p>
+                                        <p className="text-xs font-mono">{user_id}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {session_id && (
+                                <div className="flex items-center gap-2">
+                                    <HardDrives className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Session ID</p>
+                                        <p className="text-xs font-mono">{session_id}</p>
+                                    </div>
                                 </div>
                             )}
                         </div>

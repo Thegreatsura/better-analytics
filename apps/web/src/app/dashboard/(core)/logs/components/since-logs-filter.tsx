@@ -9,8 +9,12 @@ import {
 } from "@better-analytics/ui/components/popover";
 import { Separator } from "@better-analytics/ui/components/separator";
 import { Switch } from "@better-analytics/ui/components/switch";
-import { cn } from "@better-analytics/ui";
-import { CheckIcon } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
+import {
+    Command,
+    CommandGroup,
+    CommandItem,
+} from "@better-analytics/ui/components/command";
 
 export type TimeFilter = "all" | "1h" | "6h" | "24h" | "168h" | "720h";
 
@@ -79,35 +83,28 @@ export function SinceLogsFilter({
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0" align="start">
                 <div className="p-2 space-y-1">
-                    {timeRanges.map((range) => {
-                        const isSelected = value === range.value;
-                        return (
-                            <div
-                                key={range.value}
-                                onClick={() => {
-                                    if (!isSelected) {
-                                        onValueChange(range.value);
-                                    }
-                                }}
-                                className={cn(
-                                    "flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent",
-                                    isSelected && "bg-accent"
-                                )}
-                            >
-                                <div
-                                    className={cn(
-                                        "flex h-4 w-4 items-center rounded-sm border border-primary",
-                                        isSelected
-                                            ? "bg-primary text-primary-foreground"
-                                            : "opacity-50 [&_svg]:invisible",
-                                    )}
-                                >
-                                    <CheckIcon className={cn("h-4 w-4")} />
-                                </div>
-                                <span>{range.label}</span>
-                            </div>
-                        );
-                    })}
+                    <Command>
+                        <CommandGroup>
+                            {timeRanges.map((range) => {
+                                const isSelected = value === range.value;
+                                return (
+                                    <CommandItem
+                                        key={range.value}
+                                        onSelect={() => {
+                                            if (!isSelected) {
+                                                onValueChange(range.value);
+                                            }
+                                        }}
+                                    >
+                                        <div className="flex items-center justify-between w-full">
+                                            <span>{range.label}</span>
+                                            {value === range.value && <Check className="h-4 w-4" />}
+                                        </div>
+                                    </CommandItem>
+                                );
+                            })}
+                        </CommandGroup>
+                    </Command>
                 </div>
                 <Separator className="my-2" />
                 <div className="p-2 flex items-center justify-between">

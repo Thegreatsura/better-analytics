@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import type { LucideIcon } from "lucide-react";
 import { type ElementType, memo } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card } from "@better-analytics/ui/components/card";
@@ -28,7 +27,7 @@ export interface StatCardProps {
     titleExtra?: React.ReactNode;
     value: string | number;
     description?: string;
-    icon?: ElementType | LucideIcon;
+    icon?: ElementType;
     trend?: Trend | number;
     trendLabel?: string;
     isLoading?: boolean;

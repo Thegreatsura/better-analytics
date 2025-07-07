@@ -5,7 +5,7 @@ import { Badge } from '@better-analytics/ui/components/badge';
 import { Button } from '@better-analytics/ui/components/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@better-analytics/ui/components/popover';
 import { Separator } from '@better-analytics/ui/components/separator';
-import { Check, ChevronDown, Filter, Hash } from 'lucide-react';
+import { Check, CaretDown, Faders, Hash } from '@phosphor-icons/react';
 import { cn } from '@better-analytics/ui';
 
 interface FilterOption {
@@ -83,7 +83,7 @@ function FilterPopover({
                             {selectedValues.length}
                         </Badge>
                     )}
-                    <ChevronDown className="h-4 w-4" />
+                    <CaretDown className="h-4 w-4" />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-56" align="start">
@@ -147,7 +147,7 @@ function LineCountFilter({ lines, setLines }: { lines: number; setLines: (value:
                 >
                     <Hash className="h-4 w-4" />
                     Lines: {lines}
-                    <ChevronDown className="h-4 w-4" />
+                    <CaretDown className="h-4 w-4" />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-40" align="start">
@@ -197,7 +197,7 @@ export function ErrorFilters({
                 options={severityOptions}
                 selectedValues={severityFilter}
                 onSelectionChange={setSeverityFilter}
-                icon={Filter}
+                icon={Faders}
             />
 
             <FilterPopover
