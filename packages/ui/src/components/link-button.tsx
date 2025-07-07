@@ -25,14 +25,17 @@ export function LinkButton({
 	return props.disabled ? (
 		<Button
 			{...props}
-			className={cn("flex cursor-not-allowed items-center gap-2", className)}
+			className={cn(
+				"flex cursor-not-allowed select-none items-center gap-2",
+				className,
+			)}
 		>
 			{children}
 			{external && <ArrowSquareOutIcon className="size-3.5 opacity-50" />}
 		</Button>
 	) : (
 		<Button
-			className={cn("flex flex-row items-center gap-2", className)}
+			className={cn("flex select-none flex-row items-center gap-2", className)}
 			{...props}
 			asChild
 		>
