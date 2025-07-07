@@ -6,11 +6,12 @@ const nextConfig: NextConfig = {
 			fullUrl: true,
 		},
 	},
-	async rewrites() {
+	async redirects() {
 		return [
 			{
 				source: "/dashboard",
 				destination: "http://localhost:3000/dashboard",
+				statusCode: 302,
 			},
 		];
 	},
