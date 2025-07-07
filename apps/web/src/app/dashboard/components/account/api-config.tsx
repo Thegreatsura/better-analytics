@@ -102,7 +102,7 @@ export const ApiConfig = ({ userId, accessToken }: ApiConfigProps) => {
                         variant="outline"
                         size="sm"
                         onClick={copyClientId}
-                        className="flex-shrink-0"
+                        className="flex-shrink-0 h-9"
                     >
                         {clientIdCopied ? <CheckCircleIcon size={16} /> : <CopyIcon size={16} />}
                         {clientIdCopied ? 'Copied!' : 'Copy'}
@@ -148,18 +148,12 @@ export const ApiConfig = ({ userId, accessToken }: ApiConfigProps) => {
                                 variant="outline"
                                 size="sm"
                                 onClick={copyToken}
-                                className="flex-shrink-0"
+                                className="flex-shrink-0 h-9"
                             >
                                 {tokenCopied ? <CheckCircleIcon size={16} /> : <CopyIcon size={16} />}
                                 {tokenCopied ? 'Copied!' : 'Copy'}
                             </Button>
                         </div>
-
-                        {tokenCopied && (
-                            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                                ✓ Token copied successfully! You can now use it in your applications.
-                            </div>
-                        )}
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -177,15 +171,13 @@ export const ApiConfig = ({ userId, accessToken }: ApiConfigProps) => {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Regenerate Access Token</AlertDialogTitle>
-                                    <AlertDialogDescription className="space-y-2">
-                                        <p>This will create a new access token and invalidate the current one.</p>
-                                        <p className="font-medium text-destructive">
-                                            ⚠️ Any applications using the old token will stop working immediately.
-                                        </p>
-                                        <p>Make sure you're ready to update your applications with the new token.</p>
+                                    <AlertDialogTitle>Regenerate Token</AlertDialogTitle>
+
+                                    <AlertDialogDescription className="text-sm mt-2">
+                                        This will invalidate your current token. All connected applications will need to be updated.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
+
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
@@ -193,12 +185,7 @@ export const ApiConfig = ({ userId, accessToken }: ApiConfigProps) => {
                                         disabled={isRegenerating}
                                         className="bg-destructive hover:bg-destructive/90"
                                     >
-                                        {isRegenerating ? (
-                                            <CircleNotchIcon size={16} className="mr-2 animate-spin" />
-                                        ) : (
-                                            <ArrowClockwiseIcon size={16} className="mr-2" />
-                                        )}
-                                        {isRegenerating ? 'Regenerating...' : 'Yes, Regenerate Token'}
+                                        {isRegenerating ? 'Regenerating...' : 'Regenerate Token'}
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
