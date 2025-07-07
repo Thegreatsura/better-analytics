@@ -3,11 +3,12 @@ import { z } from "zod";
 
 const envSchema = {
 	API_URL: z.string(),
-	API_KEY: z.string(),
+	CLIENT_ID: z.string(),
+	ACCESS_TOKEN: z.string(),
 	NODE_ENV: z.enum(["development", "production"]),
 };
 
-export const env = createEnv({
+export default createEnv({
 	schema: envSchema,
 	values: {
 		API_URL: "http://localhost:4000",
