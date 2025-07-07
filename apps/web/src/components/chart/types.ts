@@ -11,3 +11,9 @@ export type ErrorTrendItem = {
     client: number;
     server: number;
 }
+
+export type ErrorVsLogTrendItem = {
+    date: string;
+    errors: number;
+    logs: number;
+}

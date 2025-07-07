@@ -111,7 +111,7 @@ export async function getRecentErrors() {
                 status
             FROM errors 
             WHERE client_id = {clientId:String}
-            ORDER BY created_at ASC 
+            ORDER BY created_at DESC 
             LIMIT 50
         `, { clientId });
 
@@ -150,7 +150,7 @@ export async function getRecentLogs() {
                 created_at
             FROM logs 
             WHERE client_id = {clientId:String}
-            ORDER BY created_at ASC 
+            ORDER BY created_at DESC 
             LIMIT 50
         `, { clientId });
 
@@ -206,123 +206,48 @@ export async function getAnalyticsStats() {
     }
 }
 
-export async function getErrorTrends() {
+export async function getErrorVsLogTrends() {
     try {
         const data = await chQuery<{
             date: string;
             total_errors: number;
-            client_errors: number;
-            server_errors: number;
+            total_logs: number;
         }>(`
             WITH date_range AS (
                 SELECT 
                     toDate(now() - INTERVAL number DAY) as date
                 FROM numbers(14)
+            ),
+            error_data AS (
+                SELECT 
+                    toDate(created_at) as date,
+                    COUNT(*) as total_errors
+                FROM errors 
+                WHERE created_at >= now() - INTERVAL 14 DAY
+                GROUP BY toDate(created_at)
+            ),
+            log_data AS (
+                SELECT 
+                    toDate(created_at) as date,
+                    COUNT(*) as total_logs
+                FROM logs 
+                WHERE created_at >= now() - INTERVAL 14 DAY
+                GROUP BY toDate(created_at)
             )
             SELECT 
                 date_range.date as date,
                 COALESCE(error_data.total_errors, 0) as total_errors,
-                COALESCE(error_data.client_errors, 0) as client_errors,
-                COALESCE(error_data.server_errors, 0) as server_errors
+                COALESCE(log_data.total_logs, 0) as total_logs
             FROM date_range
-            LEFT JOIN (
-                SELECT 
-                    toDate(created_at) as date,
-                    COUNT(*) as total_errors,
-                    countIf(error_type = 'client') as client_errors,
-                    countIf(error_type = 'server') as server_errors
-                FROM errors 
-                WHERE created_at >= now() - INTERVAL 14 DAY
-                GROUP BY toDate(created_at)
-            ) error_data ON date_range.date = error_data.date
+            LEFT JOIN error_data ON date_range.date = error_data.date
+            LEFT JOIN log_data ON date_range.date = log_data.date
             ORDER BY date ASC
         `);
 
         return { success: true, data };
     } catch (error) {
-        console.error('Failed to fetch error trends:', error);
-        return { success: false, error: 'Failed to fetch error trends' };
-    }
-}
-
-export async function getErrorMetrics() {
-    try {
-        const [
-            totalErrorsData,
-            errorRateData,
-            avgResolutionTimeData,
-            systemHealthData
-        ] = await Promise.all([
-            chQuery<{ count: number }>(`
-                SELECT COUNT(*) as count 
-                FROM errors 
-                WHERE created_at >= now() - INTERVAL 24 HOUR
-            `),
-            chQuery<{ error_rate: number }>(`
-                WITH (SELECT count() FROM logs WHERE created_at >= now() - INTERVAL 24 HOUR) AS total_logs
-                SELECT if(total_logs > 0, count() * 100.0 / total_logs, 0) AS error_rate
-                FROM errors
-                WHERE created_at >= now() - INTERVAL 24 HOUR
-            `),
-            chQuery<{ avg_resolution_hours: number }>(`
-                SELECT 
-                    AVG(dateDiff('hour', created_at, resolved_at)) as avg_resolution_hours
-                FROM errors 
-                WHERE resolved_at IS NOT NULL 
-                AND created_at >= now() - INTERVAL 7 DAY
-            `),
-            chQuery<{ health_score: number }>(`
-                WITH (SELECT count() FROM logs WHERE created_at >= now() - INTERVAL 24 HOUR) AS total_logs
-                SELECT if(total_logs > 0, 100.0 - (COUNT(*) * 100.0 / total_logs), 100.0) as health_score
-                FROM errors 
-                WHERE severity IN ('high', 'critical') 
-                AND created_at >= now() - INTERVAL 24 HOUR
-            `)
-        ]);
-
-        return {
-            success: true,
-            data: {
-                totalErrors: totalErrorsData[0]?.count || 0,
-                errorRate: errorRateData[0]?.error_rate || 0,
-                avgResolutionTime: avgResolutionTimeData[0]?.avg_resolution_hours || 0,
-                systemHealth: systemHealthData[0]?.health_score || 100,
-            }
-        };
-    } catch (error) {
-        console.error('Failed to fetch error metrics:', error);
-        return { success: false, error: 'Failed to fetch error metrics' };
-    }
-}
-
-export async function getTopErrors() {
-    try {
-        const data = await chQuery<{
-            error_name: string;
-            message: string;
-            error_type: string;
-            severity: string;
-            count: number;
-            last_occurrence: string;
-        }>(`
-            SELECT 
-                error_name,
-                message,
-                error_type,
-                severity,
-                COUNT(*) as count,
-                MAX(created_at) as last_occurrence
-            FROM errors 
-            WHERE created_at >= now() - INTERVAL 7 DAY
-            GROUP BY error_name, message, error_type, severity
-            ORDER BY count DESC
-            LIMIT 10
-        `);
-
-        return { success: true, data };
-    } catch (error) {
-        console.error('Failed to fetch top errors:', error);
-        return { success: false, error: 'Failed to fetch top errors' };
+        console.error('Failed to fetch error vs log trends:', error);
+        return { success: false, error: 'Failed to fetch error vs log trends' };
     }
 }
 
@@ -358,7 +283,7 @@ export async function getLogsByLevel() {
             percentage: number;
         }>(`
             SELECT 
-                level,
+                toString(level) as level,
                 COUNT(*) as count,
                 (COUNT(*) * 100.0 / (SELECT COUNT(*) FROM logs)) as percentage
             FROM logs 
@@ -374,52 +299,80 @@ export async function getLogsByLevel() {
     }
 }
 
-export async function getDebugInfo() {
+export async function getTopErrorUrls() {
     try {
-        const [
-            totalErrorsData,
-            totalLogsData,
-            sampleErrorsData,
-            severityCountData,
-            errorTypeCountData
-        ] = await Promise.all([
-            chQuery<{ count: number }>("SELECT COUNT(*) as count FROM errors"),
-            chQuery<{ count: number }>("SELECT COUNT(*) as count FROM logs"),
-            chQuery<{ id: string; severity: string; error_type: string; created_at: string }>(`
-                SELECT id, toString(severity) as severity, toString(error_type) as error_type, created_at
-                FROM errors 
-                LIMIT 5
-            `),
-            chQuery<{ severity: string; count: number }>(`
-                SELECT 
-                    toString(severity) as severity,
-                    toUInt32(COUNT(*)) as count
-                FROM errors 
-                WHERE severity IS NOT NULL
-                GROUP BY severity
-            `),
-            chQuery<{ error_type: string; count: number }>(`
-                SELECT 
-                    toString(error_type) as error_type,
-                    toUInt32(COUNT(*)) as count
-                FROM errors 
-                WHERE error_type IS NOT NULL
-                GROUP BY error_type
-            `)
-        ]);
+        const data = await chQuery<{
+            url: string;
+            count: number;
+            percentage: number;
+        }>(`
+            WITH total AS (SELECT COUNT(*) as total_count FROM errors WHERE url IS NOT NULL)
+            SELECT 
+                url,
+                COUNT(*) as count,
+                (COUNT(*) * 100.0 / total.total_count) as percentage
+            FROM errors, total
+            WHERE url IS NOT NULL
+            GROUP BY url, total.total_count
+            ORDER BY count DESC
+            LIMIT 10
+        `);
 
-        return {
-            success: true,
-            data: {
-                totalErrors: totalErrorsData[0]?.count || 0,
-                totalLogs: totalLogsData[0]?.count || 0,
-                sampleErrors: sampleErrorsData,
-                severityBreakdown: severityCountData,
-                errorTypeBreakdown: errorTypeCountData,
-            }
-        };
+        return { success: true, data };
     } catch (error) {
-        console.error('Failed to fetch debug info:', error);
-        return { success: false, error: 'Failed to fetch debug info' };
+        console.error('Failed to fetch top error URLs:', error);
+        return { success: false, error: 'Failed to fetch top error URLs' };
     }
-} 
+}
+
+export async function getErrorsByBrowser() {
+    try {
+        const data = await chQuery<{
+            browser_name: string;
+            count: number;
+            percentage: number;
+        }>(`
+            WITH total AS (SELECT COUNT(*) as total_count FROM errors WHERE browser_name IS NOT NULL)
+            SELECT 
+                browser_name,
+                COUNT(*) as count,
+                (COUNT(*) * 100.0 / total.total_count) as percentage
+            FROM errors, total
+            WHERE browser_name IS NOT NULL
+            GROUP BY browser_name, total.total_count
+            ORDER BY count DESC
+            LIMIT 10
+        `);
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('Failed to fetch errors by browser:', error);
+        return { success: false, error: 'Failed to fetch errors by browser' };
+    }
+}
+
+export async function getErrorsByLocation() {
+    try {
+        const data = await chQuery<{
+            country: string;
+            count: number;
+            percentage: number;
+        }>(`
+            WITH total AS (SELECT COUNT(*) as total_count FROM errors WHERE country IS NOT NULL)
+            SELECT 
+                country,
+                COUNT(*) as count,
+                (COUNT(*) * 100.0 / total.total_count) as percentage
+            FROM errors, total
+            WHERE country IS NOT NULL
+            GROUP BY country, total.total_count
+            ORDER BY count DESC
+            LIMIT 10
+        `);
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('Failed to fetch errors by location:', error);
+        return { success: false, error: 'Failed to fetch errors by location' };
+    }
+}
