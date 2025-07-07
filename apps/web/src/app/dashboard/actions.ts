@@ -449,3 +449,70 @@ export async function getErrorsByLocation() {
         return { success: false, error: 'Failed to fetch errors by location' };
     }
 }
+
+function getPeriod(endDate: Date, days: number) {
+    const end = new Date(endDate);
+    const start = new Date(endDate);
+    start.setDate(end.getDate() - days);
+    return { start, end };
+}
+
+const formatForClickHouse = (date: Date) => date.toISOString().slice(0, 19).replace('T', ' ');
+
+export async function getAnalyticsTrends() {
+    try {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+        const clientId = session.user.id;
+
+        const today = new Date();
+        const last7Days = getPeriod(today, 7);
+        const previous7Days = getPeriod(last7Days.start, 7);
+
+        const [
+            currentErrorsData,
+            previousErrorsData,
+            currentLogsData,
+            previousLogsData
+        ] = await Promise.all([
+            chQuery<{ count: number }>("SELECT toUInt32(COUNT(*)) as count FROM errors WHERE client_id = {clientId:String} AND created_at BETWEEN {start:String} AND {end:String}", { clientId, start: formatForClickHouse(last7Days.start), end: formatForClickHouse(last7Days.end) }),
+            chQuery<{ count: number }>("SELECT toUInt32(COUNT(*)) as count FROM errors WHERE client_id = {clientId:String} AND created_at BETWEEN {start:String} AND {end:String}", { clientId, start: formatForClickHouse(previous7Days.start), end: formatForClickHouse(previous7Days.end) }),
+            chQuery<{ count: number }>("SELECT toUInt32(COUNT(*)) as count FROM logs WHERE client_id = {clientId:String} AND created_at BETWEEN {start:String} AND {end:String}", { clientId, start: formatForClickHouse(last7Days.start), end: formatForClickHouse(last7Days.end) }),
+            chQuery<{ count: number }>("SELECT toUInt32(COUNT(*)) as count FROM logs WHERE client_id = {clientId:String} AND created_at BETWEEN {start:String} AND {end:String}", { clientId, start: formatForClickHouse(previous7Days.start), end: formatForClickHouse(previous7Days.end) }),
+        ]);
+
+        const currentErrors = currentErrorsData[0]?.count || 0;
+        const previousErrors = previousErrorsData[0]?.count || 0;
+        const errorChange = previousErrors === 0 ? (currentErrors > 0 ? 100 : 0) : ((currentErrors - previousErrors) / previousErrors) * 100;
+
+        const currentLogs = currentLogsData[0]?.count || 0;
+        const previousLogs = previousLogsData[0]?.count || 0;
+        const logChange = previousLogs === 0 ? (currentLogs > 0 ? 100 : 0) : ((currentLogs - previousLogs) / previousLogs) * 100;
+
+        return {
+            success: true,
+            data: {
+                totalErrorsTrend: {
+                    current: currentErrors,
+                    previous: previousErrors,
+                    change: errorChange,
+                    currentPeriod: { start: last7Days.start.toISOString(), end: last7Days.end.toISOString() },
+                    previousPeriod: { start: previous7Days.start.toISOString(), end: previous7Days.end.toISOString() },
+                },
+                totalLogsTrend: {
+                    current: currentLogs,
+                    previous: previousLogs,
+                    change: logChange,
+                    currentPeriod: { start: last7Days.start.toISOString(), end: last7Days.end.toISOString() },
+                    previousPeriod: { start: previous7Days.start.toISOString(), end: previous7Days.end.toISOString() },
+                },
+            },
+        };
+
+    } catch (error) {
+        console.error('Failed to fetch analytics trends:', error);
+        return { success: false, error: 'Failed to fetch analytics trends' };
+    }
+}
