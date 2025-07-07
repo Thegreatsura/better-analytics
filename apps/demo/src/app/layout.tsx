@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { cn } from "@better-analytics/ui";
 import { Banner } from "@/components/banner";
+import { PreviousRouteProvider } from "@/context/previous-route.provider";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -34,11 +35,13 @@ export default function RootLayout({ children }: LayoutProps) {
 					defaultTheme="dark"
 					attribute="class"
 				>
-					<main className="container flex h-screen w-screen items-center justify-center">
-						<Banner />
+					<PreviousRouteProvider>
+						<main className="container flex h-screen w-screen items-center justify-center">
+							<Banner />
 
-						{children}
-					</main>
+							{children}
+						</main>
+					</PreviousRouteProvider>
 				</ThemeProvider>
 			</body>
 		</html>
