@@ -7,56 +7,98 @@ import { Card, CardContent, CardHeader } from '@better-analytics/ui/components/c
 import { Switch } from '@better-analytics/ui/components/switch';
 import { Label } from '@better-analytics/ui/components/label';
 import { Separator } from '@better-analytics/ui/components/separator';
-import { Download, Search, Play, Pause, RotateCcw, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Download, Search, Play, Pause, RotateCcw, AlertTriangle, Bug, Zap, Shield, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { cn } from '@better-analytics/ui';
-import { TerminalLine } from './terminal-line';
-import { LineCountFilter } from './line-count-filter';
-import { SinceLogsFilter, type TimeFilter } from './since-logs-filter';
-import { StatusLogsFilter } from './status-logs-filter';
-import { type LogLine, getLogType } from './utils';
-import { getRecentLogs } from '../../actions';
-import { useRealtime, type LogEvent } from '@/hooks/use-realtime';
+import { ErrorLine } from './error-line';
+import { ErrorFilters } from './error-filters';
+import { useRealtime, type ErrorEvent } from '@/hooks/use-realtime';
+import { getRecentErrors } from '@/app/dashboard/actions';
 
-const priorities = [
-    { label: "Info", value: "info" },
-    { label: "Warning", value: "warning" },
-    { label: "Error", value: "error" },
-    { label: "Debug", value: "debug" },
+const severityLevels = [
+    { label: "Critical", value: "critical", icon: Zap, color: "text-red-500" },
+    { label: "High", value: "high", icon: AlertTriangle, color: "text-orange-500" },
+    { label: "Medium", value: "medium", icon: Bug, color: "text-yellow-500" },
+    { label: "Low", value: "low", icon: Shield, color: "text-blue-500" },
 ];
 
-export function LogsConsole() {
-    const [logs, setLogs] = useState<LogLine[]>([]);
-    const [filteredLogs, setFilteredLogs] = useState<LogLine[]>([]);
+const errorTypes = [
+    { label: "Client", value: "client" },
+    { label: "Server", value: "server" },
+    { label: "Network", value: "network" },
+    { label: "Database", value: "database" },
+    { label: "Validation", value: "validation" },
+    { label: "Auth", value: "auth" },
+    { label: "Business", value: "business" },
+    { label: "Unknown", value: "unknown" },
+];
+
+export interface ErrorData {
+    id: string;
+    error_name: string;
+    message: string;
+    severity: string;
+    error_type: string;
+    source: string;
+    environment: string;
+    browser_name: string;
+    os_name: string;
+    country: string;
+    url: string;
+    endpoint: string;
+    http_status_code: number;
+    created_at: string;
+    occurrence_count: number;
+    status: string;
+    stack_trace?: string;
+    user_id?: string;
+    session_id?: string;
+    custom_data?: string;
+}
+
+export function ErrorsConsole() {
+    const [errors, setErrors] = useState<ErrorData[]>([]);
+    const [filteredErrors, setFilteredErrors] = useState<ErrorData[]>([]);
     const [isStreaming, setIsStreaming] = useState(true);
     const [autoScroll, setAutoScroll] = useState(true);
-    const [lines, setLines] = useState<number>(100);
+    const [lines, setLines] = useState<number>(50);
     const [search, setSearch] = useState<string>("");
     const [showTimestamp, setShowTimestamp] = useState(true);
-    const [since, setSince] = useState<TimeFilter>("all");
+    const [severityFilter, setSeverityFilter] = useState<string[]>([]);
     const [typeFilter, setTypeFilter] = useState<string[]>([]);
-    const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+    const [statusFilter, setStatusFilter] = useState<string[]>([]);
+    const [expandedErrorId, setExpandedErrorId] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Real-time subscription
-    const handleNewLog = useCallback((logEvent: LogEvent) => {
-        const newLog: LogLine = {
-            timestamp: new Date(logEvent.created_at),
-            message: logEvent.message,
-            rawTimestamp: logEvent.created_at,
-            source: logEvent.source || 'Unknown',
-            level: logEvent.level || 'info',
-            context: logEvent.context,
-            environment: logEvent.environment,
-            user_id: logEvent.user_id,
-            session_id: logEvent.session_id,
-            tags: []
+    const handleNewError = useCallback((errorEvent: ErrorEvent) => {
+        const newError: ErrorData = {
+            id: errorEvent.id,
+            error_name: errorEvent.message.split(':')[0] || 'Unknown Error',
+            message: errorEvent.message,
+            severity: errorEvent.severity || 'medium',
+            error_type: errorEvent.error_type || 'unknown',
+            source: errorEvent.source || 'Unknown',
+            environment: 'production',
+            browser_name: errorEvent.browser_name || 'Unknown',
+            os_name: errorEvent.os_name || 'Unknown',
+            country: errorEvent.country || 'Unknown',
+            url: errorEvent.url || '',
+            endpoint: '',
+            http_status_code: 0,
+            created_at: errorEvent.created_at,
+            occurrence_count: 1,
+            status: 'new',
+            stack_trace: undefined,
+            user_id: undefined,
+            session_id: undefined,
+            custom_data: undefined
         };
 
-        setLogs(prevLogs => [...prevLogs, newLog]);
+        setErrors(prevErrors => [...prevErrors, newError]);
     }, []);
 
     const { isConnected } = useRealtime({
-        onLog: handleNewLog,
+        onError: handleNewError,
         enabled: isStreaming
     });
 
@@ -73,77 +115,62 @@ export function LogsConsole() {
         setAutoScroll(isAtBottom);
     };
 
-    const fetchLogs = async () => {
+    const fetchErrors = async () => {
         try {
-            const result = await getRecentLogs();
+            const result = await getRecentErrors();
             if (result.success && result.data) {
-                const transformedLogs: LogLine[] = result.data.map(log => ({
-                    timestamp: new Date(log.created_at),
-                    message: log.message,
-                    rawTimestamp: log.created_at,
-                    source: log.source || 'Unknown',
-                    level: log.level || 'info',
-                    context: log.context,
-                    environment: log.environment,
-                    user_id: log.user_id,
-                    session_id: log.session_id,
-                    tags: log.tags
-                }));
-                setLogs(transformedLogs);
+                setErrors(result.data);
             }
         } catch (error) {
-            console.error('Failed to fetch logs:', error);
+            console.error('Failed to fetch errors:', error);
         }
     };
 
     const handleDownload = () => {
-        const logContent = filteredLogs
-            .map(({ timestamp, message }) =>
-                `${timestamp?.toISOString() || "No timestamp"} ${message}`
+        const errorContent = filteredErrors
+            .map(error =>
+                `${error.created_at} [${error.severity.toUpperCase()}] ${error.error_name}: ${error.message}\n` +
+                `Source: ${error.source || 'Unknown'}\n` +
+                `URL: ${error.url || 'N/A'}\n` +
+                `Browser: ${error.browser_name || 'Unknown'} on ${error.os_name || 'Unknown'}\n` +
+                `Stack Trace: ${error.stack_trace || 'Not available'}\n` +
+                "---\n"
             )
             .join("\n");
 
-        const blob = new Blob([logContent], { type: "text/plain" });
+        const blob = new Blob([errorContent], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         const isoDate = new Date().toISOString();
         a.href = url;
-        a.download = `logs-${isoDate.slice(0, 10)}.txt`;
+        a.download = `errors-${isoDate.slice(0, 10)}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     };
 
-    const handleLogToggle = (logId: string) => {
-        setExpandedLogId(expandedLogId === logId ? null : logId);
+    const handleErrorToggle = (errorId: string) => {
+        setExpandedErrorId(expandedErrorId === errorId ? null : errorId);
     };
 
-    const handleFilter = (logs: LogLine[]) => {
-        return logs.filter((log) => {
-            const logType = getLogType(log.message).type;
-
-            if (search && !log.message.toLowerCase().includes(search.toLowerCase())) {
+    const handleFilter = (errors: ErrorData[]) => {
+        return errors.filter((error) => {
+            if (search && !error.message.toLowerCase().includes(search.toLowerCase()) &&
+                !error.error_name.toLowerCase().includes(search.toLowerCase())) {
                 return false;
             }
 
-            if (typeFilter.length > 0 && !typeFilter.includes(logType)) {
+            if (severityFilter.length > 0 && !severityFilter.includes(error.severity)) {
                 return false;
             }
 
-            if (since !== "all" && log.timestamp) {
-                const now = new Date();
-                const logTime = log.timestamp;
-                const diffHours = (now.getTime() - logTime.getTime()) / (1000 * 60 * 60);
+            if (typeFilter.length > 0 && !typeFilter.includes(error.error_type)) {
+                return false;
+            }
 
-                switch (since) {
-                    case "1h": return diffHours <= 1;
-                    case "6h": return diffHours <= 6;
-                    case "24h": return diffHours <= 24;
-                    case "168h": return diffHours <= 168;
-                    case "720h": return diffHours <= 720;
-                    default: return true;
-                }
+            if (statusFilter.length > 0 && !statusFilter.includes(error.status)) {
+                return false;
             }
 
             return true;
@@ -151,17 +178,25 @@ export function LogsConsole() {
     };
 
     useEffect(() => {
-        fetchLogs();
+        fetchErrors();
     }, []);
 
     useEffect(() => {
-        const filtered = handleFilter(logs);
-        setFilteredLogs(filtered.slice(-lines));
-    }, [logs, search, lines, since, typeFilter]);
+        const filtered = handleFilter(errors);
+        setFilteredErrors(filtered.slice(-lines));
+    }, [errors, search, lines, severityFilter, typeFilter, statusFilter]);
 
     useEffect(() => {
         scrollToBottom();
-    }, [filteredLogs, autoScroll]);
+    }, [filteredErrors, autoScroll]);
+
+    const errorStats = {
+        total: filteredErrors.length,
+        critical: filteredErrors.filter(e => e.severity === 'critical').length,
+        high: filteredErrors.filter(e => e.severity === 'high').length,
+        medium: filteredErrors.filter(e => e.severity === 'medium').length,
+        low: filteredErrors.filter(e => e.severity === 'low').length,
+    };
 
     return (
         <Card className="h-full flex flex-col pb-2 mb-2 gap-0">
@@ -177,19 +212,18 @@ export function LogsConsole() {
                                     <Separator orientation="vertical" className="h-4" />
                                 </div>
 
-                                <StatusLogsFilter
-                                    value={typeFilter}
-                                    setValue={setTypeFilter}
-                                    title="Level"
-                                    options={priorities}
+                                <ErrorFilters
+                                    severityFilter={severityFilter}
+                                    setSeverityFilter={setSeverityFilter}
+                                    typeFilter={typeFilter}
+                                    setTypeFilter={setTypeFilter}
+                                    statusFilter={statusFilter}
+                                    setStatusFilter={setStatusFilter}
+                                    lines={lines}
+                                    setLines={setLines}
+                                    severityOptions={severityLevels}
+                                    typeOptions={errorTypes}
                                 />
-                                <SinceLogsFilter
-                                    value={since}
-                                    onValueChange={setSince}
-                                    showTimestamp={showTimestamp}
-                                    onTimestampChange={setShowTimestamp}
-                                />
-                                <LineCountFilter value={lines} onValueChange={setLines} />
                             </div>
 
                             {/* Right Section: Actions */}
@@ -217,9 +251,9 @@ export function LogsConsole() {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={fetchLogs}
+                                    onClick={fetchErrors}
                                     className="gap-2 hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-400 transition-all duration-200"
-                                    title="Refresh logs manually"
+                                    title="Refresh errors manually"
                                 >
                                     <RefreshCw className="h-4 w-4" />
                                     Refresh
@@ -227,7 +261,7 @@ export function LogsConsole() {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => setLogs([])}
+                                    onClick={() => setErrors([])}
                                     className="gap-2 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-all duration-200"
                                 >
                                     <RotateCcw className="h-4 w-4" />
@@ -237,7 +271,7 @@ export function LogsConsole() {
                                     variant="outline"
                                     size="sm"
                                     onClick={handleDownload}
-                                    disabled={filteredLogs.length === 0}
+                                    disabled={filteredErrors.length === 0}
                                     className="gap-2 hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-400 transition-all duration-200 disabled:opacity-50"
                                 >
                                     <Download className="h-4 w-4" />
@@ -253,7 +287,7 @@ export function LogsConsole() {
                             <div className="relative flex-1 max-w-md">
                                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search logs..."
+                                    placeholder="Search errors..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="pl-9 bg-background/50 border-border/50 focus:bg-background focus:border-border transition-all duration-200"
@@ -264,13 +298,29 @@ export function LogsConsole() {
                                 <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-md">
                                     <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
                                     <span className="text-sm text-blue-400 font-medium">
-                                        {filteredLogs.length} result{filteredLogs.length !== 1 ? 's' : ''}
+                                        {filteredErrors.length} result{filteredErrors.length !== 1 ? 's' : ''}
                                     </span>
                                 </div>
                             )}
                         </div>
 
                         <div className="flex items-center gap-4">
+                            {/* Error Stats */}
+                            <div className="flex items-center gap-2">
+                                {errorStats.critical > 0 && (
+                                    <div className="flex items-center gap-1 px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-md">
+                                        <Zap className="h-3 w-3 text-red-500" />
+                                        <span className="text-xs text-red-500 font-medium">{errorStats.critical}</span>
+                                    </div>
+                                )}
+                                {errorStats.high > 0 && (
+                                    <div className="flex items-center gap-1 px-2 py-1 bg-orange-500/10 border border-orange-500/20 rounded-md">
+                                        <AlertTriangle className="h-3 w-3 text-orange-500" />
+                                        <span className="text-xs text-orange-500 font-medium">{errorStats.high}</span>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="flex items-center gap-2 px-3 py-1 bg-muted/30 border border-border/20 rounded-md">
                                 <Switch
                                     id={`autoscroll-${Math.random().toString(36).substring(2, 15)}`}
@@ -301,9 +351,9 @@ export function LogsConsole() {
                             </div>
 
                             <div className="flex items-center gap-2 px-3 py-1 bg-muted/30 border border-border/20 rounded-md">
-                                <div className="w-2 h-2 bg-emerald-400 rounded-full" />
+                                <div className="w-2 h-2 bg-red-400 rounded-full" />
                                 <span className="text-sm text-muted-foreground font-mono">
-                                    {filteredLogs.length} / {logs.length}
+                                    {filteredErrors.length} / {errors.length}
                                 </span>
                             </div>
                         </div>
@@ -321,36 +371,31 @@ export function LogsConsole() {
                         scrollbarColor: 'hsl(var(--border) / 0.3) transparent'
                     }}
                 >
-                    {filteredLogs.length === 0 ? (
+                    {filteredErrors.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                             <div className="text-center">
-                                <div className="text-lg font-medium mb-2">No logs found</div>
+                                <div className="text-lg font-medium mb-2">No errors found</div>
                                 <div className="text-sm">
-                                    {search ? 'Try adjusting your search terms or filters' : 'Logs will appear here when available'}
+                                    {search ? 'Try adjusting your search terms or filters' : 'No errors detected - your application is running smoothly!'}
                                 </div>
                             </div>
                         </div>
                     ) : (
                         <div className="space-y-1 p-2">
-                            {filteredLogs.map((log, index) => {
-                                const logId = `${log.timestamp?.getTime()}-${index}`;
-                                return (
-                                    <TerminalLine
-                                        key={logId}
-                                        log={log}
-                                        searchTerm={search}
-                                        noTimestamp={!showTimestamp}
-                                        isExpanded={expandedLogId === logId}
-                                        onToggleExpand={() => handleLogToggle(logId)}
-                                    />
-                                );
-                            })}
+                            {filteredErrors.map((error) => (
+                                <ErrorLine
+                                    key={error.id}
+                                    error={error}
+                                    searchTerm={search}
+                                    noTimestamp={!showTimestamp}
+                                    isExpanded={expandedErrorId === error.id}
+                                    onToggleExpand={() => handleErrorToggle(error.id)}
+                                />
+                            ))}
                         </div>
                     )}
                 </div>
             </CardContent>
-
-
         </Card>
     );
 } 

@@ -7,8 +7,8 @@ import { auth } from '@better-analytics/auth';
 // TYPES
 // ============================================================================
 
-import type { AnalysisInsight, AnalysisPlan, ChartData, StreamingUpdate } from '@/app/dashboard/ai/types';
-import { processInsight, buildResponseContent } from '@/app/dashboard/ai/utils';
+import type { AnalysisInsight, AnalysisPlan, ChartData, StreamingUpdate } from '@/app/dashboard/(core)/ai/types';
+import { processInsight, buildResponseContent } from '@/app/dashboard/(core)/ai/utils';
 
 // ============================================================================
 // CONSTANTS
@@ -18,99 +18,99 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const AI_MODEL = 'google/gemini-2.0-flash-001';
 
 if (!OPENROUTER_API_KEY) {
-    console.error('OPENROUTER_API_KEY environment variable is not configured');
+  console.error('OPENROUTER_API_KEY environment variable is not configured');
 }
 
 const openrouterClient = createOpenRouter({
-    apiKey: OPENROUTER_API_KEY || '',
-    baseURL: "https://openrouter.ai/api/v1",
+  apiKey: OPENROUTER_API_KEY || '',
+  baseURL: "https://openrouter.ai/api/v1",
 });
 
 const FORBIDDEN_SQL_KEYWORDS = [
-    'INSERT INTO', 'UPDATE SET', 'DELETE FROM', 'DROP TABLE', 'DROP DATABASE',
-    'CREATE TABLE', 'CREATE DATABASE', 'ALTER TABLE', 'EXEC ', 'EXECUTE ',
-    'TRUNCATE', 'MERGE', 'BULK', 'RESTORE', 'BACKUP'
+  'INSERT INTO', 'UPDATE SET', 'DELETE FROM', 'DROP TABLE', 'DROP DATABASE',
+  'CREATE TABLE', 'CREATE DATABASE', 'ALTER TABLE', 'EXEC ', 'EXECUTE ',
+  'TRUNCATE', 'MERGE', 'BULK', 'RESTORE', 'BACKUP'
 ] as const;
 
 // Database schema information based on init-db.ts
 const ErrorsSchema = {
-    table: 'errors',
-    columns: [
-        { name: 'id', type: 'UUID', description: 'Unique error identifier' },
-        { name: 'error_type', type: 'Enum8', description: 'Type of error (client, server, network, database, validation, auth, business, unknown)' },
-        { name: 'severity', type: 'Enum8', description: 'Error severity level (low, medium, high, critical)' },
-        { name: 'error_code', type: 'LowCardinality(String)', description: 'Error code identifier' },
-        { name: 'error_name', type: 'LowCardinality(String)', description: 'Error name/type' },
-        { name: 'message', type: 'String', description: 'Error message' },
-        { name: 'stack_trace', type: 'String', description: 'Error stack trace' },
-        { name: 'source', type: 'LowCardinality(String)', description: 'Source of the error' },
-        { name: 'environment', type: 'LowCardinality(String)', description: 'Environment where error occurred' },
-        { name: 'user_agent', type: 'String', description: 'User agent string' },
-        { name: 'browser_name', type: 'LowCardinality(String)', description: 'Browser name' },
-        { name: 'browser_version', type: 'LowCardinality(String)', description: 'Browser version' },
-        { name: 'os_name', type: 'LowCardinality(String)', description: 'Operating system name' },
-        { name: 'os_version', type: 'LowCardinality(String)', description: 'Operating system version' },
-        { name: 'device_type', type: 'LowCardinality(String)', description: 'Device type (desktop, mobile, tablet)' },
-        { name: 'viewport_width', type: 'UInt16', description: 'Viewport width in pixels' },
-        { name: 'viewport_height', type: 'UInt16', description: 'Viewport height in pixels' },
-        { name: 'connection_type', type: 'LowCardinality(String)', description: 'Connection type' },
-        { name: 'connection_effective_type', type: 'LowCardinality(String)', description: 'Effective connection type' },
-        { name: 'connection_downlink', type: 'Float32', description: 'Connection downlink speed' },
-        { name: 'connection_rtt', type: 'UInt32', description: 'Connection round-trip time' },
-        { name: 'device_memory', type: 'UInt8', description: 'Device memory in GB' },
-        { name: 'device_cpu_cores', type: 'UInt8', description: 'Device CPU cores' },
-        { name: 'url', type: 'String', description: 'URL where error occurred' },
-        { name: 'page_title', type: 'String', description: 'Page title' },
-        { name: 'referrer', type: 'String', description: 'Referrer URL' },
-        { name: 'server_name', type: 'LowCardinality(String)', description: 'Server name' },
-        { name: 'service_name', type: 'LowCardinality(String)', description: 'Service name' },
-        { name: 'service_version', type: 'LowCardinality(String)', description: 'Service version' },
-        { name: 'endpoint', type: 'String', description: 'API endpoint' },
-        { name: 'http_method', type: 'LowCardinality(String)', description: 'HTTP method' },
-        { name: 'http_status_code', type: 'UInt16', description: 'HTTP status code' },
-        { name: 'request_id', type: 'String', description: 'Request identifier' },
-        { name: 'user_id', type: 'String', description: 'User identifier' },
-        { name: 'session_id', type: 'String', description: 'Session identifier' },
-        { name: 'ip_address', type: 'String', description: 'IP address' },
-        { name: 'country', type: 'LowCardinality(String)', description: 'Country code' },
-        { name: 'region', type: 'LowCardinality(String)', description: 'Geographic region' },
-        { name: 'city', type: 'LowCardinality(String)', description: 'City name' },
-        { name: 'org', type: 'LowCardinality(String)', description: 'Organization' },
-        { name: 'postal', type: 'LowCardinality(String)', description: 'Postal code' },
-        { name: 'loc', type: 'LowCardinality(String)', description: 'Location coordinates' },
-        { name: 'response_time_ms', type: 'UInt32', description: 'Response time in milliseconds' },
-        { name: 'memory_usage_mb', type: 'Float32', description: 'Memory usage in MB' },
-        { name: 'cpu_usage_percent', type: 'Float32', description: 'CPU usage percentage' },
-        { name: 'first_occurrence', type: 'DateTime64(3)', description: 'First occurrence timestamp' },
-        { name: 'last_occurrence', type: 'DateTime64(3)', description: 'Last occurrence timestamp' },
-        { name: 'occurrence_count', type: 'UInt32', description: 'Number of occurrences' },
-        { name: 'status', type: 'Enum8', description: 'Error status (new, investigating, resolved, ignored, recurring)' },
-        { name: 'resolved_at', type: 'DateTime64(3)', description: 'Resolution timestamp' },
-        { name: 'resolved_by', type: 'String', description: 'Who resolved the error' },
-        { name: 'resolution_notes', type: 'String', description: 'Resolution notes' },
-        { name: 'custom_data', type: 'String', description: 'Custom data JSON' },
-        { name: 'tags', type: 'Array(String)', description: 'Error tags' },
-        { name: 'created_at', type: 'DateTime64(3)', description: 'Creation timestamp' },
-        { name: 'updated_at', type: 'DateTime64(3)', description: 'Last update timestamp' },
-        { name: 'client_id', type: 'LowCardinality(String)', description: 'Client identifier' }
-    ]
+  table: 'errors',
+  columns: [
+    { name: 'id', type: 'UUID', description: 'Unique error identifier' },
+    { name: 'error_type', type: 'Enum8', description: 'Type of error (client, server, network, database, validation, auth, business, unknown)' },
+    { name: 'severity', type: 'Enum8', description: 'Error severity level (low, medium, high, critical)' },
+    { name: 'error_code', type: 'LowCardinality(String)', description: 'Error code identifier' },
+    { name: 'error_name', type: 'LowCardinality(String)', description: 'Error name/type' },
+    { name: 'message', type: 'String', description: 'Error message' },
+    { name: 'stack_trace', type: 'String', description: 'Error stack trace' },
+    { name: 'source', type: 'LowCardinality(String)', description: 'Source of the error' },
+    { name: 'environment', type: 'LowCardinality(String)', description: 'Environment where error occurred' },
+    { name: 'user_agent', type: 'String', description: 'User agent string' },
+    { name: 'browser_name', type: 'LowCardinality(String)', description: 'Browser name' },
+    { name: 'browser_version', type: 'LowCardinality(String)', description: 'Browser version' },
+    { name: 'os_name', type: 'LowCardinality(String)', description: 'Operating system name' },
+    { name: 'os_version', type: 'LowCardinality(String)', description: 'Operating system version' },
+    { name: 'device_type', type: 'LowCardinality(String)', description: 'Device type (desktop, mobile, tablet)' },
+    { name: 'viewport_width', type: 'UInt16', description: 'Viewport width in pixels' },
+    { name: 'viewport_height', type: 'UInt16', description: 'Viewport height in pixels' },
+    { name: 'connection_type', type: 'LowCardinality(String)', description: 'Connection type' },
+    { name: 'connection_effective_type', type: 'LowCardinality(String)', description: 'Effective connection type' },
+    { name: 'connection_downlink', type: 'Float32', description: 'Connection downlink speed' },
+    { name: 'connection_rtt', type: 'UInt32', description: 'Connection round-trip time' },
+    { name: 'device_memory', type: 'UInt8', description: 'Device memory in GB' },
+    { name: 'device_cpu_cores', type: 'UInt8', description: 'Device CPU cores' },
+    { name: 'url', type: 'String', description: 'URL where error occurred' },
+    { name: 'page_title', type: 'String', description: 'Page title' },
+    { name: 'referrer', type: 'String', description: 'Referrer URL' },
+    { name: 'server_name', type: 'LowCardinality(String)', description: 'Server name' },
+    { name: 'service_name', type: 'LowCardinality(String)', description: 'Service name' },
+    { name: 'service_version', type: 'LowCardinality(String)', description: 'Service version' },
+    { name: 'endpoint', type: 'String', description: 'API endpoint' },
+    { name: 'http_method', type: 'LowCardinality(String)', description: 'HTTP method' },
+    { name: 'http_status_code', type: 'UInt16', description: 'HTTP status code' },
+    { name: 'request_id', type: 'String', description: 'Request identifier' },
+    { name: 'user_id', type: 'String', description: 'User identifier' },
+    { name: 'session_id', type: 'String', description: 'Session identifier' },
+    { name: 'ip_address', type: 'String', description: 'IP address' },
+    { name: 'country', type: 'LowCardinality(String)', description: 'Country code' },
+    { name: 'region', type: 'LowCardinality(String)', description: 'Geographic region' },
+    { name: 'city', type: 'LowCardinality(String)', description: 'City name' },
+    { name: 'org', type: 'LowCardinality(String)', description: 'Organization' },
+    { name: 'postal', type: 'LowCardinality(String)', description: 'Postal code' },
+    { name: 'loc', type: 'LowCardinality(String)', description: 'Location coordinates' },
+    { name: 'response_time_ms', type: 'UInt32', description: 'Response time in milliseconds' },
+    { name: 'memory_usage_mb', type: 'Float32', description: 'Memory usage in MB' },
+    { name: 'cpu_usage_percent', type: 'Float32', description: 'CPU usage percentage' },
+    { name: 'first_occurrence', type: 'DateTime64(3)', description: 'First occurrence timestamp' },
+    { name: 'last_occurrence', type: 'DateTime64(3)', description: 'Last occurrence timestamp' },
+    { name: 'occurrence_count', type: 'UInt32', description: 'Number of occurrences' },
+    { name: 'status', type: 'Enum8', description: 'Error status (new, investigating, resolved, ignored, recurring)' },
+    { name: 'resolved_at', type: 'DateTime64(3)', description: 'Resolution timestamp' },
+    { name: 'resolved_by', type: 'String', description: 'Who resolved the error' },
+    { name: 'resolution_notes', type: 'String', description: 'Resolution notes' },
+    { name: 'custom_data', type: 'String', description: 'Custom data JSON' },
+    { name: 'tags', type: 'Array(String)', description: 'Error tags' },
+    { name: 'created_at', type: 'DateTime64(3)', description: 'Creation timestamp' },
+    { name: 'updated_at', type: 'DateTime64(3)', description: 'Last update timestamp' },
+    { name: 'client_id', type: 'LowCardinality(String)', description: 'Client identifier' }
+  ]
 };
 
 const LogsSchema = {
-    table: 'logs',
-    columns: [
-        { name: 'id', type: 'UUID', description: 'Unique log identifier' },
-        { name: 'client_id', type: 'LowCardinality(String)', description: 'Client identifier' },
-        { name: 'level', type: 'Enum8', description: 'Log level (log, info, warn, error, debug, trace)' },
-        { name: 'message', type: 'String', description: 'Log message' },
-        { name: 'context', type: 'String', description: 'Log context' },
-        { name: 'source', type: 'LowCardinality(String)', description: 'Log source' },
-        { name: 'environment', type: 'LowCardinality(String)', description: 'Environment' },
-        { name: 'user_id', type: 'String', description: 'User identifier' },
-        { name: 'session_id', type: 'String', description: 'Session identifier' },
-        { name: 'tags', type: 'Array(String)', description: 'Log tags' },
-        { name: 'created_at', type: 'DateTime64(3)', description: 'Creation timestamp' }
-    ]
+  table: 'logs',
+  columns: [
+    { name: 'id', type: 'UUID', description: 'Unique log identifier' },
+    { name: 'client_id', type: 'LowCardinality(String)', description: 'Client identifier' },
+    { name: 'level', type: 'Enum8', description: 'Log level (log, info, warn, error, debug, trace)' },
+    { name: 'message', type: 'String', description: 'Log message' },
+    { name: 'context', type: 'String', description: 'Log context' },
+    { name: 'source', type: 'LowCardinality(String)', description: 'Log source' },
+    { name: 'environment', type: 'LowCardinality(String)', description: 'Environment' },
+    { name: 'user_id', type: 'String', description: 'User identifier' },
+    { name: 'session_id', type: 'String', description: 'Session identifier' },
+    { name: 'tags', type: 'Array(String)', description: 'Log tags' },
+    { name: 'created_at', type: 'DateTime64(3)', description: 'Creation timestamp' }
+  ]
 };
 
 // Enhanced system prompt for comprehensive analysis planning
@@ -148,11 +148,11 @@ You transform natural language questions into comprehensive **Analysis Plans** t
     <client_filter>client_id (LowCardinality(String)) - ALWAYS REQUIRED IN WHERE CLAUSE</client_filter>
     <columns>
       ${JSON.stringify(ErrorsSchema.columns.map(col => ({
-    name: col.name,
-    type: col.type,
-    description: col.description,
-    cardinality: col.name.includes('LowCardinality') ? 'low' : 'high',
-    indexed: ['client_id', 'error_type', 'severity', 'created_at', 'browser_name', 'os_name'].includes(col.name)
+  name: col.name,
+  type: col.type,
+  description: col.description,
+  cardinality: col.name.includes('LowCardinality') ? 'low' : 'high',
+  indexed: ['client_id', 'error_type', 'severity', 'created_at', 'browser_name', 'os_name'].includes(col.name)
 })), null, 2)}
     </columns>
     <common_filters>
@@ -176,11 +176,11 @@ You transform natural language questions into comprehensive **Analysis Plans** t
     <client_filter>client_id (LowCardinality(String)) - ALWAYS REQUIRED IN WHERE CLAUSE</client_filter>
     <columns>
       ${JSON.stringify(LogsSchema.columns.map(col => ({
-    name: col.name,
-    type: col.type,
-    description: col.description,
-    cardinality: col.name.includes('LowCardinality') ? 'low' : 'high',
-    indexed: ['client_id', 'level', 'created_at', 'source'].includes(col.name)
+  name: col.name,
+  type: col.type,
+  description: col.description,
+  cardinality: col.name.includes('LowCardinality') ? 'low' : 'high',
+  indexed: ['client_id', 'level', 'created_at', 'source'].includes(col.name)
 })), null, 2)}
     </columns>
     <common_filters>
@@ -403,44 +403,44 @@ The root of the object is "analysis", which contains a list of "insights".
 // ============================================================================
 
 function validateSQL(sql: string): boolean {
-    const upperSQL = sql.toUpperCase();
-    const trimmed = upperSQL.trim();
+  const upperSQL = sql.toUpperCase();
+  const trimmed = upperSQL.trim();
 
-    // Check for dangerous keyword patterns
-    for (const keyword of FORBIDDEN_SQL_KEYWORDS) {
-        if (upperSQL.includes(keyword)) return false;
-    }
+  // Check for dangerous keyword patterns
+  for (const keyword of FORBIDDEN_SQL_KEYWORDS) {
+    if (upperSQL.includes(keyword)) return false;
+  }
 
-    // Must start with SELECT or WITH (for CTEs)
-    return trimmed.startsWith('SELECT') || trimmed.startsWith('WITH');
+  // Must start with SELECT or WITH (for CTEs)
+  return trimmed.startsWith('SELECT') || trimmed.startsWith('WITH');
 }
 
 function debugLog(step: string, data: unknown): void {
-    console.log(`🔍 [AI-Assistant] ${step}`, { step, data });
+  console.log(`🔍 [AI-Assistant] ${step}`, { step, data });
 }
 
 function createThinkingStep(step: string): string {
-    return `🧠 ${step}`;
+  return `🧠 ${step}`;
 }
 
 async function executeQuery(sql: string, clientId: string): Promise<unknown[]> {
-    const queryStart = Date.now();
-    const result = await chQuery(sql, { clientId });
-    const queryTime = Date.now() - queryStart;
+  const queryStart = Date.now();
+  const result = await chQuery(sql, { clientId });
+  const queryTime = Date.now() - queryStart;
 
-    debugLog("Query execution completed", { timeTaken: `${queryTime}ms`, resultCount: result.length });
+  debugLog("Query execution completed", { timeTaken: `${queryTime}ms`, resultCount: result.length });
 
-    return result;
+  return result;
 }
 
 async function generateDynamicProse(
-    userQuery: string,
-    insight: AnalysisInsight,
-    queryResult: Record<string, unknown>[],
-    clientId: string
+  userQuery: string,
+  insight: AnalysisInsight,
+  queryResult: Record<string, unknown>[],
+  clientId: string
 ): Promise<string> {
-    try {
-        const prosePrompt = `You are Nova, an expert data analyst. The user asked: "${userQuery}"
+  try {
+    const prosePrompt = `You are Nova, an expert data analyst. The user asked: "${userQuery}"
 
 I executed this SQL query:
 \`\`\`sql
@@ -462,31 +462,31 @@ Based on this ACTUAL data, write a conversational, insightful prose that:
 
 Write 2-3 sentences maximum. Be specific and cite actual data points.`;
 
-        const result = await streamText({
-            model: openrouterClient(AI_MODEL),
-            messages: [
-                {
-                    role: 'user',
-                    content: prosePrompt,
-                }
-            ],
-            maxTokens: 300,
-            temperature: 0.3,
-        });
-
-        let prose = '';
-        for await (const delta of result.fullStream) {
-            if (delta.type === 'text-delta') {
-                prose += delta.textDelta;
-            }
+    const result = await streamText({
+      model: openrouterClient(AI_MODEL),
+      messages: [
+        {
+          role: 'user',
+          content: prosePrompt,
         }
+      ],
+      maxTokens: 300,
+      temperature: 0.3,
+    });
 
-        return prose.trim();
-    } catch (error) {
-        console.error('Failed to generate dynamic prose:', error);
-        // Fallback to basic prose
-        return `Based on the query results, I found ${queryResult.length} relevant data points that help answer your question.`;
+    let prose = '';
+    for await (const delta of result.fullStream) {
+      if (delta.type === 'text-delta') {
+        prose += delta.textDelta;
+      }
     }
+
+    return prose.trim();
+  } catch (error) {
+    console.error('Failed to generate dynamic prose:', error);
+    // Fallback to basic prose
+    return `Based on the query results, I found ${queryResult.length} relevant data points that help answer your question.`;
+  }
 }
 
 // ============================================================================
@@ -494,267 +494,267 @@ Write 2-3 sentences maximum. Be specific and cite actual data points.`;
 // ============================================================================
 
 export async function POST(req: Request) {
-    try {
-        const { messages } = await req.json();
+  try {
+    const { messages } = await req.json();
 
-        if (!OPENROUTER_API_KEY) {
-            return new Response(
-                `data: ${JSON.stringify({
-                    type: 'error',
-                    content: "AI service is currently unavailable. Please try again later.",
-                })}\n\n`,
-                {
-                    status: 503,
-                    headers: {
-                        'Content-Type': 'text/event-stream',
-                        'Cache-Control': 'no-cache',
-                        'Access-Control-Allow-Origin': '*',
-                    },
-                }
-            );
+    if (!OPENROUTER_API_KEY) {
+      return new Response(
+        `data: ${JSON.stringify({
+          type: 'error',
+          content: "AI service is currently unavailable. Please try again later.",
+        })}\n\n`,
+        {
+          status: 503,
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Access-Control-Allow-Origin': '*',
+          },
         }
-
-        const session = await auth.api.getSession({
-            headers: req.headers,
-        });
-
-        const clientId = session?.user?.id;
-
-        if (!clientId) {
-            return new Response(
-                `data: ${JSON.stringify({
-                    type: 'error',
-                    content: "Authentication required. Please log in to use the AI assistant.",
-                })}\n\n`,
-                {
-                    status: 401,
-                    headers: {
-                        'Content-Type': 'text/event-stream',
-                        'Cache-Control': 'no-cache',
-                        'Access-Control-Allow-Origin': '*',
-                    },
-                }
-            );
-        }
-
-        // Get the latest user message
-        const userMessage = messages[messages.length - 1];
-        const userQuery = userMessage?.content || '';
-
-        // Build conversation messages
-        const conversationMessages = [
-            {
-                role: "system" as const,
-                content: createSystemPrompt(clientId || ''),
-            },
-            ...messages.map((msg: { role: string; content: string }) => ({
-                role: msg.role as "user" | "assistant",
-                content: msg.content,
-            })),
-        ];
-
-        // Create a readable stream for Server-Sent Events
-        const stream = new ReadableStream({
-            async start(controller) {
-                const encoder = new TextEncoder();
-
-                // Send SSE-formatted updates
-                const sendUpdate = (update: StreamingUpdate) => {
-                    const data = `data: ${JSON.stringify(update)}\n\n`;
-                    controller.enqueue(encoder.encode(data));
-                };
-
-                try {
-                    debugLog("✅ Input validated", { messages: messages.length });
-
-                    // Send initial thinking step
-                    sendUpdate({
-                        type: 'thinking',
-                        content: createThinkingStep('Creating analysis plan...')
-                    });
-
-                    // Generate AI analysis plan
-                    const result = streamText({
-                        model: openrouterClient(AI_MODEL),
-                        messages: conversationMessages,
-                        maxTokens: 2000,
-                        temperature: 0.2,
-                    });
-
-                    let aiResponse = '';
-
-                    // Collect the full AI response
-                    for await (const delta of result.fullStream) {
-                        if (delta.type === 'text-delta') {
-                            aiResponse += delta.textDelta;
-                        }
-                    }
-
-                    debugLog("AI Response received", { responseLength: aiResponse.length });
-
-                    // Parse the AI response as JSON
-                    let analysisPlan: AnalysisPlan;
-                    try {
-                        // Clean the response by removing markdown code blocks if present
-                        let cleanedResponse = aiResponse.trim();
-
-                        // Remove ```json at the start and ``` at the end if present
-                        if (cleanedResponse.startsWith('```json')) {
-                            cleanedResponse = cleanedResponse.slice(7); // Remove '```json'
-                        } else if (cleanedResponse.startsWith('```')) {
-                            cleanedResponse = cleanedResponse.slice(3); // Remove '```'
-                        }
-
-                        if (cleanedResponse.endsWith('```')) {
-                            cleanedResponse = cleanedResponse.slice(0, -3); // Remove trailing '```'
-                        }
-
-                        cleanedResponse = cleanedResponse.trim();
-
-                        analysisPlan = JSON.parse(cleanedResponse);
-                    } catch (parseError) {
-                        console.error('Failed to parse AI response as JSON:', parseError);
-                        console.error('Raw AI response:', aiResponse.substring(0, 200) + '...');
-                        throw new Error('Invalid AI response format');
-                    }
-
-                    // Validate the analysis plan structure
-                    if (!analysisPlan?.analysis?.insights || !Array.isArray(analysisPlan.analysis.insights)) {
-                        throw new Error('Invalid analysis plan structure');
-                    }
-
-                    sendUpdate({
-                        type: 'thinking',
-                        content: createThinkingStep(`Processing ${analysisPlan.analysis.insights.length} insight(s)...`)
-                    });
-
-                    // Process each insight in the analysis plan
-                    const processedInsights = [];
-
-                    for (let i = 0; i < analysisPlan.analysis.insights.length; i++) {
-                        const insight = analysisPlan.analysis.insights[i];
-
-                        sendUpdate({
-                            type: 'thinking',
-                            content: createThinkingStep(`Processing insight ${i + 1}: ${insight.type}`)
-                        });
-
-                        let processedInsight = insight;
-
-                        // Execute query if present
-                        if (insight.query) {
-                            // Validate the SQL query
-                            if (!validateSQL(insight.query)) {
-                                console.error('Invalid SQL query generated:', insight.query);
-                                processedInsight = {
-                                    ...insight,
-                                    prose: "I encountered an issue with the generated query. Please try rephrasing your question.",
-                                    query: null
-                                };
-                            } else {
-                                try {
-                                    const queryResult = await executeQuery(insight.query, clientId);
-
-                                    // Generate dynamic prose based on actual query results
-                                    sendUpdate({
-                                        type: 'thinking',
-                                        content: createThinkingStep("Analyzing results and generating insights...")
-                                    });
-
-                                    const dynamicProse = await generateDynamicProse(userQuery, insight, queryResult as Record<string, unknown>[], clientId);
-
-                                    // Process the insight with dynamic prose
-                                    processedInsight = processInsight({
-                                        ...insight,
-                                        prose: dynamicProse
-                                    }, queryResult as Record<string, unknown>[]);
-                                } catch (queryError) {
-                                    console.error('Query execution error:', queryError);
-                                    processedInsight = {
-                                        ...insight,
-                                        prose: "I encountered an issue while fetching the data. Please try again.",
-                                        query: null
-                                    };
-                                }
-                            }
-                        }
-
-                        processedInsights.push(processedInsight);
-                    }
-
-                    // Build the final response content
-                    const { content: finalContent, hasCharts, finalChartData } = buildResponseContent(processedInsights);
-
-                    // Send final complete message
-                    sendUpdate({
-                        type: 'complete',
-                        content: finalContent.trim() || 'Analysis completed.',
-                        data: {
-                            hasVisualization: hasCharts,
-                            responseType: hasCharts ? 'chart' : 'text',
-                            chartType: finalChartData?.type,
-                            data: finalChartData?.data,
-                            chartData: finalChartData || undefined,
-                            insights: processedInsights
-                        }
-                    });
-
-                } catch (error) {
-                    console.error('Streaming error:', error);
-                    sendUpdate({
-                        type: 'error',
-                        content: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
-                    });
-                } finally {
-                    controller.close();
-                }
-            }
-        });
-
-        return new Response(stream, {
-            headers: {
-                'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST',
-                'Access-Control-Allow-Headers': 'Content-Type',
-            },
-        });
-
-    } catch (error) {
-        console.error("Chat stream API error:", error);
-
-        // Determine appropriate error response based on error type
-        let statusCode = 500;
-        let errorMessage = "I apologize, but I'm having trouble processing your request right now. Please try again later.";
-
-        if (error instanceof Error) {
-            if (error.message.includes('rate limit') || error.message.includes('quota')) {
-                statusCode = 429;
-                errorMessage = "Too many requests. Please wait a moment before trying again.";
-            } else if (error.message.includes('network') || error.message.includes('fetch')) {
-                statusCode = 503;
-                errorMessage = "Service temporarily unavailable. Please try again later.";
-            } else if (error.message.includes('auth') || error.message.includes('unauthorized')) {
-                statusCode = 401;
-                errorMessage = "Authentication required. Please log in to continue.";
-            }
-        }
-
-        return new Response(
-            `data: ${JSON.stringify({
-                type: 'error',
-                content: errorMessage,
-            })}\n\n`,
-            {
-                status: statusCode,
-                headers: {
-                    'Content-Type': 'text/event-stream',
-                    'Cache-Control': 'no-cache',
-                    'Access-Control-Allow-Origin': '*',
-                },
-            }
-        );
+      );
     }
+
+    const session = await auth.api.getSession({
+      headers: req.headers,
+    });
+
+    const clientId = session?.user?.id;
+
+    if (!clientId) {
+      return new Response(
+        `data: ${JSON.stringify({
+          type: 'error',
+          content: "Authentication required. Please log in to use the AI assistant.",
+        })}\n\n`,
+        {
+          status: 401,
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
+    }
+
+    // Get the latest user message
+    const userMessage = messages[messages.length - 1];
+    const userQuery = userMessage?.content || '';
+
+    // Build conversation messages
+    const conversationMessages = [
+      {
+        role: "system" as const,
+        content: createSystemPrompt(clientId || ''),
+      },
+      ...messages.map((msg: { role: string; content: string }) => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      })),
+    ];
+
+    // Create a readable stream for Server-Sent Events
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+
+        // Send SSE-formatted updates
+        const sendUpdate = (update: StreamingUpdate) => {
+          const data = `data: ${JSON.stringify(update)}\n\n`;
+          controller.enqueue(encoder.encode(data));
+        };
+
+        try {
+          debugLog("✅ Input validated", { messages: messages.length });
+
+          // Send initial thinking step
+          sendUpdate({
+            type: 'thinking',
+            content: createThinkingStep('Creating analysis plan...')
+          });
+
+          // Generate AI analysis plan
+          const result = streamText({
+            model: openrouterClient(AI_MODEL),
+            messages: conversationMessages,
+            maxTokens: 2000,
+            temperature: 0.2,
+          });
+
+          let aiResponse = '';
+
+          // Collect the full AI response
+          for await (const delta of result.fullStream) {
+            if (delta.type === 'text-delta') {
+              aiResponse += delta.textDelta;
+            }
+          }
+
+          debugLog("AI Response received", { responseLength: aiResponse.length });
+
+          // Parse the AI response as JSON
+          let analysisPlan: AnalysisPlan;
+          try {
+            // Clean the response by removing markdown code blocks if present
+            let cleanedResponse = aiResponse.trim();
+
+            // Remove ```json at the start and ``` at the end if present
+            if (cleanedResponse.startsWith('```json')) {
+              cleanedResponse = cleanedResponse.slice(7); // Remove '```json'
+            } else if (cleanedResponse.startsWith('```')) {
+              cleanedResponse = cleanedResponse.slice(3); // Remove '```'
+            }
+
+            if (cleanedResponse.endsWith('```')) {
+              cleanedResponse = cleanedResponse.slice(0, -3); // Remove trailing '```'
+            }
+
+            cleanedResponse = cleanedResponse.trim();
+
+            analysisPlan = JSON.parse(cleanedResponse);
+          } catch (parseError) {
+            console.error('Failed to parse AI response as JSON:', parseError);
+            console.error('Raw AI response:', aiResponse.substring(0, 200) + '...');
+            throw new Error('Invalid AI response format');
+          }
+
+          // Validate the analysis plan structure
+          if (!analysisPlan?.analysis?.insights || !Array.isArray(analysisPlan.analysis.insights)) {
+            throw new Error('Invalid analysis plan structure');
+          }
+
+          sendUpdate({
+            type: 'thinking',
+            content: createThinkingStep(`Processing ${analysisPlan.analysis.insights.length} insight(s)...`)
+          });
+
+          // Process each insight in the analysis plan
+          const processedInsights = [];
+
+          for (let i = 0; i < analysisPlan.analysis.insights.length; i++) {
+            const insight = analysisPlan.analysis.insights[i];
+
+            sendUpdate({
+              type: 'thinking',
+              content: createThinkingStep(`Processing insight ${i + 1}: ${insight.type}`)
+            });
+
+            let processedInsight = insight;
+
+            // Execute query if present
+            if (insight.query) {
+              // Validate the SQL query
+              if (!validateSQL(insight.query)) {
+                console.error('Invalid SQL query generated:', insight.query);
+                processedInsight = {
+                  ...insight,
+                  prose: "I encountered an issue with the generated query. Please try rephrasing your question.",
+                  query: null
+                };
+              } else {
+                try {
+                  const queryResult = await executeQuery(insight.query, clientId);
+
+                  // Generate dynamic prose based on actual query results
+                  sendUpdate({
+                    type: 'thinking',
+                    content: createThinkingStep("Analyzing results and generating insights...")
+                  });
+
+                  const dynamicProse = await generateDynamicProse(userQuery, insight, queryResult as Record<string, unknown>[], clientId);
+
+                  // Process the insight with dynamic prose
+                  processedInsight = processInsight({
+                    ...insight,
+                    prose: dynamicProse
+                  }, queryResult as Record<string, unknown>[]);
+                } catch (queryError) {
+                  console.error('Query execution error:', queryError);
+                  processedInsight = {
+                    ...insight,
+                    prose: "I encountered an issue while fetching the data. Please try again.",
+                    query: null
+                  };
+                }
+              }
+            }
+
+            processedInsights.push(processedInsight);
+          }
+
+          // Build the final response content
+          const { content: finalContent, hasCharts, finalChartData } = buildResponseContent(processedInsights);
+
+          // Send final complete message
+          sendUpdate({
+            type: 'complete',
+            content: finalContent.trim() || 'Analysis completed.',
+            data: {
+              hasVisualization: hasCharts,
+              responseType: hasCharts ? 'chart' : 'text',
+              chartType: finalChartData?.type,
+              data: finalChartData?.data,
+              chartData: finalChartData || undefined,
+              insights: processedInsights
+            }
+          });
+
+        } catch (error) {
+          console.error('Streaming error:', error);
+          sendUpdate({
+            type: 'error',
+            content: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
+          });
+        } finally {
+          controller.close();
+        }
+      }
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+
+  } catch (error) {
+    console.error("Chat stream API error:", error);
+
+    // Determine appropriate error response based on error type
+    let statusCode = 500;
+    let errorMessage = "I apologize, but I'm having trouble processing your request right now. Please try again later.";
+
+    if (error instanceof Error) {
+      if (error.message.includes('rate limit') || error.message.includes('quota')) {
+        statusCode = 429;
+        errorMessage = "Too many requests. Please wait a moment before trying again.";
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        statusCode = 503;
+        errorMessage = "Service temporarily unavailable. Please try again later.";
+      } else if (error.message.includes('auth') || error.message.includes('unauthorized')) {
+        statusCode = 401;
+        errorMessage = "Authentication required. Please log in to continue.";
+      }
+    }
+
+    return new Response(
+      `data: ${JSON.stringify({
+        type: 'error',
+        content: errorMessage,
+      })}\n\n`,
+      {
+        status: statusCode,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
+  }
 } 
