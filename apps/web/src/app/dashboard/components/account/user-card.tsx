@@ -71,19 +71,6 @@ export const UserCard = (props: UserCardProps) => {
                     </div>
                 </div>
             </div>
-
-            {/* Account Status */}
-            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full" />
-                    <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                        Account Status: Active
-                    </span>
-                </div>
-                <Badge variant="outline" className="text-green-600 border-green-300">
-                    Verified
-                </Badge>
-            </div>
         </div>
     );
 };
