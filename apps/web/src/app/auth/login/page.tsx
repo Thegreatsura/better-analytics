@@ -3,8 +3,7 @@ import Link from "next/link";
 import { siteConfig } from "@/config/site";
 import { Noise } from "@better-analytics/ui/components/noise";
 import { Logo } from "@better-analytics/ui/icons";
-
-import { LoginClient } from "./login.client";
+import { LoginForm } from "./login.form";
 
 export default function Login() {
 	return (
@@ -22,7 +21,7 @@ export default function Login() {
 					</p>
 				</div>
 
-				<LoginClient />
+				<LoginForm />
 			</div>
 
 			<Noise opacity={0.5} />
