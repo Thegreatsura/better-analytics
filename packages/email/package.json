@@ -6,9 +6,8 @@
 		"dev": "email dev -p 3002"
 	},
 	"exports": {
-		"./emails/*": "./emails/*",
-		"./env": "./src/env.ts",
-		"./resend": "./src/resend.ts"
+		"./*": "./emails/*.tsx",
+		".": "./src/index.ts"
 	},
 	"dependencies": {
 		"@react-email/components": "0.1.0",
