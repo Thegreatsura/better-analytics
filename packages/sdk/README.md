@@ -27,17 +27,19 @@ Create an analytics instance in your app:
 
 ```typescript
 // lib/analytics.ts
-import { createErrorTracker } from "@better-analytics/sdk";
+import { init } from "@better-analytics/sdk";
 
-export const analytics = createErrorTracker({
+export const analytics = init({
   apiUrl: "https://api.analytics.customhack.dev",
   clientId: "your-client-id-here",
   accessToken: "your-access-token-here", // Optional but recommended
-  environment: process.env.NODE_ENV,
-  debug: process.env.NODE_ENV === "development",
-  autoCapture: true, // Automatically capture unhandled errors
 });
 ```
+
+The `init` function automatically detects:
+- **Environment**: `development` or `production` based on `NODE_ENV`
+- **Debug mode**: Enabled in development, disabled in production
+- **Auto-capture**: Automatically enabled for unhandled errors
 
 ### 4. Environment Variables
 
@@ -53,15 +55,30 @@ Then update your analytics setup:
 
 ```typescript
 // lib/analytics.ts
+import { init } from "@better-analytics/sdk";
+
+export const analytics = init({
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || "",
+  clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "",
+  accessToken: process.env.NEXT_PUBLIC_ACCESS_TOKEN || "",
+});
+```
+
+### Advanced Configuration
+
+If you need more control, you can still use the full configuration:
+
+```typescript
+// lib/analytics.ts
 import { createErrorTracker } from "@better-analytics/sdk";
 
 export const analytics = createErrorTracker({
   apiUrl: process.env.NEXT_PUBLIC_API_URL || "",
   clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "",
   accessToken: process.env.NEXT_PUBLIC_ACCESS_TOKEN || "",
-  environment: process.env.NODE_ENV || "",
-  debug: process.env.NODE_ENV === "development",
-  autoCapture: true,
+  environment: "production", // Force specific environment
+  debug: false, // Force disable debug mode
+  autoCapture: false, // Disable automatic error capture
 });
 ```
 
@@ -167,6 +184,49 @@ export default function GlobalError({ error }: ErrorProps) {
     </div>
   );
 }
+```
+
+## Server-Side Logging
+
+For server-side applications, use the logger for structured logging:
+
+```typescript
+// lib/logger.ts
+import { initLogger } from "@better-analytics/sdk";
+
+export const logger = initLogger({
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || "",
+  clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "",
+  accessToken: process.env.NEXT_PUBLIC_ACCESS_TOKEN || "",
+  serviceName: "my-app-backend",
+});
+
+// Usage
+await logger.info("User logged in", { userId: "123" });
+await logger.error("Payment failed", { orderId: "456", amount: 100 });
+```
+
+The `initLogger` function automatically detects:
+- **Environment**: `development` or `production` based on `NODE_ENV`
+- **Debug mode**: Enabled in development, disabled in production
+- **Log level**: `debug` in development, `info` in production
+- **Service version**: Defaults to `1.0.0`
+
+### Advanced Logger Configuration
+
+```typescript
+import { createLogger } from "@better-analytics/sdk";
+
+export const logger = createLogger({
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || "",
+  clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "",
+  accessToken: process.env.NEXT_PUBLIC_ACCESS_TOKEN || "",
+  environment: "production",
+  serviceName: "my-service",
+  serviceVersion: "2.1.0",
+  debug: false,
+  minLevel: "warn", // Only log warnings and errors
+});
 ```
 
 ## API Reference

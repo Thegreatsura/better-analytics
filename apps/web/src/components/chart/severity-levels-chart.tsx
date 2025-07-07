@@ -41,6 +41,12 @@ export type CustomTooltipProps = {
     label?: string;
 }
 
+const EmptyState = () => (
+    <div className="flex h-full w-full items-center justify-center">
+        <p className="text-sm text-muted-foreground">No severity data available.</p>
+    </div>
+);
+
 export function SeverityLevelsChartSkeleton() {
     return (
         <div className="h-full w-full flex flex-col">
@@ -80,6 +86,10 @@ const renderPieChartLabel = (props: PieChartLabelProps): string => {
 export function SeverityLevelsChart(props: SeverityLevelsChartProps) {
     if (props.loading) {
         return <SeverityLevelsChartSkeleton />;
+    }
+
+    if (!props.data || props.data.length === 0) {
+        return <EmptyState />;
     }
 
     return (

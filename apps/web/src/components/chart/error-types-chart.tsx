@@ -31,6 +31,12 @@ export type CustomTooltipProps = {
     label?: string;
 }
 
+const EmptyState = () => (
+    <div className="flex h-full w-full items-center justify-center">
+        <p className="text-sm text-muted-foreground">No error type data available.</p>
+    </div>
+);
+
 export function ErrorTypesChartSkeleton() {
     return (
         <Skeleton className="h-full w-full rounded-md" />
@@ -43,7 +49,7 @@ const CustomTooltip = (props: CustomTooltipProps): JSX.Element | null => {
     return (
         <div className="border shadow-sm bg-background px-3 py-2 min-w-[7.5rem]">
             {props.payload.map((entry, index) => (
-                <div key={index} className="flex items-center justify-between gap-4">
+                <div key={entry.name} className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-1.5">
                         <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.payload.color }} />
                         <span className="text-xs capitalize">{entry.payload.name}</span>
@@ -65,6 +71,10 @@ const formatYAxisTick = (value: string | number): string => {
 export function ErrorTypesChart(props: ErrorTypesChartProps) {
     if (props.loading) {
         return <ErrorTypesChartSkeleton />;
+    }
+
+    if (!props.data || props.data.length === 0) {
+        return <EmptyState />;
     }
 
     return (

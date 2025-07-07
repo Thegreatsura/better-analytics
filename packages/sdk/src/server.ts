@@ -7,6 +7,14 @@ export interface LogData {
 	tags?: string[];
 }
 
+// Simplified config for easy initialization
+export interface SimpleLoggerConfig {
+	apiUrl: string;
+	clientId: string;
+	accessToken?: string;
+	serviceName?: string;
+}
+
 export interface LoggerConfig {
 	apiUrl: string;
 	clientId: string;
@@ -216,4 +224,19 @@ class ServerLogger implements Logger {
 
 export function createLogger(config: LoggerConfig): Logger {
 	return new ServerLogger(config);
+}
+
+// Simple logger initialization with auto-detection
+export function initLogger(config: SimpleLoggerConfig): Logger {
+	const isProduction = typeof process !== "undefined"
+		? process.env.NODE_ENV === "production"
+		: false;
+
+	return new ServerLogger({
+		...config,
+		environment: isProduction ? "production" : "development",
+		serviceVersion: "1.0.0",
+		debug: !isProduction,
+		minLevel: isProduction ? "info" : "debug",
+	});
 }

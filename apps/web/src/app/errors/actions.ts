@@ -1,20 +1,199 @@
 "use server";
 
 import { analytics } from "@/lib/analytics";
-import { createLogger } from "@better-analytics/sdk";
+import { initLogger } from "@better-analytics/sdk";
 import { headers } from "next/headers";
 
-// Create server-side logger for proper logging (goes to logs table)
-const logger = createLogger({
+const logger = initLogger({
     apiUrl: process.env.NEXT_PUBLIC_API_URL || "",
     clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "",
     accessToken: process.env.NEXT_PUBLIC_ACCESS_TOKEN || "",
-    environment: process.env.NODE_ENV || "",
     serviceName: 'better-analytics-web',
-    serviceVersion: '1.0.0',
-    debug: process.env.NODE_ENV === 'development',
-    minLevel: 'debug',
 });
+
+// ============================================================================
+// DYNAMIC ERROR GENERATION UTILITIES
+// ============================================================================
+
+const ERROR_SCENARIOS = [
+    { type: 'server', severity: 'critical', weight: 5 },
+    { type: 'server', severity: 'high', weight: 15 },
+    { type: 'server', severity: 'medium', weight: 30 },
+    { type: 'server', severity: 'low', weight: 50 },
+    { type: 'client', severity: 'critical', weight: 2 },
+    { type: 'client', severity: 'high', weight: 10 },
+    { type: 'client', severity: 'medium', weight: 40 },
+    { type: 'client', severity: 'low', weight: 60 },
+    { type: 'network', severity: 'critical', weight: 3 },
+    { type: 'network', severity: 'high', weight: 12 },
+    { type: 'network', severity: 'medium', weight: 25 },
+    { type: 'network', severity: 'low', weight: 35 },
+    { type: 'database', severity: 'critical', weight: 8 },
+    { type: 'database', severity: 'high', weight: 20 },
+    { type: 'database', severity: 'medium', weight: 35 },
+    { type: 'database', severity: 'low', weight: 25 },
+    { type: 'validation', severity: 'critical', weight: 1 },
+    { type: 'validation', severity: 'high', weight: 5 },
+    { type: 'validation', severity: 'medium', weight: 45 },
+    { type: 'validation', severity: 'low', weight: 70 },
+    { type: 'auth', severity: 'critical', weight: 10 },
+    { type: 'auth', severity: 'high', weight: 25 },
+    { type: 'auth', severity: 'medium', weight: 30 },
+    { type: 'auth', severity: 'low', weight: 15 },
+    { type: 'business', severity: 'critical', weight: 4 },
+    { type: 'business', severity: 'high', weight: 18 },
+    { type: 'business', severity: 'medium', weight: 40 },
+    { type: 'business', severity: 'low', weight: 55 },
+];
+
+function getRandomErrorScenario() {
+    const totalWeight = ERROR_SCENARIOS.reduce((sum, scenario) => sum + scenario.weight, 0);
+    let random = Math.random() * totalWeight;
+
+    for (const scenario of ERROR_SCENARIOS) {
+        random -= scenario.weight;
+        if (random <= 0) {
+            return scenario;
+        }
+    }
+
+    return ERROR_SCENARIOS[ERROR_SCENARIOS.length - 1];
+}
+
+function generateDynamicErrorDetails() {
+    const scenario = getRandomErrorScenario();
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substr(2, 9);
+
+    const errorMessages: Record<string, string[]> = {
+        critical: [
+            "System memory exhausted - immediate intervention required",
+            "Database connection pool completely depleted",
+            "Authentication service completely unavailable",
+            "Payment processing gateway down",
+            "Critical security breach detected",
+        ],
+        high: [
+            "Database query timeout exceeded",
+            "External API rate limit exceeded",
+            "User session validation failed",
+            "File upload service degraded",
+            "Cache invalidation failed",
+        ],
+        medium: [
+            "Form validation failed for user input",
+            "Image processing took longer than expected",
+            "Email delivery delayed",
+            "Search indexing behind schedule",
+            "User preference sync failed",
+        ],
+        low: [
+            "Non-critical warning logged",
+            "Debug information collected",
+            "Performance metric below threshold",
+            "Optional feature temporarily disabled",
+            "Informational system status update",
+        ],
+    };
+
+    const errorCodes: Record<string, string[]> = {
+        server: [`SRV_${timestamp}_${randomId.toUpperCase()}`, `SERVER_ERROR_${Math.floor(Math.random() * 1000)}`],
+        client: [`CLI_${timestamp}_${randomId.toUpperCase()}`, `CLIENT_ERROR_${Math.floor(Math.random() * 1000)}`],
+        network: [`NET_${timestamp}_${randomId.toUpperCase()}`, `NETWORK_ERROR_${Math.floor(Math.random() * 1000)}`],
+        database: [`DB_${timestamp}_${randomId.toUpperCase()}`, `DATABASE_ERROR_${Math.floor(Math.random() * 1000)}`],
+        validation: [`VAL_${timestamp}_${randomId.toUpperCase()}`, `VALIDATION_ERROR_${Math.floor(Math.random() * 1000)}`],
+        auth: [`AUTH_${timestamp}_${randomId.toUpperCase()}`, `AUTH_ERROR_${Math.floor(Math.random() * 1000)}`],
+        business: [`BIZ_${timestamp}_${randomId.toUpperCase()}`, `BUSINESS_ERROR_${Math.floor(Math.random() * 1000)}`],
+    };
+
+    return {
+        type: scenario.type,
+        severity: scenario.severity,
+        message: errorMessages[scenario.severity][Math.floor(Math.random() * errorMessages[scenario.severity].length)],
+        code: errorCodes[scenario.type][Math.floor(Math.random() * errorCodes[scenario.type].length)],
+        timestamp: new Date().toISOString(),
+        requestId: `req_${timestamp}_${randomId}`,
+    };
+}
+
+// ============================================================================
+// BULK ERROR GENERATION FOR TESTING
+// ============================================================================
+
+export async function generateMultipleRandomErrors(count: number = 10) {
+    const results = [];
+
+    for (let i = 0; i < count; i++) {
+        try {
+            // Add small delay to spread out timestamps
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+
+            const dynamicError = generateDynamicErrorDetails();
+
+            // Create error with dynamic details
+            const error = new Error(dynamicError.message);
+            (error as any).errorCode = dynamicError.code;
+            (error as any).errorCategory = 'bulk-generated';
+            (error as any).severity = dynamicError.severity;
+            (error as any).error_type = dynamicError.type;
+            (error as any).timestamp = dynamicError.timestamp;
+            (error as any).requestId = dynamicError.requestId;
+
+            // Log to errors table
+            await analytics.track(dynamicError.message, {
+                tags: ["bulk-generated", "testing", dynamicError.type, dynamicError.severity],
+                error_type: dynamicError.type,
+                error_code: dynamicError.code,
+                severity: dynamicError.severity,
+                environment: process.env.NODE_ENV || 'development',
+                custom_data: {
+                    bulkGeneration: {
+                        batchId: `batch_${Date.now()}`,
+                        errorIndex: i + 1,
+                        totalErrors: count,
+                        generatedAt: new Date().toISOString(),
+                    },
+                    errorDetails: {
+                        dynamicMessage: dynamicError.message,
+                        dynamicCode: dynamicError.code,
+                        dynamicType: dynamicError.type,
+                        dynamicSeverity: dynamicError.severity,
+                    },
+                },
+            });
+
+            results.push({
+                success: true,
+                index: i + 1,
+                error: {
+                    message: dynamicError.message,
+                    code: dynamicError.code,
+                    type: dynamicError.type,
+                    severity: dynamicError.severity,
+                    timestamp: dynamicError.timestamp,
+                },
+            });
+
+        } catch (e: any) {
+            results.push({
+                success: false,
+                index: i + 1,
+                error: e.message,
+            });
+        }
+    }
+
+    return {
+        success: true,
+        message: `Generated ${count} random errors`,
+        results,
+        summary: {
+            total: count,
+            successful: results.filter(r => r.success).length,
+            failed: results.filter(r => !r.success).length,
+        },
+    };
+}
 
 // ============================================================================
 // LOGGING ACTIONS (goes to logs table)
@@ -94,11 +273,14 @@ export async function logWarning(message: string, warningData: Record<string, an
 // Enhanced server-side error generation with comprehensive metadata
 export async function triggerServerActionError() {
     try {
+        // Generate dynamic error details
+        const dynamicError = generateDynamicErrorDetails();
+
         // Collect comprehensive server context
         const headersList = await headers();
         const serverContext = {
-            timestamp: new Date().toISOString(),
-            requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            timestamp: dynamicError.timestamp,
+            requestId: dynamicError.requestId,
             action: 'triggerServerActionError',
             runtime: 'server',
             environment: process.env.NODE_ENV || 'development',
@@ -186,11 +368,12 @@ export async function triggerServerActionError() {
             },
         };
 
-        // Create enhanced error with detailed context
-        const error = new Error("Enhanced server action error with comprehensive system context");
-        (error as any).errorCode = 'SERVER_ACTION_ERROR_001';
+        // Create enhanced error with dynamic details
+        const error = new Error(dynamicError.message);
+        (error as any).errorCode = dynamicError.code;
         (error as any).errorCategory = 'server-action';
-        (error as any).severity = 'high';
+        (error as any).severity = dynamicError.severity;
+        (error as any).error_type = dynamicError.type;
         (error as any).serverContext = serverContext;
 
         // Add stack trace enhancement

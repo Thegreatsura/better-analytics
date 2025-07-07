@@ -14,6 +14,13 @@ export interface ErrorData {
 	customData?: Record<string, any>;
 }
 
+export interface SimpleErrorTrackerConfig {
+	apiUrl: string;
+	clientId: string;
+	accessToken?: string;
+	userId?: string;
+}
+
 export interface ErrorTrackerConfig {
 	apiUrl: string;
 	clientId: string;
@@ -394,4 +401,18 @@ class ClientErrorTracker implements ErrorTracker {
 
 export function createErrorTracker(config: ErrorTrackerConfig): ErrorTracker {
 	return new ClientErrorTracker(config);
+}
+
+// Simple initialization with auto-detection
+export function init(config: SimpleErrorTrackerConfig): ErrorTracker {
+	const isProduction = typeof process !== "undefined"
+		? process.env.NODE_ENV === "production"
+		: false;
+
+	return new ClientErrorTracker({
+		...config,
+		environment: isProduction ? "production" : "development",
+		debug: !isProduction,
+		autoCapture: true,
+	});
 }

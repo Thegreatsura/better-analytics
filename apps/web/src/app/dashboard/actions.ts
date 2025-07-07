@@ -516,3 +516,333 @@ export async function getAnalyticsTrends() {
         return { success: false, error: 'Failed to fetch analytics trends' };
     }
 }
+
+export const getRecentErrorsChart = async () => {
+    try {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+        const clientId = session.user.id;
+
+        const data = await chQuery<{ hour: number; severity: string; count: number }>(`
+            SELECT 
+                toHour(created_at) as hour,
+                severity,
+                toUInt32(COUNT(*)) as count
+            FROM errors
+            WHERE created_at >= now() - INTERVAL 24 HOUR AND client_id = {clientId:String}
+            GROUP BY hour, severity
+            ORDER BY hour, severity
+        `, { clientId });
+
+        // Transform data into chart format with severity breakdown
+        const chartData = Array.from({ length: 24 }, (_, i) => {
+            const hourData = data.filter(d => d.hour === i);
+            return {
+                hour: i,
+                critical: hourData.find(d => d.severity === 'critical')?.count || 0,
+                high: hourData.find(d => d.severity === 'high')?.count || 0,
+                medium: hourData.find(d => d.severity === 'medium')?.count || 0,
+                low: hourData.find(d => d.severity === 'low')?.count || 0,
+                total: hourData.reduce((sum, d) => sum + d.count, 0)
+            };
+        });
+
+        return { success: true, data: chartData };
+    } catch (error) {
+        console.error('Failed to get recent errors chart data:', error);
+        return { success: false, error: 'Failed to get recent errors chart data' };
+    }
+}
+
+export const getNewErrors = async () => {
+    try {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+        const clientId = session.user.id;
+
+        const data = await chQuery<ErrorData>(`
+            SELECT * FROM errors
+            WHERE status = 'new' AND client_id = {clientId:String}
+            ORDER BY created_at DESC
+            LIMIT 5
+        `, { clientId });
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('Failed to get new errors:', error);
+        return { success: false, error: 'Failed to get new errors' };
+    }
+}
+
+export const getTopErrors = async () => {
+    try {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+        const clientId = session.user.id;
+
+        const data = await chQuery<{ name: string, count: number }>(`
+            SELECT 
+                toString(error_name) as name,
+                toUInt32(COUNT(*)) as count
+            FROM errors
+            WHERE client_id = {clientId:String} AND error_name IS NOT NULL
+            GROUP BY name
+            ORDER BY count DESC
+            LIMIT 5
+        `, { clientId });
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('Failed to get top errors:', error);
+        return { success: false, error: 'Failed to get top errors' };
+    }
+}
+
+// Add a unified dashboard data function for consistency
+export async function getDashboardData() {
+    try {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session?.user?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+        const clientId = session.user.id;
+
+        // Define consistent time ranges
+        const now = new Date();
+        const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const previous7Days = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+        const [
+            // All-time totals for overview
+            totalErrorsData,
+            totalLogsData,
+
+            // Last 7 days for trends
+            last7DaysErrorsData,
+            previous7DaysErrorsData,
+            last7DaysLogsData,
+            previous7DaysLogsData,
+
+            // Breakdowns (all-time for consistency with totals)
+            errorsByTypeData,
+            errorsBySeverityData,
+
+            // Recent data for specific charts
+            recentErrorsChartData,
+            newErrorsData,
+            topErrorsData,
+
+            // Other breakdowns
+            topUrlsData,
+            topBrowsersData,
+            topLocationsData,
+            errorVsLogTrendsData
+        ] = await Promise.all([
+            // All-time totals
+            chQuery<{ count: number }>("SELECT toUInt32(COUNT(*)) as count FROM errors WHERE client_id = {clientId:String}", { clientId }),
+            chQuery<{ count: number }>("SELECT toUInt32(COUNT(*)) as count FROM logs WHERE client_id = {clientId:String}", { clientId }),
+
+            // 7-day trends
+            chQuery<{ count: number }>("SELECT toUInt32(COUNT(*)) as count FROM errors WHERE client_id = {clientId:String} AND created_at >= {start:String}", { clientId, start: formatForClickHouse(last7Days) }),
+            chQuery<{ count: number }>("SELECT toUInt32(COUNT(*)) as count FROM errors WHERE client_id = {clientId:String} AND created_at >= {start:String} AND created_at < {end:String}", { clientId, start: formatForClickHouse(previous7Days), end: formatForClickHouse(last7Days) }),
+            chQuery<{ count: number }>("SELECT toUInt32(COUNT(*)) as count FROM logs WHERE client_id = {clientId:String} AND created_at >= {start:String}", { clientId, start: formatForClickHouse(last7Days) }),
+            chQuery<{ count: number }>("SELECT toUInt32(COUNT(*)) as count FROM logs WHERE client_id = {clientId:String} AND created_at >= {start:String} AND created_at < {end:String}", { clientId, start: formatForClickHouse(previous7Days), end: formatForClickHouse(last7Days) }),
+
+            // Breakdowns (all-time)
+            chQuery<{ error_type: string; count: number }>(`
+                SELECT 
+                    toString(error_type) as error_type,
+                    toUInt32(COUNT(*)) as count
+                FROM errors 
+                WHERE error_type IS NOT NULL AND client_id = {clientId:String}
+                GROUP BY error_type 
+                ORDER BY count DESC
+            `, { clientId }),
+            chQuery<{ severity: string; count: number }>(`
+                SELECT 
+                    toString(severity) as severity,
+                    toUInt32(COUNT(*)) as count
+                FROM errors 
+                WHERE severity IS NOT NULL AND client_id = {clientId:String}
+                GROUP BY severity 
+                ORDER BY count DESC
+            `, { clientId }),
+
+            // Recent errors chart (24 hours)
+            chQuery<{ hour: number; severity: string; count: number }>(`
+                SELECT 
+                    toHour(created_at) as hour,
+                    toString(severity) as severity,
+                    toUInt32(COUNT(*)) as count
+                FROM errors
+                WHERE created_at >= {start:String} AND client_id = {clientId:String} AND severity IS NOT NULL
+                GROUP BY hour, severity
+                ORDER BY hour, severity
+            `, { clientId, start: formatForClickHouse(last24Hours) }),
+
+            // New errors (last 24 hours)
+            chQuery<ErrorData>(`
+                SELECT * FROM errors
+                WHERE status = 'new' AND client_id = {clientId:String} AND created_at >= {start:String}
+                ORDER BY created_at DESC
+                LIMIT 5
+            `, { clientId, start: formatForClickHouse(last24Hours) }),
+
+            // Top errors (all-time)
+            chQuery<{ name: string, count: number }>(`
+                SELECT 
+                    toString(error_name) as name,
+                    toUInt32(COUNT(*)) as count
+                FROM errors
+                WHERE client_id = {clientId:String} AND error_name IS NOT NULL
+                GROUP BY name
+                ORDER BY count DESC
+                LIMIT 5
+            `, { clientId }),
+
+            // Top URLs (all-time)
+            chQuery<{ url: string; count: number; percentage: number }>(`
+                WITH total AS (SELECT toUInt32(COUNT(*)) as total_count FROM errors WHERE url IS NOT NULL AND client_id = {clientId:String})
+                SELECT 
+                    url,
+                    toUInt32(COUNT(*)) as count,
+                    (COUNT(*) * 100.0 / total.total_count) as percentage
+                FROM errors, total
+                WHERE url IS NOT NULL AND client_id = {clientId:String}
+                GROUP BY url, total.total_count
+                ORDER BY count DESC
+                LIMIT 25
+            `, { clientId }),
+
+            // Top browsers (all-time)
+            chQuery<{ browser_name: string; count: number; percentage: number }>(`
+                WITH total AS (SELECT toUInt32(COUNT(*)) as total_count FROM errors WHERE browser_name IS NOT NULL AND client_id = {clientId:String})
+                SELECT 
+                    browser_name,
+                    toUInt32(COUNT(*)) as count,
+                    (COUNT(*) * 100.0 / total.total_count) as percentage
+                FROM errors, total
+                WHERE browser_name IS NOT NULL AND client_id = {clientId:String}
+                GROUP BY browser_name, total.total_count
+                ORDER BY count DESC
+                LIMIT 25
+            `, { clientId }),
+
+            // Top locations (all-time)
+            chQuery<{ country: string; count: number; percentage: number }>(`
+                WITH total AS (SELECT toUInt32(COUNT(*)) as total_count FROM errors WHERE country IS NOT NULL AND client_id = {clientId:String})
+                SELECT 
+                    country,
+                    toUInt32(COUNT(*)) as count,
+                    (COUNT(*) * 100.0 / total.total_count) as percentage
+                FROM errors, total
+                WHERE country IS NOT NULL AND client_id = {clientId:String}
+                GROUP BY country, total.total_count
+                ORDER BY count DESC
+                LIMIT 25
+            `, { clientId }),
+
+            // Error vs Log trends (14 days)
+            chQuery<{ date: string; total_errors: number; total_logs: number }>(`
+                WITH date_range AS (
+                    SELECT 
+                        toDate(now() - INTERVAL number DAY) as date
+                    FROM numbers(14)
+                ),
+                error_data AS (
+                    SELECT 
+                        toDate(created_at) as date,
+                        toUInt32(COUNT(*)) as total_errors
+                    FROM errors 
+                    WHERE created_at >= now() - INTERVAL 14 DAY AND client_id = {clientId:String}
+                    GROUP BY toDate(created_at)
+                ),
+                log_data AS (
+                    SELECT 
+                        toDate(created_at) as date,
+                        toUInt32(COUNT(*)) as total_logs
+                    FROM logs 
+                    WHERE created_at >= now() - INTERVAL 14 DAY AND client_id = {clientId:String}
+                    GROUP BY toDate(created_at)
+                )
+                SELECT 
+                    date_range.date as date,
+                    COALESCE(error_data.total_errors, 0) as total_errors,
+                    COALESCE(log_data.total_logs, 0) as total_logs
+                FROM date_range
+                LEFT JOIN error_data ON date_range.date = error_data.date
+                LEFT JOIN log_data ON date_range.date = log_data.date
+                ORDER BY date ASC
+            `, { clientId })
+        ]);
+
+        // Calculate trends
+        const currentErrors = last7DaysErrorsData[0]?.count || 0;
+        const previousErrors = previous7DaysErrorsData[0]?.count || 0;
+        const errorChange = previousErrors === 0 ? (currentErrors > 0 ? 100 : 0) : ((currentErrors - previousErrors) / previousErrors) * 100;
+
+        const currentLogs = last7DaysLogsData[0]?.count || 0;
+        const previousLogs = previous7DaysLogsData[0]?.count || 0;
+        const logChange = previousLogs === 0 ? (currentLogs > 0 ? 100 : 0) : ((currentLogs - previousLogs) / previousLogs) * 100;
+
+        // Transform recent errors chart data
+        const recentErrorsChartFormatted = Array.from({ length: 24 }, (_, i) => {
+            const hourData = recentErrorsChartData.filter(d => d.hour === i);
+            return {
+                hour: i,
+                critical: hourData.find(d => d.severity === 'critical')?.count || 0,
+                high: hourData.find(d => d.severity === 'high')?.count || 0,
+                medium: hourData.find(d => d.severity === 'medium')?.count || 0,
+                low: hourData.find(d => d.severity === 'low')?.count || 0,
+                total: hourData.reduce((sum, d) => sum + d.count, 0)
+            };
+        });
+
+        return {
+            success: true,
+            data: {
+                // All-time totals
+                analyticsStats: {
+                    totalErrors: totalErrorsData[0]?.count || 0,
+                    totalLogs: totalLogsData[0]?.count || 0,
+                    errorsByType: errorsByTypeData,
+                    errorsBySeverity: errorsBySeverityData,
+                },
+
+                // Trends
+                analyticsTrends: {
+                    totalErrorsTrend: {
+                        current: currentErrors,
+                        previous: previousErrors,
+                        change: errorChange,
+                        currentPeriod: { start: last7Days.toISOString(), end: now.toISOString() },
+                        previousPeriod: { start: previous7Days.toISOString(), end: last7Days.toISOString() },
+                    },
+                    totalLogsTrend: {
+                        current: currentLogs,
+                        previous: previousLogs,
+                        change: logChange,
+                        currentPeriod: { start: last7Days.toISOString(), end: now.toISOString() },
+                        previousPeriod: { start: previous7Days.toISOString(), end: last7Days.toISOString() },
+                    },
+                },
+
+                // Chart data
+                recentErrorsChartData: recentErrorsChartFormatted,
+                errorVsLogTrendData: errorVsLogTrendsData,
+
+                // Lists
+                newErrorsData: newErrorsData,
+                topErrorsData: topErrorsData,
+                topUrlsData: topUrlsData,
+                topBrowsersData: topBrowsersData,
+                topLocationsData: topLocationsData,
+            }
+        };
+
+    } catch (error) {
+        console.error('Failed to fetch unified dashboard data:', error);
+        return { success: false, error: 'Failed to fetch unified dashboard data' };
+    }
+}
