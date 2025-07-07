@@ -1,9 +1,15 @@
-import { createErrorTracker } from "@better-analytics/sdk";
-import env from "@/env";
+/** biome-ignore-all lint/style/noNonNullAssertion: demo */
+import { init, initLogger } from "@better-analytics/sdk";
 
-export const analytics = createErrorTracker({
-	apiUrl: env.API_URL,
-	clientId: env.CLIENT_ID,
-	accessToken: env.ACCESS_TOKEN,
-	autoCapture: true,
+export const analytics = init({
+	apiUrl: process.env.API_URL!,
+	clientId: process.env.CLIENT_ID!,
+	accessToken: process.env.ACCESS_TOKEN!,
+});
+
+export const logger = initLogger({
+	apiUrl: process.env.API_URL!,
+	clientId: process.env.CLIENT_ID!,
+	accessToken: process.env.ACCESS_TOKEN!,
+	serviceName: "better-analytics-demo",
 });

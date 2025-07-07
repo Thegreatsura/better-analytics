@@ -2,8 +2,9 @@
 
 "use client";
 
-import { useEffect } from "react";
 import { analytics } from "@/lib/analytics";
+import { useEffect } from "react";
+
 import { Button } from "@better-analytics/ui/components/button";
 import { LinkButton } from "@better-analytics/ui/components/link-button";
 
