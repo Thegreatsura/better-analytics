@@ -87,5 +87,12 @@ export const LogIngestBody = t.Object({
 	context: t.Optional(t.String({ maxLength: 5000 })),
 });
 
+export const NotFoundIngestBody = t.Object({
+	...BaseIngestBody,
+	url: t.String({ maxLength: 500 }),
+	referrer: t.Optional(t.String({ maxLength: 500 })),
+});
+
 export type ErrorIngest = (typeof ErrorIngestBody)["static"];
 export type LogIngest = (typeof LogIngestBody)["static"];
+export type NotFoundIngest = (typeof NotFoundIngestBody)["static"];
