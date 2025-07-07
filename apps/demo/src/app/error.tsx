@@ -23,7 +23,7 @@ export default function Error({ error, reset }: ErrorProps) {
 		<div className="flex flex-col items-center justify-center gap-4 text-center">
 			<div className="flex flex-col gap-2">
 				<h2 className="font-bold text-2xl">{translated.errorTitle}</h2>
-				<p className="text-muted-foreground text-sm">
+				<p className="max-w-sm text-muted-foreground text-sm">
 					{translated.errorMessage}
 				</p>
 			</div>
