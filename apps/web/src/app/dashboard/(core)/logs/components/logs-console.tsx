@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useId } from 'react';
 import { Button } from '@better-analytics/ui/components/button';
 import { Input } from '@better-analytics/ui/components/input';
 import { Card, CardContent, CardHeader } from '@better-analytics/ui/components/card';
@@ -25,6 +25,7 @@ import { StatusLogsFilter } from './status-logs-filter';
 import { type LogLine, getLogType } from './utils';
 import { getRecentLogs } from '../../../actions';
 import { useRealtime, type LogEvent } from '@/hooks/use-realtime';
+import { Skeleton } from '@better-analytics/ui/components/skeleton';
 
 const priorities = [
     { label: "Info", value: "info" },
@@ -44,7 +45,9 @@ export function LogsConsole() {
     const [since, setSince] = useState<TimeFilter>("all");
     const [typeFilter, setTypeFilter] = useState<string[]>([]);
     const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const autoScrollId = useId();
 
     // Real-time subscription
     const handleNewLog = useCallback((logEvent: LogEvent) => {
@@ -83,6 +86,7 @@ export function LogsConsole() {
     };
 
     const fetchLogs = async () => {
+        setIsLoading(true);
         try {
             const result = await getRecentLogs();
             if (result.success && result.data) {
@@ -102,6 +106,8 @@ export function LogsConsole() {
             }
         } catch (error) {
             console.error('Failed to fetch logs:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -282,11 +288,11 @@ export function LogsConsole() {
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2 px-3 py-1 bg-muted/30 border border-border/20 rounded-md">
                                 <Switch
-                                    id={`autoscroll-${Math.random().toString(36).substring(2, 15)}`}
+                                    id={autoScrollId}
                                     checked={autoScroll}
                                     onCheckedChange={setAutoScroll}
                                 />
-                                <Label htmlFor="autoscroll" className="text-sm font-medium">Auto-scroll</Label>
+                                <Label htmlFor={autoScrollId} className="text-sm font-medium">Auto-scroll</Label>
                             </div>
 
                             {/* Real-time connection indicator */}
@@ -321,45 +327,55 @@ export function LogsConsole() {
             </CardHeader>
 
             <CardContent className="flex-1 p-0 min-h-0">
-                <div
-                    ref={scrollRef}
-                    onScroll={handleScroll}
-                    className="h-full overflow-auto bg-muted/20 border-t custom-scrollbar"
-                    style={{
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: 'hsl(var(--border) / 0.3) transparent'
-                    }}
-                >
-                    {filteredLogs.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                            <div className="text-center">
-                                <div className="text-lg font-medium mb-2">No logs found</div>
-                                <div className="text-sm">
-                                    {search ? 'Try adjusting your search terms or filters' : 'Logs will appear here when available'}
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-1 p-2">
-                            {filteredLogs.map((log, index) => {
-                                const logId = `${log.timestamp?.getTime()}-${index}`;
-                                return (
+                <div className="flex flex-col h-full">
+                    <div className="flex-1 overflow-y-auto" ref={scrollRef} onScroll={handleScroll}>
+                        {isLoading ? (
+                            <LoadingSkeleton />
+                        ) : filteredLogs.length > 0 ? (
+                            <div className="divide-y divide-border/20">
+                                {filteredLogs.map((log, index) => (
                                     <TerminalLine
-                                        key={logId}
+                                        key={`${log.rawTimestamp}-${index}`}
                                         log={log}
-                                        searchTerm={search}
                                         noTimestamp={!showTimestamp}
-                                        isExpanded={expandedLogId === logId}
-                                        onToggleExpand={() => handleLogToggle(logId)}
+                                        searchTerm={search}
+                                        isExpanded={expandedLogId === `${log.rawTimestamp}-${index}`}
+                                        onToggleExpand={() => handleLogToggle(`${log.rawTimestamp}-${index}`)}
                                     />
-                                );
-                            })}
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                                <MagnifyingGlass className="w-16 h-16 text-muted-foreground/30 mb-4" />
+                                <h3 className="text-lg font-semibold text-foreground">No logs found</h3>
+                                <p className="text-sm text-muted-foreground max-w-xs">
+                                    It looks like everything is running smoothly. If you were expecting to see logs, please check your filters.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                    {/* Footer */}
+                    <div className="p-2 border-t border-border/20 text-xs text-muted-foreground flex justify-between items-center">
+                        <span>Showing {filteredLogs.length} of {logs.length} logs</span>
+                    </div>
                 </div>
             </CardContent>
-
-
         </Card>
+    );
+}
+
+function LoadingSkeleton() {
+    return (
+        <div className="p-4 space-y-4">
+            {[...Array(15)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4 p-2">
+                    <Skeleton className="h-6 w-24 rounded-md" />
+                    <Skeleton className="h-6 w-20 rounded-md" />
+                    <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-full" />
+                    </div>
+                </div>
+            ))}
+        </div>
     );
 } 

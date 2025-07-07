@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useId } from 'react';
 import { Button } from '@better-analytics/ui/components/button';
 import { Input } from '@better-analytics/ui/components/input';
 import { Card, CardContent, CardHeader } from '@better-analytics/ui/components/card';
@@ -13,6 +13,7 @@ import { ErrorLine } from './error-line';
 import { ErrorFilters } from './error-filters';
 import { useRealtime, type ErrorEvent } from '@/hooks/use-realtime';
 import { getRecentErrors } from '@/app/dashboard/actions';
+import { Skeleton } from '@better-analytics/ui/components/skeleton';
 
 const severityLevels = [
     { label: "Critical", value: "critical", icon: Lightning, color: "text-red-500" },
@@ -69,7 +70,9 @@ export function ErrorsConsole() {
     const [typeFilter, setTypeFilter] = useState<string[]>([]);
     const [statusFilter, setStatusFilter] = useState<string[]>([]);
     const [expandedErrorId, setExpandedErrorId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const autoScrollId = useId();
 
     // Real-time subscription
     const handleNewError = useCallback((errorEvent: ErrorEvent) => {
@@ -118,6 +121,7 @@ export function ErrorsConsole() {
     };
 
     const fetchErrors = async () => {
+        setIsLoading(true);
         try {
             const result = await getRecentErrors();
             if (result.success && result.data) {
@@ -125,6 +129,8 @@ export function ErrorsConsole() {
             }
         } catch (error) {
             console.error('Failed to fetch errors:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -325,11 +331,11 @@ export function ErrorsConsole() {
 
                             <div className="flex items-center gap-2 px-3 py-1 bg-muted/30 border border-border/20 rounded-md">
                                 <Switch
-                                    id={`autoscroll-${Math.random().toString(36).substring(2, 15)}`}
+                                    id={autoScrollId}
                                     checked={autoScroll}
                                     onCheckedChange={setAutoScroll}
                                 />
-                                <Label htmlFor="autoscroll" className="text-sm font-medium">Auto-scroll</Label>
+                                <Label htmlFor={autoScrollId} className="text-sm font-medium">Auto-scroll</Label>
                             </div>
 
                             {/* Real-time connection indicator */}
@@ -378,7 +384,9 @@ export function ErrorsConsole() {
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto" ref={scrollRef} onScroll={handleScroll}>
-                        {filteredErrors.length > 0 ? (
+                        {isLoading ? (
+                            <LoadingSkeleton />
+                        ) : filteredErrors.length > 0 ? (
                             <div className="divide-y divide-border/20">
                                 {filteredErrors.map((error) => (
                                     <ErrorLine
@@ -412,5 +420,22 @@ export function ErrorsConsole() {
                 </div>
             </CardContent>
         </Card>
+    );
+}
+
+function LoadingSkeleton() {
+    return (
+        <div className="p-4 space-y-4">
+            {[...Array(10)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4 p-2">
+                    <Skeleton className="h-8 w-24 rounded-md" />
+                    <Skeleton className="h-8 w-20 rounded-md" />
+                    <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-3/4" />
+                    </div>
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+            ))}
+        </div>
     );
 } 

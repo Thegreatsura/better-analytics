@@ -157,8 +157,7 @@ What could be causing this error and how can it be resolved?`;
                 severityConfig.bgColor
             )}
         >
-            <button
-                type="button"
+            <div
                 className="flex w-full items-center p-4 cursor-pointer transition-all duration-200 text-left"
                 onClick={hasDetails ? onToggleExpand : undefined}
             >
@@ -231,7 +230,7 @@ What could be causing this error and how can it be resolved?`;
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => window.open(`/errors/${error.id}`, '_blank')}
+                                        onClick={(e) => { e.stopPropagation(); window.open(`/errors/${error.id}`, '_blank'); }}
                                         className="h-7 w-7 p-0 hover:bg-sky-500/10 hover:text-sky-400 transition-all duration-150"
                                     >
                                         <ArrowSquareOut className="h-3 w-3" />
@@ -296,7 +295,7 @@ What could be causing this error and how can it be resolved?`;
                         </div>
                     )}
                 </div>
-            </button>
+            </div>
 
             {hasDetails && (
                 <CollapsibleContent>
