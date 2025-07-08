@@ -2,11 +2,11 @@
 
 Real-time error tracking and logging for web applications. Track client-side errors and server-side logs with automatic translation.
 
-## Quick Start
+## Quick Start - THIS IS A DEMO, THIS IS NOT LIVE OR PUBLIC
 
 ### 1. Get Your API Keys
 
-1. Visit [Better Analytics Dashboard](https://analytics.customhack.dev)
+1. Visit [Better Analytics Dashboard](#)
 2. Create a project and copy your **Client ID** and **Access Token**
 
 ### 2. Install
