@@ -2,7 +2,7 @@
 
 Real-time error tracking and logging for web applications. Track client-side errors and server-side logs with automatic translation.
 
-## Quick Start - THIS IS A DEMO, THIS IS NOT LIVE OR PUBLIC
+## Quick Start - THIS IS A DEMO, THIS IS NOT LIVE OR PUBLIC, ANYTHING HERE IS PLACEHOLDER AND NOT INTENDED FOR PRODUCTION
 
 ### 1. Get Your API Keys
 
@@ -148,9 +148,3 @@ const translated = await analytics.localizeObject(content, "fr");
 - **Free**: 1,000 errors/month
 - **Pro**: $9/month - 10,000 errors/month
 - **Enterprise**: Custom pricing
-
-## Support
-
-- Email: support@customhack.dev
-- Docs: [docs.analytics.customhack.dev](https://docs.analytics.customhack.dev)
-- Issues: [GitHub Issues](https://github.com/customhack/better-analytics/issues)
