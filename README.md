@@ -1,8 +1,9 @@
 # Better Analytics
 
-Real-time error tracking and logging for web applications. Track client-side errors and server-side logs with automatic translation.
+Real-time error tracking and logging for web applications.
+Track both client-side and server-side issues with support for auto-translated messages.
 
-## Quick Start - THIS IS A DEMO, THIS IS NOT LIVE OR PUBLIC, ANYTHING HERE IS PLACEHOLDER AND NOT INTENDED FOR PRODUCTION
+⚠️ This is a demo project built for a hackathon. It's not a real product or production-ready service. Everything here is placeholder. Use at your own risk.
 
 ### 1. Get Your API Keys
 
