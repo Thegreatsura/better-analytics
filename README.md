@@ -1,9 +1,9 @@
 # Better Analytics
 
 Real-time error tracking and logging for web applications.
-Track both client-side and server-side issues with support for auto-translated messages.
+Track both client-side and server-side issues with support for auto-translated error messages.
 
-⚠️ This is a demo project built for a hackathon. It's not a real product or production-ready service. Everything here is placeholder. Use at your own risk.
+⚠️ This is a demo project built for a hackathon. It's not a real product or production-ready service. Everything here was created simply to demo the idea for the hackathon, also as a potential candidate to be a feature for Databuddy. Use at your own risk.
 
 ### 1. Get Your API Keys
 
